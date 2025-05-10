@@ -39,4 +39,9 @@ export const register = (data) => {
     return api.post('/register', data);
 };
 
+export const login = (data) => {
+    console.log('Calling login with:', data);
+    return api.post('/login', data);
+}
+
 export default api;

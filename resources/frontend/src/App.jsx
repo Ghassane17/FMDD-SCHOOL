@@ -4,11 +4,9 @@ import InstructorRoutes from './routes/InstructorRoutes.jsx';
 import LearnerRoutes from './routes/LearnerRoutes.jsx';
 import PublicRoutes from './routes/PublicRoutes.jsx';
 import ProtectedRoute from './components/ProtectedRoute.jsx';
-import Login from './pages/Login.jsx';
-import Register from './pages/Register.jsx' ;
 
 const App = () => (
-  <Routes>
+    <Routes>
         <Route
             path="/admin/*"
             element={<ProtectedRoute role="admin"><AdminRoutes /></ProtectedRoute>}
@@ -28,15 +26,8 @@ const App = () => (
 
 
 
-      <Route
-          path="/register"
-          element={<Register />}
-      />
 
-
-
-
-  </Routes>
+    </Routes>
 );
 
 export default App;
