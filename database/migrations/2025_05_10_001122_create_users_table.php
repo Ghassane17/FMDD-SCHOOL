@@ -14,14 +14,10 @@ return new class extends Migration {
             $table->string('email', 191)->unique();
             $table->timestamp('email_verified_at')->nullable();
             $table->string('password');
-            $table->rememberToken();
-
-
+            $table->enum('role', ['learner', 'instructor'])->default('learner');
             $table->string('profile_image')->nullable();
             $table->text('bio')->nullable();
-
-            $table->enum('role', ['learner', 'instructor', 'admin'])->default('learner');
-
+            $table->rememberToken();
             $table->timestamps();
         });
 
