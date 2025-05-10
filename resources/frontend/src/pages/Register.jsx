@@ -1,6 +1,6 @@
 import React, { useState } from 'react';
 import { useNavigate } from 'react-router-dom';
-import { register } from '../services/api';
+import { register } from '../services/api.js';
 
 const Register = () => {
     const [formData, setFormData] = useState({
@@ -26,27 +26,20 @@ const Register = () => {
         setErrors({});
         setMessage('');
         setLoading(true);
-
-        if (!formData.username || !formData.email || !formData.password || !formData.password_confirmation) {
-            setErrors({ general: 'Required fields are missing' });
-            setLoading(false);
-            return;
-        }
-        if (formData.password !== formData.password_confirmation) {
-            setErrors({ password_confirmation: 'Passwords do not match' });
-            setLoading(false);
-            return;
-        }
+        console.log('Submitting registration:', formData);
 
         try {
-            await register(formData);
+            const response = await register(formData);
+            console.log('Registration response:', response.data);
+            localStorage.setItem('token', response.data.token);
             setMessage('Registration successful! Redirecting to login...');
             setTimeout(() => navigate('/login'), 2000);
         } catch (error) {
-            if (error.response?.data) {
-                setErrors(error.response.data);
+            console.error('Registration failed:', error);
+            if (error.response?.data?.errors) {
+                setErrors(error.response.data.errors); // Set field-specific errors
             } else {
-                setErrors({ general: 'Failed to connect to server. Please try again.' });
+                setErrors({ general: 'Failed to connect to server. Please check if the backend is running.' });
             }
         } finally {
             setLoading(false);
@@ -71,7 +64,7 @@ const Register = () => {
                             className="w-full p-2 border rounded"
                             required
                         />
-                        {errors.username && <p className="text-red-500 text-sm">{errors.username}</p>}
+                        {errors.username && <p className="text-red-500 text-sm">{errors.username.join(', ')}</p>}
                     </div>
 
                     <div className="mb-4">
@@ -84,7 +77,7 @@ const Register = () => {
                             className="w-full p-2 border rounded"
                             required
                         />
-                        {errors.email && <p className="text-red-500 text-sm">{errors.email}</p>}
+                        {errors.email && <p className="text-red-500 text-sm">{errors.email.join(', ')}</p>}
                     </div>
 
                     <div className="mb-4">
@@ -98,7 +91,7 @@ const Register = () => {
                             required
                             minLength="6"
                         />
-                        {errors.password && <p className="text-red-500 text-sm">{errors.password}</p>}
+                        {errors.password && <p className="text-red-500 text-sm">{errors.password.join(', ')}</p>}
                     </div>
 
                     <div className="mb-4">
@@ -112,7 +105,7 @@ const Register = () => {
                             required
                             minLength="6"
                         />
-                        {errors.password_confirmation && <p className="text-red-500 text-sm">{errors.password_confirmation}</p>}
+                        {errors.password_confirmation && <p className="text-red-500 text-sm">{errors.password_confirmation.join(', ')}</p>}
                     </div>
 
                     <div className="mb-4">
@@ -126,7 +119,7 @@ const Register = () => {
                             <option value="learner">Learner</option>
                             <option value="instructor">Instructor</option>
                         </select>
-                        {errors.role && <p className="text-red-500 text-sm">{errors.role}</p>}
+                        {errors.role && <p className="text-red-500 text-sm">{errors.role.join(', ')}</p>}
                     </div>
 
                     <div className="mb-4">
@@ -138,7 +131,7 @@ const Register = () => {
                             onChange={handleChange}
                             className="w-full p-2 border rounded"
                         />
-                        {errors.profile_image && <p className="text-red-500 text-sm">{errors.profile_image}</p>}
+                        {errors.profile_image && <p className="text-red-500 text-sm">{errors.profile_image.join(', ')}</p>}
                     </div>
 
                     <div className="mb-4">
@@ -150,7 +143,7 @@ const Register = () => {
                             className="w-full p-2 border rounded"
                             rows="4"
                         />
-                        {errors.bio && <p className="text-red-500 text-sm">{errors.bio}</p>}
+                        {errors.bio && <p className="text-red-500 text-sm">{errors.bio.join(', ')}</p>}
                     </div>
 
                     <button

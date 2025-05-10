@@ -21,7 +21,6 @@ class RegisterController extends Controller
                 'profile_image' => 'nullable|url',
                 'bio' => 'nullable|string',
             ]);
-
             $user = User::create([
                 'username' => $validated['username'],
                 'email' => $validated['email'],
