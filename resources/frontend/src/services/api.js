@@ -43,5 +43,9 @@ export const login = (data) => {
     console.log('Calling login with:', data);
     return api.post('/login', data);
 }
+export const getLearnerDashboard = () => {
+    console.log('Fetching learner Dashboard');
+    return api.get('/learner/dashboard');
+};
 
 export default api;

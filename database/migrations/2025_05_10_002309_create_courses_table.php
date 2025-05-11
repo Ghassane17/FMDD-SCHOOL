@@ -10,17 +10,14 @@ return new class extends Migration
     {
         Schema::create('courses', function (Blueprint $table) {
             $table->id();
-            $table->foreignId('instructor_id')->constrained('users')->onDelete('cascade');
+            $table->foreignId('instructor_id')->constrained('ghassane_test_instructors')->onDelete('cascade');
             $table->string('title');
             $table->text('description');
-            $table->string('cover_image')->nullable();
-            $table->string('thumbnail_image')->nullable();
-
-            $table->enum('niveau', ['débutant', 'intermediare', 'avancé'])->default('débutant');            // beginner, intermediate, advanced
-            $table->float('rating')->default(0);
-            $table->boolean('is_for_members')->default(false); // restrict access to paying users
-            $table->enum('media_type', ['text', 'video', 'audio', 'multimedia'])->default('text');
+            $table->string('course_thumbnail');
             $table->timestamps();
+
+
+
         });
     }
 

@@ -4,13 +4,16 @@ namespace App\Http\Controllers\Auth;
 
 use App\Http\Controllers\Controller;
 use App\Models\User;
+use App\Models\Learner;
 use Illuminate\Http\Request;
+use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Facades\Hash;
 use Illuminate\Validation\ValidationException;
+use Carbon\Carbon;
 
 class LoginController extends Controller
 {
-    public function login(Request $request)
+    public function login(Request $request): \Illuminate\Http\JsonResponse
     {
         // 1️⃣ Validate incoming request
         $credentials = $request->validate([
@@ -28,10 +31,23 @@ class LoginController extends Controller
             ], 401);
         }
 
-        // 4️⃣ Revoke old tokens if you wish (optional)
-        // $user->tokens()->delete();
+        // 4️⃣ Handle role-specific logic
+        if ($user->role === 'learner') {
+            try {
+                DB::beginTransaction();
+                $learner = Learner::where('user_id', $user->id)->first();
+                if ($learner) {
+                    $learner->update(['last_connection' => Carbon::now()]);
+                }
+                DB::commit();
+            } catch (\Exception $e) {
+                DB::rollBack();
+                \log::error('Failed to update last_connection: ' . $e->getMessage());
+                // Continue login even if update fails
+            }
+        }
 
-        // 5️⃣ Create a new personal access token
+        // 5️⃣ Create new personal access token
         $token = $user->createToken('auth-token')->plainTextToken;
 
         // 6️⃣ Return user data + token
