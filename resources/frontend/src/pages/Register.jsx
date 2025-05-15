@@ -9,7 +9,7 @@ const Register = () => {
         password: '',
         password_confirmation: '',
         role: 'learner',
-        profile_image: '',
+        profile_image: null, // Changed to null for file
         bio: '',
     });
     const [errors, setErrors] = useState({});
@@ -18,7 +18,12 @@ const Register = () => {
     const navigate = useNavigate();
 
     const handleChange = (e) => {
-        setFormData({ ...formData, [e.target.name]: e.target.value });
+        const { name, value, files } = e.target;
+        if (name === 'profile_image') {
+            setFormData({ ...formData, [name]: files[0] || null });
+        } else {
+            setFormData({ ...formData, [name]: value });
+        }
     };
 
     const handleSubmit = async (e) => {
@@ -26,10 +31,29 @@ const Register = () => {
         setErrors({});
         setMessage('');
         setLoading(true);
-        console.log('Submitting registration:', formData);
+
+        // Create FormData for file upload
+        const data = new FormData();
+        data.append('username', formData.username);
+        data.append('email', formData.email);
+        data.append('password', formData.password);
+        data.append('password_confirmation', formData.password_confirmation);
+        data.append('role', formData.role);
+        if (formData.profile_image) {
+            data.append('profile_image', formData.profile_image);
+        }
+        data.append('bio', formData.bio);
+
+        console.log('Submitting registration:', {
+            username: formData.username,
+            email: formData.email,
+            role: formData.role,
+            hasProfileImage: !!formData.profile_image,
+            bio: formData.bio,
+        });
 
         try {
-            const response = await register(formData);
+            const response = await register(data);
             console.log('Registration response:', response.data);
             localStorage.setItem('token', response.data.token);
             setMessage('Registration successful! Redirecting to login...');
@@ -37,7 +61,7 @@ const Register = () => {
         } catch (error) {
             console.error('Registration failed:', error);
             if (error.response?.data?.errors) {
-                setErrors(error.response.data.errors); // Set field-specific errors
+                setErrors(error.response.data.errors);
             } else {
                 setErrors({ general: 'Failed to connect to server. Please check if the backend is running.' });
             }
@@ -61,7 +85,7 @@ const Register = () => {
                             name="username"
                             value={formData.username}
                             onChange={handleChange}
-                            className="w-full p-2 border rounded"
+                            className="w-full p-2 border rounded focus:outline-none focus:ring-2 focus:ring-indigo-500"
                             required
                         />
                         {errors.username && <p className="text-red-500 text-sm">{errors.username.join(', ')}</p>}
@@ -74,7 +98,7 @@ const Register = () => {
                             name="email"
                             value={formData.email}
                             onChange={handleChange}
-                            className="w-full p-2 border rounded"
+                            className="w-full p-2 border rounded focus:outline-none focus:ring-2 focus:ring-indigo-500"
                             required
                         />
                         {errors.email && <p className="text-red-500 text-sm">{errors.email.join(', ')}</p>}
@@ -87,7 +111,7 @@ const Register = () => {
                             name="password"
                             value={formData.password}
                             onChange={handleChange}
-                            className="w-full p-2 border rounded"
+                            className="w-full p-2 border rounded focus:outline-none focus:ring-2 focus:ring-indigo-500"
                             required
                             minLength="6"
                         />
@@ -101,7 +125,7 @@ const Register = () => {
                             name="password_confirmation"
                             value={formData.password_confirmation}
                             onChange={handleChange}
-                            className="w-full p-2 border rounded"
+                            className="w-full p-2 border rounded focus:outline-none focus:ring-2 focus:ring-indigo-500"
                             required
                             minLength="6"
                         />
@@ -114,7 +138,7 @@ const Register = () => {
                             name="role"
                             value={formData.role}
                             onChange={handleChange}
-                            className="w-full p-2 border rounded"
+                            className="w-full p-2 border rounded focus:outline-none focus:ring-2 focus:ring-indigo-500"
                         >
                             <option value="learner">Learner</option>
                             <option value="instructor">Instructor</option>
@@ -123,11 +147,11 @@ const Register = () => {
                     </div>
 
                     <div className="mb-4">
-                        <label className="block text-gray-700 mb-2" htmlFor="profile_image">Profile Image URL</label>
+                        <label className="block text-gray-700 mb-2" htmlFor="profile_image">Profile Image</label>
                         <input
-                            type="url"
+                            type="file"
                             name="profile_image"
-                            value={formData.profile_image}
+                            accept="image/*"
                             onChange={handleChange}
                             className="w-full p-2 border rounded"
                         />
@@ -140,7 +164,7 @@ const Register = () => {
                             name="bio"
                             value={formData.bio}
                             onChange={handleChange}
-                            className="w-full p-2 border rounded"
+                            className="w-full p-2 border rounded focus:outline-none focus:ring-2 focus:ring-indigo-500"
                             rows="4"
                         />
                         {errors.bio && <p className="text-red-500 text-sm">{errors.bio.join(', ')}</p>}
@@ -149,14 +173,14 @@ const Register = () => {
                     <button
                         type="submit"
                         disabled={loading}
-                        className={`w-full p-2 text-white rounded ${loading ? 'bg-gray-400' : 'bg-blue-500 hover:bg-blue-600'}`}
+                        className={`w-full p-2 text-white rounded ${loading ? 'bg-gray-400' : 'bg-indigo-600 hover:bg-indigo-700'} transition`}
                     >
                         {loading ? 'Registering...' : 'Register'}
                     </button>
                 </form>
 
                 <p className="mt-4 text-center">
-                    Already have an account? <a href="/login" className="text-blue-500 hover:underline">Login</a>
+                    Already have an account? <a href="/login" className="text-indigo-600 hover:underline">Login</a>
                 </p>
             </div>
         </div>

@@ -21,7 +21,7 @@ return [
 
     'allowed_methods' => ['*'],
 
-    'allowed_origins' => ['http://localhost:5731'],
+    'allowed_origins' => ['http://localhost:5732'],
 
     'allowed_origins_patterns' => [],
 

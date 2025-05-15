@@ -1,5 +1,5 @@
 import { useState } from 'react';
-import { login } from '../services/api';
+import { login, setToken, setUser } from '../services/api';
 import { useNavigate } from 'react-router-dom';
 
 function Login() {
@@ -15,25 +15,48 @@ function Login() {
         try {
             const response = await login(credentials);
             console.log('Login success:', response.data);
-            localStorage.setItem('token', response.data.token);
-            localStorage.setItem('user', JSON.stringify(response.data.user));
+
+            // Vérifier le message de succès qui devrait être "Login successful"
+            if (response.data.message === "Login successful") {
+                console.log('Authentication confirmed with message:', response.data.message);
+            }
+
             const role = response.data.user.role;
             console.log('User role:', role);
-            if (role === 'learner') {
-                console.log('Navigating to /learner/dashboard');
-                navigate('/learner/dashboard');
-            } else if (role === 'admin') {
-                console.log('Navigating to /admin');
-                navigate('/admin');
-            } else if (role === 'instructor') {
-                console.log('Navigating to /instructor/dashboard');
-                navigate('/instructor/dashboard');
-            } else {
-                setError('Unsupported role');
+
+            // Navigation basée sur le rôle
+            switch (role) {
+                case 'learner':
+                    console.log('Navigating to /learner');
+                    navigate('/learner');
+                    break;
+                case 'admin':
+                    console.log('Navigating to /admin');
+                    navigate('/admin');
+                    break;
+                case 'instructor':
+                    console.log('Navigating to /instructor/dashboard');
+                    navigate('/instructor/dashboard');
+                    break;
+                default:
+                    setError('Rôle non pris en charge');
             }
         } catch (err) {
             console.error('Login failed:', err);
-            setError(err.response?.data?.message || 'Failed to login');
+
+            // Gestion d'erreur améliorée
+            if (err.response?.status === 422) {
+                // Erreurs de validation
+                const validationErrors = err.response.data.errors;
+                const errorMessage = validationErrors ?
+                    Object.values(validationErrors).flat().join(', ') :
+                    'Données d\'authentification invalides';
+                setError(errorMessage);
+            } else if (err.response?.status === 401) {
+                setError('Email ou mot de passe incorrect');
+            } else {
+                setError(err.response?.data?.message || 'Échec de la connexion');
+            }
         } finally {
             setLoading(false);
         }
@@ -72,7 +95,7 @@ function Login() {
                         disabled={loading}
                         className="w-full bg-indigo-600 text-white py-2 rounded-lg hover:bg-indigo-700 transition disabled:opacity-50"
                     >
-                        {loading ? 'Logging in...' : 'Login'}
+                        {loading ? 'Connexion en cours...' : 'Se connecter'}
                     </button>
                 </form>
             </div>

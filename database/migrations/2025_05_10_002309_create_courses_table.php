@@ -14,7 +14,13 @@ return new class extends Migration
             $table->string('title');
             $table->text('description');
             $table->string('course_thumbnail');
+
             $table->timestamps();
+
+//            //new cols
+           $table->string('level')->default('intermédiaire') ;
+           $table->integer('students')->default(0);
+           $table->float('rating')->nullable();
 
 
 
