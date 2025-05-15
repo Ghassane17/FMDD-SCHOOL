@@ -330,4 +330,21 @@ export const updateLearnerSettings = async (data) => {
     }
 };
 
+export const submitContactForm = async (data) => {
+    if (!isAuthenticated()) {
+        console.error('Cannot submit contact form: User not authenticated');
+        throw new Error('Authentication required');
+    }
+
+    try {
+        console.log('Submitting contact form with:', data);
+        const response = await api.post('/learner/contact', data);
+        console.log('Contact form submitted successfully:', response.data);
+        return response;
+    } catch (error) {
+        console.error('Failed to submit contact form');
+        throw error;
+    }
+};
+
 export default api;

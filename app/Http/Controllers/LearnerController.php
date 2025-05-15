@@ -200,5 +200,44 @@ class LearnerController extends Controller
         }
     }
 
+    public function contact(Request $request): \Illuminate\Http\JsonResponse
+    {
+        $user = Auth::user();
+        if (!$user) {
+            Log::error('No authenticated user for contact form');
+            return response()->json(['message' => 'Unauthenticated'], 401);
+        }
+
+        if ($user->role !== 'learner') {
+            Log::warning('Unauthorized role for contact form', ['user_id' => $user->id, 'role' => $user->role]);
+            return response()->json(['message' => 'Unauthorized'], 403);
+        }
+
+        try {
+            $validated = $request->validate([
+                'name' => 'required|string|max:255',
+                'email' => 'required|email|max:255',
+                'subject' => 'required|string|max:255',
+                'message' => 'required|string|min:10',
+            ]);
+
+            ContactUs::create([
+                'user_id' => $user->id,
+                'name' => $validated['name'],
+                'email' => $validated['email'],
+                'subject' => $validated['subject'],
+                'message' => $validated['message'],
+            ]);
+
+            return response()->json(['message' => 'Contact form submitted successfully'], 200);
+        } catch (\Exception $e) {
+            Log::error('Error in contact form submission', [
+                'user_id' => $user->id,
+                'error' => $e->getMessage(),
+            ]);
+            return response()->json(['message' => 'Internal server error'], 500);
+        }
+    }
+
 
 }
