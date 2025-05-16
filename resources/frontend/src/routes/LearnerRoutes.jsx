@@ -18,17 +18,15 @@ const LearnerRoutes = {
             element: <LearnerDashboardPage />,
         },
         {
-            path: 'dashboard',
-            element: <LearnerDashboardPage />,
-        },
+            path: 'all-enrolled-courses',
+            element: <MyCourses />,
+        }
+       ,
         {
             path: 'settings',
             element: <LearnerSettingsPage />,
         },
-        {
-            path: 'all-enrolled-courses',
-            element: <MyCourses />,
-        },
+       ,
         {
             path: 'suggested-courses',
             element: <SuggestedCourses />,

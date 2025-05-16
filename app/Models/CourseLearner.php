@@ -8,7 +8,11 @@ class CourseLearner extends Pivot
 {
     protected $table = 'course_learner';
 
-    protected $fillable = ['learner_id', 'course_id', 'progress'];
+    protected $fillable = ['learner_id', 'course_id', 'progress', 'last_accessed'];
+
+    protected $casts = [
+        'last_accessed' => 'datetime',
+    ];
 
     public function learner()
     {
