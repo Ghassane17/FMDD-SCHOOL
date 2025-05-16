@@ -15,6 +15,8 @@ import { trainerData } from '../../data/trainerData';
 const TrainerDashboard = () => {
   const [activeTab, setActiveTab] = useState('profile');
 
+  const user = JSON.parse(localStorage.getItem('user'))|| {};
+
   // Render the appropriate content based on the active tab
   const renderContent = () => {
     switch (activeTab) {
@@ -60,8 +62,8 @@ const TrainerDashboard = () => {
                 <div>
                   <img
                     className="h-8 w-8 rounded-full object-cover"
-                    src={trainerData.avatar}
-                    alt={trainerData.name}
+                    src={user.avatar || 'https://via.placeholder.com/150'}
+                    alt={user.username}
                   />
                 </div>
               </div>

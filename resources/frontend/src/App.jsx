@@ -13,12 +13,12 @@ const router = createBrowserRouter([
         errorElement: <ErrorBoundary />,
         children: AdminRoutes.children,
     },
-/*    {
+    {
         path: '/instructor',
         element: <ProtectedRoute role="instructor">{InstructorRoutes.element}</ProtectedRoute>,
         errorElement: <ErrorBoundary />,
         children: InstructorRoutes.children,
-    },*/
+    },
     {
         path: '/learner',
         element: <ProtectedRoute role="learner">{LearnerRoutes.element}</ProtectedRoute>,

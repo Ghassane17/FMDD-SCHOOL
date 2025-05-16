@@ -4,6 +4,7 @@ use App\Http\Controllers\Auth\RegisterController;
 
 use App\Http\Controllers\Auth\LoginController;
 use App\Http\Controllers\LearnerController ;
+use App\Http\Controllers\InstructorController;  // ← add this
 
 use Illuminate\Support\Facades\Route;
 
@@ -16,5 +17,8 @@ Route::post('/login',   [LoginController::class, 'login']);
 // Learner dashboard Route
 Route::middleware('auth:sanctum')->group(function () {
     Route::get('/learner/dashboard', [LearnerController::class, 'dashboard']);
+
+    // Instructor dashboard
+    Route::get('/instructor/dashboard', [InstructorController::class, 'dashboard']);
 });
 // TODO: get the id after authentication to show each individual his actual real data
