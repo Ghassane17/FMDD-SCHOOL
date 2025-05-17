@@ -6,6 +6,7 @@ use Illuminate\Database\Seeder;
 use App\Models\User;
 use App\Models\Learner;
 use App\Models\Ghassane_test_instructor;
+use App\Models\Instructor ;
 use App\Models\Course;
 use Illuminate\Support\Facades\Hash;
 
@@ -21,6 +22,18 @@ class GhassaneTestSeeder extends Seeder
             'avatar' => 'https://via.placeholder.com/50',
             'bio' => 'Passionate about tech and data',
         ]);
+
+       /* $AmineInstructor = User::create(
+            ['id' => 4 ,
+                'username' => 'Amine',
+                'email' =>'amine@example.com' ,
+                'password' => Hash::make('password'),
+                'role' => 'instructor',
+                'avatar' => 'https://via.placeholder.com/50',
+                'bio' => 'Passionate about tech and data',
+            ]);*/
+
+
 
         $learner = Learner::create([
             'user_id' => $user->id,
@@ -40,6 +53,8 @@ class GhassaneTestSeeder extends Seeder
             'email' => 'instructor2@example.com',
             'avatar' => 'https://via.placeholder.com/61'
         ]);
+
+
 
         $courses = [
             [

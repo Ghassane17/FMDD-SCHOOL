@@ -12,7 +12,9 @@ return new class extends Migration
             $table->id();
             $table->foreignId('course_id')->constrained()->onDelete('cascade');
             $table->string('title');
+            $table->boolean('isFinal');
             $table->json('questions')->nullable();
+
             $table->timestamps();
         });
     }

@@ -2,6 +2,7 @@
 
 namespace App\Http\Controllers;
 
+use App\Models\ContactUs;
 use Illuminate\Http\Request;
 use App\Models\Learner;
 use Illuminate\Support\Facades\Auth;
@@ -200,6 +201,7 @@ class LearnerController extends Controller
         }
     }
 
+    //--------------------------------------------------------------------------------------
     public function contact(Request $request): \Illuminate\Http\JsonResponse
     {
         $user = Auth::user();
@@ -238,6 +240,8 @@ class LearnerController extends Controller
             return response()->json(['message' => 'Internal server error'], 500);
         }
     }
+
+    //--------------------------------------------------------------------------------------
 
 
 }

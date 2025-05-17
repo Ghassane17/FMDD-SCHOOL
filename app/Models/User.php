@@ -20,7 +20,7 @@ use Laravel\Sanctum\HasApiTokens;
  * @property Carbon|null $email_verified_at
  * @property string $password
  * @property string|null $remember_token
- * @property string|null $profile_image
+ * @property string|null $avatar
  * @property string|null $bio
  * @property string $role
  * @property Carbon|null $created_at

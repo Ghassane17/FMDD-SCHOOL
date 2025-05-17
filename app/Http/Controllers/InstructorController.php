@@ -26,7 +26,6 @@ class InstructorController extends Controller
         if (!$instructor) {
             return response()->json(['message' => 'Instructor profile not found'], 404);
         }
-
         // 3) Build response
         return response()->json([
             'instructor_id'  => $instructor->id,

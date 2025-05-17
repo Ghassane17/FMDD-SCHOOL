@@ -1,6 +1,6 @@
 import React, { useState } from 'react';
 import { useNavigate } from 'react-router-dom';
-import { register } from '../services/api.js';
+import { register, initializeCSRF } from '../services/api.js';
 
 const Register = () => {
     const [formData, setFormData] = useState({
@@ -9,7 +9,7 @@ const Register = () => {
         password: '',
         password_confirmation: '',
         role: 'learner',
-        profile_image: null, // Changed to null for file
+        avatar: '',
         bio: '',
     });
     const [errors, setErrors] = useState({});
@@ -18,12 +18,13 @@ const Register = () => {
     const navigate = useNavigate();
 
     const handleChange = (e) => {
-        const { name, value, files } = e.target;
-        if (name === 'profile_image') {
-            setFormData({ ...formData, [name]: files[0] || null });
-        } else {
-            setFormData({ ...formData, [name]: value });
-        }
+        const { name, value } = e.target;
+        console.log(`handleChange: Updating ${name} to ${value}`);
+        setFormData((prev) => {
+            const newData = { ...prev, [name]: value };
+            console.log('New formData:', newData);
+            return newData;
+        });
     };
 
     const handleSubmit = async (e) => {
@@ -32,38 +33,32 @@ const Register = () => {
         setMessage('');
         setLoading(true);
 
-        // Create FormData for file upload
-        const data = new FormData();
-        data.append('username', formData.username);
-        data.append('email', formData.email);
-        data.append('password', formData.password);
-        data.append('password_confirmation', formData.password_confirmation);
-        data.append('role', formData.role);
-        if (formData.profile_image) {
-            data.append('profile_image', formData.profile_image);
-        }
-        data.append('bio', formData.bio);
-
-        console.log('Submitting registration:', {
+        const data = {
             username: formData.username,
             email: formData.email,
+            password: formData.password,
+            password_confirmation: formData.password_confirmation,
             role: formData.role,
-            hasProfileImage: !!formData.profile_image,
+            avatar: formData.avatar,
             bio: formData.bio,
-        });
+        };
+
+        console.log('Submitting registration:', data);
 
         try {
+            console.log('Initializing CSRF...');
+            await initializeCSRF();
+            console.log('CSRF initialized, sending registration request...');
             const response = await register(data);
             console.log('Registration response:', response.data);
-            localStorage.setItem('token', response.data.token);
-            setMessage('Registration successful! Redirecting to login...');
+            setMessage('Inscription réussie ! Redirection vers la page login...');
             setTimeout(() => navigate('/login'), 2000);
         } catch (error) {
-            console.error('Registration failed:', error);
+            console.error('Échec de l\'inscription:', error);
             if (error.response?.data?.errors) {
                 setErrors(error.response.data.errors);
             } else {
-                setErrors({ general: 'Failed to connect to server. Please check if the backend is running.' });
+                setErrors({ general: error.response?.data?.message || 'Impossible de se connecter au serveur.' });
             }
         } finally {
             setLoading(false);
@@ -73,13 +68,13 @@ const Register = () => {
     return (
         <div className="min-h-screen flex items-center justify-center bg-gray-100">
             <div className="w-full max-w-md p-8 bg-white rounded-lg shadow-lg">
-                <h2 className="text-2xl font-bold mb-6 text-center">Register</h2>
+                <h2 className="text-2xl font-bold mb-6 text-center">Inscription</h2>
                 {message && <p className="text-green-500 mb-4">{message}</p>}
                 {errors.general && <p className="text-red-500 mb-4">{errors.general}</p>}
 
                 <form onSubmit={handleSubmit}>
                     <div className="mb-4">
-                        <label className="block text-gray-700 mb-2" htmlFor="username">Username</label>
+                        <label className="block text-gray-700 mb-2" htmlFor="username">Nom d'utilisateur</label>
                         <input
                             type="text"
                             name="username"
@@ -105,7 +100,7 @@ const Register = () => {
                     </div>
 
                     <div className="mb-4">
-                        <label className="block text-gray-700 mb-2" htmlFor="password">Password</label>
+                        <label className="block text-gray-700 mb-2" htmlFor="password">Mot de passe</label>
                         <input
                             type="password"
                             name="password"
@@ -113,13 +108,13 @@ const Register = () => {
                             onChange={handleChange}
                             className="w-full p-2 border rounded focus:outline-none focus:ring-2 focus:ring-indigo-500"
                             required
-                            minLength="6"
+                            minLength="8"
                         />
                         {errors.password && <p className="text-red-500 text-sm">{errors.password.join(', ')}</p>}
                     </div>
 
                     <div className="mb-4">
-                        <label className="block text-gray-700 mb-2" htmlFor="password_confirmation">Confirm Password</label>
+                        <label className="block text-gray-700 mb-2" htmlFor="password_confirmation">Confirmer le mot de passe</label>
                         <input
                             type="password"
                             name="password_confirmation"
@@ -127,35 +122,37 @@ const Register = () => {
                             onChange={handleChange}
                             className="w-full p-2 border rounded focus:outline-none focus:ring-2 focus:ring-indigo-500"
                             required
-                            minLength="6"
+                            minLength="8"
                         />
                         {errors.password_confirmation && <p className="text-red-500 text-sm">{errors.password_confirmation.join(', ')}</p>}
                     </div>
 
                     <div className="mb-4">
-                        <label className="block text-gray-700 mb-2" htmlFor="role">Role</label>
+                        <label className="block text-gray-700 mb-2" htmlFor="role">Rôle</label>
                         <select
                             name="role"
                             value={formData.role}
                             onChange={handleChange}
                             className="w-full p-2 border rounded focus:outline-none focus:ring-2 focus:ring-indigo-500"
+                            required
                         >
-                            <option value="learner">Learner</option>
-                            <option value="instructor">Instructor</option>
+                            <option value="learner">Apprenant</option>
+                            <option value="instructor">Instructeur</option>
                         </select>
                         {errors.role && <p className="text-red-500 text-sm">{errors.role.join(', ')}</p>}
                     </div>
 
                     <div className="mb-4">
-                        <label className="block text-gray-700 mb-2" htmlFor="profile_image">Profile Image</label>
+                        <label className="block text-gray-700 mb-2" htmlFor="avatar">URL de l'avatar</label>
                         <input
-                            type="file"
-                            name="profile_image"
-                            accept="image/*"
+                            type="url"
+                            name="avatar"
+                            value={formData.avatar}
                             onChange={handleChange}
-                            className="w-full p-2 border rounded"
+                            className="w-full p-2 border rounded focus:outline-none focus:ring-2 focus:ring-indigo-500"
+                            placeholder="https://example.com/avatar.jpg"
                         />
-                        {errors.profile_image && <p className="text-red-500 text-sm">{errors.profile_image.join(', ')}</p>}
+                        {errors.avatar && <p className="text-red-500 text-sm">{errors.avatar.join(', ')}</p>}
                     </div>
 
                     <div className="mb-4">
@@ -175,12 +172,12 @@ const Register = () => {
                         disabled={loading}
                         className={`w-full p-2 text-white rounded ${loading ? 'bg-gray-400' : 'bg-indigo-600 hover:bg-indigo-700'} transition`}
                     >
-                        {loading ? 'Registering...' : 'Register'}
+                        {loading ? 'Inscription en cours...' : 'S\'inscrire'}
                     </button>
                 </form>
 
                 <p className="mt-4 text-center">
-                    Already have an account? <a href="/login" className="text-indigo-600 hover:underline">Login</a>
+                    Vous avez déjà un compte ? <a href="/login" className="text-indigo-600 hover:underline">Se connecter</a>
                 </p>
             </div>
         </div>

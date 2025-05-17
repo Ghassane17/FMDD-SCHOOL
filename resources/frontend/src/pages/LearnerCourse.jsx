@@ -1,4 +1,3 @@
-
 import React, { useState } from 'react';
 import CourseHeader from '../components/LearnerCourse/CourseHeader';
 import CourseSidebar from '../components/LearnerCourse/CourseSidebar';
@@ -12,13 +11,13 @@ import { dummyCourseData } from '../data/courseData';
 const LearnerCourse = () => {
   // State to track current module index
   const [currentModuleIndex, setCurrentModuleIndex] = useState(0);
-  
+
   // State to control sidebar visibility on mobile
   const [isSidebarOpen, setIsSidebarOpen] = useState(false);
-  
+
   // Get current module from dummy data
   const currentModule = dummyCourseData.modules[currentModuleIndex];
-  
+
   /**
    * Toggle sidebar visibility (for mobile view)
    */
@@ -58,11 +57,11 @@ const LearnerCourse = () => {
   return (
     <div className="min-h-screen bg-gray-50 flex flex-col">
       {/* Sticky Header */}
-      <CourseHeader 
-        courseTitle={dummyCourseData.title} 
-        toggleSidebar={toggleSidebar} 
+      <CourseHeader
+        courseTitle={dummyCourseData.title}
+        toggleSidebar={toggleSidebar}
       />
-      
+
       <div className="flex flex-1 relative">
         {/* Sidebar - hidden on mobile by default */}
         <CourseSidebar
@@ -72,7 +71,7 @@ const LearnerCourse = () => {
           isOpen={isSidebarOpen}
           onModuleSelect={selectModule}
         />
-        
+
         {/* Main Content Area */}
         <CourseContent
           currentModule={currentModule}

@@ -16,11 +16,21 @@ const api = axios.create({
 });
 
 // Intercepteur de requête amélioré avec plus de logs
+// In api.js, modify the request interceptor:
 api.interceptors.request.use(
     config => {
         console.log('-------- AXIOS REQUEST --------');
         console.log('URL:', `${config.baseURL}${config.url}`);
         console.log('Method:', config.method?.toUpperCase());
+
+        // Check if data is FormData and avoid setting Content-Type
+        // Axios will automatically set the correct Content-Type with boundary
+        if (config.data instanceof FormData) {
+            console.log('FormData detected - letting Axios set the proper Content-Type');
+            // Remove the Content-Type header to let Axios set it with the boundary
+            delete config.headers['Content-Type'];
+        }
+
         console.log('Headers:', config.headers);
 
         const logData = { ...config.data };
@@ -142,7 +152,7 @@ export const clearAllCaches = () => {
 export const initializeCSRF = async () => {
     try {
         await axios.get('/sanctum/csrf-cookie', {
-            baseURL: import.meta.env.VITE_APP_URL || 'http://localhost:8000',
+            baseURL: import.meta.env.VITE_APP_URL || 'http://localhost:5731',
             withCredentials: true
         });
         console.log('CSRF cookie initialized successfully');
@@ -197,25 +207,25 @@ export const login = async (data) => {
     }
 };
 
-export const register = async (formData) => {
-    clearAllCaches();
-
+export const register = async (data) => {
     try {
-        const response = await api.post('/register', formData);
+        console.log('Sending registration request with:', data instanceof FormData ? Object.fromEntries(data) : { ...data, password: '********', password_confirmation: '********' });
+        await initializeCSRF();
+        const response = await api.post('/register', data);
 
         if (response.data.token) {
-            setToken(response.data.token);
-            console.log('Token stored successfully after registration');
+            localStorage.setItem('token', response.data.token);
+            console.log('Token stored successfully');
         }
 
         if (response.data.user) {
-            setUser(response.data.user);
-            console.log('User data stored successfully after registration');
+            localStorage.setItem('user', JSON.stringify(response.data.user));
+            console.log('User data stored successfully');
         }
 
         return response;
     } catch (error) {
-        console.error('Registration failed');
+        console.error('Registration failed:', error);
         throw error;
     }
 };

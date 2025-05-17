@@ -10,7 +10,7 @@ use Illuminate\Validation\ValidationException;
 
 class RegisterController extends Controller
 {
-    public function register(Request $request)
+    public function register(Request $request): \Illuminate\Http\JsonResponse
     {
         try {
             $validated = $request->validate([
@@ -18,15 +18,16 @@ class RegisterController extends Controller
                 'email' => 'required|email|unique:users',
                 'password' => 'required|string|min:6|confirmed',
                 'role' => 'required|in:learner,instructor',
-                'profile_image' => 'nullable|url',
+                'avatar' => 'nullable|url',
                 'bio' => 'nullable|string',
             ]);
             $user = User::create([
+
                 'username' => $validated['username'],
                 'email' => $validated['email'],
                 'password' => Hash::make($validated['password']),
                 'role' => $validated['role'],
-                'profile_image' => $validated['profile_image'],
+                'avatar' => $validated['avatar'],
                 'bio' => $validated['bio'],
             ]);
 

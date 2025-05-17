@@ -12,7 +12,7 @@ return new class extends Migration
             $table->id();
             $table->foreignId('learner_id')->constrained('learners')->onDelete('cascade');
             $table->foreignId('course_id')->constrained('courses')->onDelete('cascade');
-            $table->integer('progress')->default(0);
+            $table->unsignedInteger('progress')->default(0);
            $table->timestamp('last_accessed')->nullable();
             $table->timestamps();
             $table->timestamp('enrolled_at')->useCurrent();
