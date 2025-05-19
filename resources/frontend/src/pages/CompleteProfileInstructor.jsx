@@ -13,7 +13,7 @@ const CompleteProfileInstructor = () => {
   const navigate = useNavigate();
   const [currentStep, setCurrentStep] = useState(1);
   const totalSteps = 4;
-  
+
   const [formData, setFormData] = useState({
     skills: [],
     languages: [],
@@ -24,44 +24,44 @@ const CompleteProfileInstructor = () => {
       paymentMethod: ""
     }
   });
-  
+
   const updateSkills = (skills) => {
     setFormData(prev => ({ ...prev, skills }));
   };
-  
+
   const updateLanguages = (languages) => {
     setFormData(prev => ({ ...prev, languages }));
   };
-  
+
   const updateCertifications = (certifications) => {
     setFormData(prev => ({ ...prev, certifications }));
   };
-  
+
   const updateBankInfo = (bankInfo) => {
     setFormData(prev => ({ ...prev, bankInfo }));
   };
-  
+
   const handleNext = () => {
     if (currentStep < totalSteps) {
       setCurrentStep(currentStep + 1);
     } else {
       toast.success("Votre profil a été complété avec succès!");
-      navigate("/");
+        setTimeout(() => navigate("/login"), 1500);
     }
   };
-  
+
   const handleBack = () => {
     if (currentStep > 1) {
       setCurrentStep(currentStep - 1);
     }
   };
-  
+
   const handleSkip = () => {
     if (currentStep < totalSteps) {
       setCurrentStep(currentStep + 1);
     }
   };
-  
+
   // Check if current step data is valid for enabling next button
   const isStepValid = () => {
     switch (currentStep) {
@@ -78,7 +78,7 @@ const CompleteProfileInstructor = () => {
         return false;
     }
   };
-  
+
   // Render the form based on the current step
   const renderStepContent = () => {
     switch (currentStep) {
@@ -97,7 +97,7 @@ const CompleteProfileInstructor = () => {
 
   return (
     <div className="bg-white min-h-screen">
-      
+
       <div className="container mx-auto px-4 py-8">
         <div className="max-w-3xl mx-auto">
           <div className="bg-white/80 backdrop-blur-sm rounded-xl shadow-md p-6 mb-6">
@@ -105,14 +105,14 @@ const CompleteProfileInstructor = () => {
             <p className="text-gray-600 text-sm mb-4">
               Quelques informations supplémentaires pour perfectionner votre profil formateur
             </p>
-            
+
             <ProgressIndicator currentStep={currentStep} totalSteps={totalSteps} />
           </div>
-          
+
           <div className="mb-6">
             {renderStepContent()}
           </div>
-          
+
           <div className="flex justify-between">
             <Button
               type="button"
@@ -124,7 +124,7 @@ const CompleteProfileInstructor = () => {
               <ChevronLeft className="w-5 h-5" />
               Retour
             </Button>
-            
+
             <div className="flex gap-4">
               {currentStep === 4 && (
                 <Button
@@ -136,7 +136,7 @@ const CompleteProfileInstructor = () => {
                   Ignorer pour le moment
                 </Button>
               )}
-              
+
               <Button
                 type="button"
                 onClick={handleNext}

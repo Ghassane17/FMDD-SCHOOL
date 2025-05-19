@@ -23,10 +23,15 @@ class RegisterController extends Controller
                 'email' => 'required|email|unique:users',
                 'password' => 'required|string|min:6|confirmed',
                 'role' => 'required|in:learner,instructor',
-                'avatar' => 'nullable|url',
+                'avatar' => 'nullable|image|mimes:jpeg,png,jpg,gif,svg|max:2048',
                 'bio' => 'nullable|string|max:1000',
                 'phone' => 'nullable|string|max:20',
             ]);
+
+            if ($request->hasFile('avatar')) {
+                $avatarPath = $request->file('avatar')->store('avatars', 'public');
+                $validated['avatar'] = '/storage/' . $avatarPath;
+            }
 
             // Start database transaction
             DB::beginTransaction();
@@ -44,32 +49,23 @@ class RegisterController extends Controller
 
             // Handle role-specific data
             if ($user->role == 'learner') {
-                $validatedLearner = $request->validate([
-                    'fields_of_interest' => 'nullable|string|max:500',
-                    'diploma' => 'nullable|string|max:255',
-                ]);
-
                 Learner::create([
                     'user_id' => $user->id,
-                    'fields_of_interest' => $validatedLearner['fields_of_interest'] ?? null,
-                    'diploma' => $validatedLearner['diploma'] ?? null,
+                    'fields_of_interest' => null,
+                    'languages' => null,
+                    'certifications' =>null,
+                    'bank_info' => null,
                 ]);
             } elseif ($user->role == 'instructor') {
-                $validatedInstructor = $request->validate([
-                    'skills' => 'nullable|json',
-                    'languages' => 'nullable|json',
-                    'certifications' => 'nullable|json',
-                    'availability' => 'nullable|json',
-                    'bank_info' => 'nullable|string|max:500',
-                ]);
+
 
                 Instructor::create([
                     'user_id' => $user->id,
-                    'skills' => $validatedInstructor['skills'] ?? null,
-                    'languages' => $validatedInstructor['languages'] ?? null,
-                    'certifications' => $validatedInstructor['certifications'] ?? null,
-                    'availability' => $validatedInstructor['availability'] ?? null,
-                    'bank_info' => $validatedInstructor['bank_info'] ?? null,
+                    'skills' => null,
+                    'languages' =>null,
+                    'certifications' => null,
+                    'availability' =>  null,
+                    'bank_info' => null,
                 ]);
             }
 

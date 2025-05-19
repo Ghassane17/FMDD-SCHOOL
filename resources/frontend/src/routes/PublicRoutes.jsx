@@ -7,6 +7,7 @@ import Contact from '../pages/Contact.jsx';
 import Login from '../pages/Login.jsx';
 import Register from '../pages/Register.jsx';
 import CompleteProfileInstructor from '../pages/CompleteProfileInstructor.jsx';
+import CompleteProfileLearner from "@/pages/CompleteProfileLearner.jsx";
 
 const PublicRoutes = {
     element: <MainLayout />,
@@ -36,8 +37,12 @@ const PublicRoutes = {
             element: <Contact />,
         },
         {
-            path: 'complete',
+            path: 'instructor-profile',
             element: <CompleteProfileInstructor />,
+        },
+        {
+            path: 'learner-profile',
+            element: <CompleteProfileLearner />, // (create this component/page)
         },
         {
             path: '*',

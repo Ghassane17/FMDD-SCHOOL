@@ -11,6 +11,7 @@ const Register = () => {
         role: 'learner',
         avatar: '',
         bio: '',
+        phone:''
     });
     const [errors, setErrors] = useState({});
     const [message, setMessage] = useState('');
@@ -33,28 +34,36 @@ const Register = () => {
         setMessage('');
         setLoading(true);
 
-        const data = {
-            username: formData.username,
-            email: formData.email,
-            password: formData.password,
-            password_confirmation: formData.password_confirmation,
-            role: formData.role,
-            avatar: formData.avatar,
-            bio: formData.bio,
-        };
-
-        console.log('Submitting registration:', data);
+        const data = new FormData();
+        data.append('username', formData.username);
+        data.append('email', formData.email);
+        data.append('password', formData.password);
+        data.append('password_confirmation', formData.password_confirmation);
+        data.append('role', formData.role);
+        data.append('bio', formData.bio);
+        data.append('phone', formData.phone);
+        if (formData.avatar) {
+            data.append('avatar', formData.avatar);
+        }
 
         try {
-            console.log('Initializing CSRF...');
             await initializeCSRF();
-            console.log('CSRF initialized, sending registration request...');
-            const response = await register(data);
-            console.log('Registration response:', response.data);
-            setMessage('Inscription réussie ! Redirection vers la page login...');
-            setTimeout(() => navigate('/login'), 2000);
+            const response = await register(data, {
+                headers: { 'Content-Type': 'multipart/form-data' }
+            });
+
+            const user = response.data.user;
+            setMessage('Inscription réussie ! Redirection...');
+
+            // Multistep redirect based on role
+            if (user.role === 'learner') {
+                setTimeout(() => navigate('/learner-profile'), 1500);
+            } else if (user.role === 'instructor') {
+                setTimeout(() => navigate('/instructor-profile'), 1500);
+            } else {
+                setTimeout(() => navigate('/login'), 1500);
+            }
         } catch (error) {
-            console.error('Échec de l\'inscription:', error);
             if (error.response?.data?.errors) {
                 setErrors(error.response.data.errors);
             } else {
@@ -63,6 +72,12 @@ const Register = () => {
         } finally {
             setLoading(false);
         }
+    };
+    const handleFileChange = (e) => {
+        setFormData((prev) => ({
+            ...prev,
+            avatar: e.target.files[0], // store the File object
+        }));
     };
 
     return (
@@ -74,7 +89,7 @@ const Register = () => {
 
                 <form onSubmit={handleSubmit}>
                     <div className="mb-4">
-                        <label className="block text-gray-700 mb-2" htmlFor="username">Nom d'utilisateur</label>
+                        <label className="block text-gray-700 mb-2" htmlFor="username">Nom complet</label>
                         <input
                             type="text"
                             name="username"
@@ -145,12 +160,12 @@ const Register = () => {
                     <div className="mb-4">
                         <label className="block text-gray-700 mb-2" htmlFor="avatar">URL de l'avatar</label>
                         <input
-                            type="url"
+                            type="file"
                             name="avatar"
-                            value={formData.avatar}
-                            onChange={handleChange}
+                            accept="image/*"
+                            onChange={handleFileChange}
                             className="w-full p-2 border rounded focus:outline-none focus:ring-2 focus:ring-indigo-500"
-                            placeholder="https://example.com/avatar.jpg"
+
                         />
                         {errors.avatar && <p className="text-red-500 text-sm">{errors.avatar.join(', ')}</p>}
                     </div>
@@ -165,6 +180,20 @@ const Register = () => {
                             rows="4"
                         />
                         {errors.bio && <p className="text-red-500 text-sm">{errors.bio.join(', ')}</p>}
+                    </div>
+
+                    <div className="mb-4">
+                        <label className="block text-gray-700 mb-2" htmlFor="phone">Téléphone</label>
+                        <input
+                            type="text"
+                            name="phone"
+                            value={formData.phone}
+                            onChange={handleChange}
+                            className="w-full p-2 border rounded focus:outline-none focus:ring-2 focus:ring-indigo-500"
+                            placeholder="Numéro de téléphone"
+                            maxLength={20}
+                        />
+                        {errors.phone && <p className="text-red-500 text-sm">{errors.phone.join(', ')}</p>}
                     </div>
 
                     <button

@@ -209,9 +209,26 @@ export const login = async (data) => {
 
 export const register = async (data) => {
     try {
-        console.log('Sending registration request with:', data instanceof FormData ? Object.fromEntries(data) : { ...data, password: '********', password_confirmation: '********' });
+        // For logging: show keys, but don't try to print file objects
+        if (data instanceof FormData) {
+            const entries = {};
+            data.forEach((value, key) => {
+                entries[key] = value instanceof File ? '[File]' : value;
+            });
+            console.log('Sending registration request with:', entries);
+        } else {
+            console.log('Sending registration request with:', { ...data, password: '********', password_confirmation: '********' });
+        }
+
         await initializeCSRF();
-        const response = await api.post('/register', data);
+
+        // Set headers only if data is FormData
+        const config = {};
+        if (data instanceof FormData) {
+            config.headers = { 'Content-Type': 'multipart/form-data' };
+        }
+
+        const response = await api.post('/register', data, config);
 
         if (response.data.token) {
             localStorage.setItem('token', response.data.token);
@@ -226,6 +243,16 @@ export const register = async (data) => {
         return response;
     } catch (error) {
         console.error('Registration failed:', error);
+        throw error;
+    }
+};
+
+export const completeLearnerProfile = async (data) => {
+    try {
+        // If your backend expects JSON, this is fine:
+        const response = await api.patch('/learner/profile', data);
+        return response.data;
+    } catch (error) {
         throw error;
     }
 };

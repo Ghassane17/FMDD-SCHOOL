@@ -8,7 +8,7 @@ const ProgressIndicator = ({ currentStep, totalSteps }) => {
     { id: 3, name: "Certifications" },
     { id: 4, name: "Informations bancaires" },
   ];
-  
+
   // Calculate progress percentage
   const progressPercentage = (currentStep / totalSteps) * 100;
 
@@ -20,10 +20,10 @@ const ProgressIndicator = ({ currentStep, totalSteps }) => {
           {steps.map(step => (
             <div key={step.id} className="flex flex-col items-center">
               <div className={`w-14 h-14 rounded-full flex items-center justify-center text-xl font-semibold ${
-                step.id === currentStep 
-                  ? "bg-gradient-to-r from-blue-600 to-teal-500 text-white shadow-md" 
-                  : step.id < currentStep 
-                    ? "bg-gradient-to-r from-teal-500 to-teal-600 text-white" 
+                step.id === currentStep
+                  ? "bg-gradient-to-r from-blue-600 to-teal-500 text-white shadow-md"
+                  : step.id < currentStep
+                    ? "bg-gradient-to-r from-teal-500 to-teal-600 text-white"
                     : "bg-gray-100 text-gray-500"
               }`}>
                 {step.id < currentStep ? '✓' : step.id}
@@ -36,9 +36,9 @@ const ProgressIndicator = ({ currentStep, totalSteps }) => {
             </div>
           ))}
         </div>
-        <Progress 
-          value={progressPercentage} 
-          className="h-3 bg-teal-100" 
+        <Progress
+          value={progressPercentage}
+          className="h-3 bg-teal-100"
           indicatorClassName="bg-gradient-to-r from-blue-600 to-teal-500"
         />
       </div>
@@ -48,9 +48,9 @@ const ProgressIndicator = ({ currentStep, totalSteps }) => {
         <p className="text-lg font-medium mb-3 text-gray-700">
           Étape {currentStep} sur {totalSteps}: {steps[currentStep - 1].name}
         </p>
-        <Progress 
-          value={progressPercentage} 
-          className="h-3 bg-teal-100" 
+        <Progress
+          value={progressPercentage}
+          className="h-3 bg-teal-100"
           indicatorClassName="bg-gradient-to-r from-blue-600 to-teal-500"
         />
       </div>

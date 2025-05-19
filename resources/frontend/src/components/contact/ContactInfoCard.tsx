@@ -1,4 +1,5 @@
 import React from "react";
+// @ts-ignore
 import { Card, CardContent } from "../ui/card"; // Adjust the import path as necessary
 import { Mail, MapPin, Phone, Clock } from "lucide-react"; // Added Clock icon for hours
 
@@ -37,7 +38,7 @@ const info = [
 
 /**
  * ContactInfoCard Component
- * 
+ *
  * A styled card displaying organization contact information
  * with icons, labels, and values in a consistent format
  */
@@ -48,12 +49,12 @@ const ContactInfoCard = () => (
       <h3 className="text-blue-900 font-bold mb-6 text-xl border-b border-brand-teal/20 pb-2">
         Coordonnées
       </h3>
-      
+
       {/* Contact Information List */}
       <ul className="flex flex-col gap-5">
         {info.map((item, index) => (
-          <li 
-            className="flex items-start gap-4 group hover:bg-brand-blue/5 p-2 rounded-md transition-colors duration-200" 
+          <li
+            className="flex items-start gap-4 group hover:bg-brand-blue/5 p-2 rounded-md transition-colors duration-200"
             key={item.label}
           >
             {/* Icon Container */}
@@ -62,18 +63,18 @@ const ContactInfoCard = () => (
                 <item.icon size={20} className="text-brand-blue" />
               </span>
             )}
-            
+
             {/* Contact Information Content */}
             <div className="flex-1">
               {/* Label/Title */}
               <div className="text-sm font-medium text-brand-blue mb-1">
                 {item.label}
               </div>
-              
+
               {/* Value - Either as link or plain text */}
               {item.href ? (
-                <a 
-                  href={item.href} 
+                <a
+                  href={item.href}
                   className="block text-sm text-brand-teal hover:underline hover:text-brand-blue transition-colors duration-200 break-all"
                 >
                   {item.value}

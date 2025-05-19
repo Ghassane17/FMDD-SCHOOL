@@ -20,8 +20,10 @@ return new class extends Migration
             $table->timestamp('last_connection')->nullable();
             $table->timestamps();
             $table->softDeletes();
-            $table->string('fields_of_interrest')->nullable();
-            $table->string('diploma')->nullable(); // e.g., Bachelor, Master, etc.
+            $table->json('fields_of_interest')->nullable();
+            $table->json('languages')->nullable();
+            $table->json('certifications')->nullable();
+            $table->json('bank_info')->nullable();
 //
 //            $table->enum('status', ['active', 'inactive', 'suspended'])->default('active');
 
