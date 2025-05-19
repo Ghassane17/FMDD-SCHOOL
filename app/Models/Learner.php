@@ -16,10 +16,16 @@ class Learner extends Model
         return $this->belongsTo(User::class);
     }
 
+    public function courseEnrollments()
+    {
+        return $this->hasMany(CourseLearner::class);
+    }
+
     public function courses()
     {
         return $this->belongsToMany(Course::class, 'course_learner')
-            ->withPivot('progress')
+            ->using(CourseLearner::class)
+            ->withPivot('progress' , 'last_accessed')
             ->withTimestamps();
     }
 }

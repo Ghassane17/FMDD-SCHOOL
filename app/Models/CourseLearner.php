@@ -8,18 +8,30 @@ class CourseLearner extends Pivot
 {
     protected $table = 'course_learner';
 
-    protected $fillable = ['learner_id', 'course_id', 'progress', 'last_accessed'];
+    // Allow timestamps on this pivot model
+    public $timestamps = true;
 
     protected $casts = [
-        'last_accessed' => 'datetime',
+        'course_id' => 'int',
+        'learner_id' => 'int',
+        'progress' => 'int',
+        'last_accessed' => 'datetime'
     ];
 
-    public function learner()
+    protected $fillable = [
+        'course_id',
+        'learner_id',
+        'progress',
+        'last_accessed'
+    ];
+
+
+    public function learner(): \Illuminate\Database\Eloquent\Relations\BelongsTo
     {
         return $this->belongsTo(Learner::class);
     }
 
-    public function course()
+    public function course(): \Illuminate\Database\Eloquent\Relations\BelongsTo
     {
         return $this->belongsTo(Course::class);
     }

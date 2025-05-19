@@ -315,7 +315,7 @@ export const getLearnerSettings = async (forceRefresh = false) => {
         console.error('Failed to fetch learner settings');
         throw error;
     }
-};
+}; //fix later
 
 export const updateLearnerSettings = async (data) => {
     if (!isAuthenticated()) {
@@ -338,7 +338,7 @@ export const updateLearnerSettings = async (data) => {
         console.error('Failed to update learner settings');
         throw error;
     }
-};
+}; //fix later
 
 export const submitContactForm = async (data) => {
     if (!isAuthenticated()) {
@@ -353,6 +353,32 @@ export const submitContactForm = async (data) => {
         return response;
     } catch (error) {
         console.error('Failed to submit contact form');
+        throw error;
+    }
+};
+
+export const getCourseById = async (courseId) => {
+    if (!isAuthenticated()) {
+        console.error('Cannot fetch course: User not authenticated');
+        throw new Error('Authentication required');
+    }
+
+    try {
+        console.log(`Fetching course with ID: ${courseId}`);
+        const response = await api.get(`/courses/${courseId}`);
+        console.log('Course fetched:', response.data);
+        return response.data;
+    } catch (error) {
+        console.error(`Failed to fetch course with ID ${courseId}:`, error);
+        if (error.response?.status === 401) {
+            console.error('Unauthorized: Invalid or missing token');
+            removeToken();
+            removeUser();
+        } else if (error.response?.status === 404) {
+            console.error('Course not found');
+        } else if (error.response?.status === 403) {
+            console.error('Forbidden: User not enrolled in course');
+        }
         throw error;
     }
 };

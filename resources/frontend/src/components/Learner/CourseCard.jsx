@@ -27,7 +27,7 @@ const CourseCard = ({ id, title, progress, lastAccessed, image, level }) => {
                 },
             }}
         >
-            <Link to={`/learner/courses/${id}`}>
+            <Link to={`all-enrolled-courses/${id}`}>
                 <CardMedia
                     component="img"
                     height="140"

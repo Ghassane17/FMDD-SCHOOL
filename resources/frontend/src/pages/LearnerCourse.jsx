@@ -1,88 +1,125 @@
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
+import { useParams, useNavigate } from 'react-router-dom';
 import CourseHeader from '../components/LearnerCourse/CourseHeader';
 import CourseSidebar from '../components/LearnerCourse/CourseSidebar';
 import CourseContent from '../components/LearnerCourse/CourseContent';
-import { dummyCourseData } from '../data/courseData';
+import { getCourseById, isAuthenticated } from '../services/api.js';
 
 /**
- * Formation Page - Course Player Component
- * Main container for the course player experience
+ * Course Player Component
+ * Displays a specific enrolled course for the learner
  */
 const LearnerCourse = () => {
-  // State to track current module index
-  const [currentModuleIndex, setCurrentModuleIndex] = useState(0);
+    const { courseId } = useParams(); // Get courseId from URL
+    const navigate = useNavigate();
+    const [courseData, setCourseData] = useState(null);
+    const [currentModuleIndex, setCurrentModuleIndex] = useState(0);
+    const [isSidebarOpen, setIsSidebarOpen] = useState(false);
+    const [loading, setLoading] = useState(true);
+    const [error, setError] = useState(null);
 
-  // State to control sidebar visibility on mobile
-  const [isSidebarOpen, setIsSidebarOpen] = useState(false);
+    useEffect(() => {
+        if (!isAuthenticated()) {
+            console.log('User not authenticated, redirecting to login');
+            navigate('/login');
+            return;
+        }
 
-  // Get current module from dummy data
-  const currentModule = dummyCourseData.modules[currentModuleIndex];
+        const fetchCourse = async () => {
+            setLoading(true);
+            try {
+                const data = await getCourseById(courseId);
+                setCourseData(data);
+                setLoading(false);
+            } catch (err) {
+                console.error('Failed to fetch course:', err);
+                setError('Impossible de charger le cours. Veuillez vérifier votre inscription ou réessayer.');
+                setLoading(false);
+            }
+        };
 
-  /**
-   * Toggle sidebar visibility (for mobile view)
-   */
-  const toggleSidebar = () => {
-    setIsSidebarOpen(!isSidebarOpen);
-  };
+        fetchCourse();
+    }, [courseId, navigate]);
 
-  /**
-   * Navigate to previous module if available
-   */
-  const goToPreviousModule = () => {
-    if (currentModuleIndex > 0) {
-      setCurrentModuleIndex(currentModuleIndex - 1);
+    const toggleSidebar = () => {
+        setIsSidebarOpen(!isSidebarOpen);
+    };
+
+    const goToPreviousModule = () => {
+        if (currentModuleIndex > 0) {
+            setCurrentModuleIndex(currentModuleIndex - 1);
+        }
+    };
+
+    const goToNextModule = () => {
+        if (courseData && currentModuleIndex < courseData.modules.length - 1) {
+            setCurrentModuleIndex(currentModuleIndex + 1);
+        }
+    };
+
+    const selectModule = (index) => {
+        setCurrentModuleIndex(index);
+        if (window.innerWidth < 1024) {
+            setIsSidebarOpen(false);
+        }
+    };
+
+    const retryFetch = () => {
+        setError(null);
+        setLoading(true);
+        fetchCourse();
+    };
+
+    if (loading) {
+        return (
+            <div className="min-h-screen flex items-center justify-center bg-gray-50">
+                <p className="text-lg">Chargement du cours...</p>
+            </div>
+        );
     }
-  };
 
-  /**
-   * Navigate to next module if available
-   */
-  const goToNextModule = () => {
-    if (currentModuleIndex < dummyCourseData.modules.length - 1) {
-      setCurrentModuleIndex(currentModuleIndex + 1);
+    if (error || !courseData) {
+        return (
+            <div className="min-h-screen flex items-center justify-center bg-gray-50">
+                <div className="text-center">
+                    <p className="text-red-500 mb-4">{error || 'Cours non trouvé.'}</p>
+                    <button
+                        onClick={retryFetch}
+                        className="px-4 py-2 bg-indigo-600 text-white rounded hover:bg-indigo-700"
+                    >
+                        Réessayer
+                    </button>
+                </div>
+            </div>
+        );
     }
-  };
 
-  /**
-   * Set specific module as current
-   */
-  const selectModule = (index) => {
-    setCurrentModuleIndex(index);
-    // Close sidebar on mobile after selection
-    if (window.innerWidth < 1024) {
-      setIsSidebarOpen(false);
-    }
-  };
+    const currentModule = courseData.modules[currentModuleIndex];
 
-  return (
-    <div className="min-h-screen bg-gray-50 flex flex-col">
-      {/* Sticky Header */}
-      <CourseHeader
-        courseTitle={dummyCourseData.title}
-        toggleSidebar={toggleSidebar}
-      />
-
-      <div className="flex flex-1 relative">
-        {/* Sidebar - hidden on mobile by default */}
-        <CourseSidebar
-          modules={dummyCourseData.modules}
-          currentModuleIndex={currentModuleIndex}
-          progress={dummyCourseData.progress}
-          isOpen={isSidebarOpen}
-          onModuleSelect={selectModule}
-        />
-
-        {/* Main Content Area */}
-        <CourseContent
-          currentModule={currentModule}
-          hasPrevious={currentModuleIndex > 0}
-          hasNext={currentModuleIndex < dummyCourseData.modules.length - 1}
-          onPreviousClick={goToPreviousModule}
-          onNextClick={goToNextModule}
-        />
-      </div>
-    </div>
-  );
+    return (
+        <div className="min-h-screen bg-gray-50 flex flex-col">
+            <CourseHeader
+                courseTitle={courseData.title}
+                toggleSidebar={toggleSidebar}
+            />
+            <div className="flex flex-1 relative">
+                <CourseSidebar
+                    modules={courseData.modules}
+                    currentModuleIndex={currentModuleIndex}
+                    progress={courseData.progress}
+                    isOpen={isSidebarOpen}
+                    onModuleSelect={selectModule}
+                />
+                <CourseContent
+                    currentModule={currentModule}
+                    hasPrevious={currentModuleIndex > 0}
+                    hasNext={currentModuleIndex < courseData.modules.length - 1}
+                    onPreviousClick={goToPreviousModule}
+                    onNextClick={goToNextModule}
+                />
+            </div>
+        </div>
+    );
 };
 
 export default LearnerCourse;

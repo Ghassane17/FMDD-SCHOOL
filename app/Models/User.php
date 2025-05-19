@@ -50,26 +50,36 @@ class User extends Model
 	protected $fillable = [
 		'username',
 		'email',
-		'email_verified_at',
 		'password',
         'role'  ,
 		'avatar',
 		'bio' ,
+        'phone',
+        'email_verified_at',
         'remember_token'
 	];
 
-	public function courses()
-	{
-		return $this->hasMany(Course::class, 'instructor_id');
-	}
 
-	public function learners()
-	{
-		return $this->hasMany(Learner::class);
-	}
 
-	public function sessions()
-	{
+	public function learner(): \Illuminate\Database\Eloquent\Relations\HasOne
+    {
+		return $this->hasOne(Learner::class);
+	}
+    public function instructor(): \Illuminate\Database\Eloquent\Relations\HasOne
+    {
+        return $this->hasOne(Instructor::class);
+    }
+    public function isLearner(): bool
+    {
+        return $this->role === 'learner';
+    }
+    public function isInstructor(): bool
+    {
+        return $this->role === 'instructor';
+    }
+
+	public function sessions(): \Illuminate\Database\Eloquent\Relations\HasMany
+    {
 		return $this->hasMany(Session::class);
 	}
 }

@@ -36,13 +36,13 @@ const LearnerRoutes = {
             element: <Contact />,
         },
         {
-            path: 'courses/:courseId',
+            path: 'all-enrolled-courses/:courseId',
             element: <LearnerCourse />,
-        },
-        {
-            path: 'courses/:courseId/quiz',
+        } ,
+       /* {
+            path: 'courses/:courseId/quiz', //useless i guess
             element: <QuizPage />,
-        },
+        },*/
         {
             path: '*',
             element: <NotFoundPage />,

@@ -17,7 +17,7 @@ return new class extends Migration {
             $table->string('phone')->nullable();
             $table->enum('role', ['learner', 'instructor'])->default('learner');
             $table->string('avatar')->nullable();
-            $table->text('bio')->nullable();
+            $table->text('bio')->nullable() ;
             $table->rememberToken();
             $table->timestamps();
         });

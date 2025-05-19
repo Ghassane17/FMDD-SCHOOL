@@ -20,15 +20,9 @@ return new class extends Migration
             $table->timestamp('last_connection')->nullable();
             $table->timestamps();
             $table->softDeletes();
-
-// Academic info
-
-
-//            $table->string('field_of_study')->nullable();
-//            $table->string('school')->nullable();
-//            $table->string('university')->nullable();
-//            $table->string('degree')->nullable(); // e.g., Bachelor, Master, etc.
-//            $table->year('year_of_study')->nullable(); // e.g., 2025
+            $table->string('fields_of_interrest')->nullable();
+            $table->string('diploma')->nullable(); // e.g., Bachelor, Master, etc.
+//
 //            $table->enum('status', ['active', 'inactive', 'suspended'])->default('active');
 
 
