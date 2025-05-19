@@ -247,10 +247,10 @@ export const register = async (data) => {
     }
 };
 
-export const completeLearnerProfile = async (data) => {
+export const completeProfile = async (role, data) => {
+    const endpoint = role === 'learner' ? '/learner/profile' : '/instructor/profile';
     try {
-        // If your backend expects JSON, this is fine:
-        const response = await api.patch('/learner/profile', data);
+        const response = await api.patch(endpoint, data);
         return response.data;
     } catch (error) {
         throw error;

@@ -60,4 +60,47 @@ class InstructorController extends Controller
             'bank_info'      => json_decode($instructor->bank_info, true)   ?? null,
         ], 200);
     }
+
+
+    public function profile(Request $request): \Illuminate\Http\JsonResponse
+    {
+        $user = $request->user();
+        if (!$user || $user->role !== 'instructor') {
+            return response()->json(['message' => 'Unauthorized.'], 403);
+        }
+
+        $validated = $request->validate([
+            'skills' => 'nullable|array',
+            'skills.*' => 'string|max:255',
+
+            'languages' => 'nullable|array',
+            'languages.*.name' => 'required|string|max:255',
+            'languages.*.code' => 'nullable|string|max:10',
+
+            'certifications' => 'nullable|array',
+            'certifications.*.name' => 'required|string|max:255',
+            'certifications.*.institution' => 'nullable|string|max:255',
+
+            'availability' => 'nullable|array',
+            // You can add more detailed validation for availability if needed
+
+            'bank_info' => 'nullable|array',
+            'bank_info.iban' => 'nullable|string|max:255',
+            'bank_info.bankName' => 'nullable|string|max:255',
+            'bank_info.paymentMethod' => 'nullable|string|max:255',
+        ]);
+
+        $instructor = \App\Models\Instructor::where('user_id', $user->id)->first();
+
+        if (!$instructor) {
+            return response()->json(['message' => 'Instructor profile not found.'], 404);
+        }
+
+        $instructor->update($validated);
+
+        return response()->json([
+            'message' => 'Profile updated successfully.',
+            'instructor' => $instructor->fresh()
+        ]);
+    }
 }

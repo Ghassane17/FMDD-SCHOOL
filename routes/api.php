@@ -20,7 +20,7 @@ Route::post('/logout', [LoginController::class, 'logout'])->middleware('auth:san
 Route::middleware('auth:sanctum')->group(function () {
 
     Route::patch('/learner/profile', [LearnerController::class, 'profile'] )->name('learner.profile');
-    //Route::patch('/instructor/profile', [InstructorController::class, 'profile'] )->name('instructor.profile'); THIS ROUTE IS TO MODIFY
+    Route::patch('/instructor/profile', [InstructorController::class, 'profile'] )->name('instructor.profile');
 
     // Learner Routes
     Route::get('/learner', [LearnerController::class, 'dashboard'])->name('learner.dashboard');

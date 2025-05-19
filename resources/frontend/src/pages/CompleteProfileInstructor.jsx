@@ -8,6 +8,7 @@ import BankInfoForm from "../components/formateurs/profile-completion-formateur/
 import { ChevronLeft, ChevronRight } from "lucide-react";
 import { useNavigate } from "react-router-dom";
 import { toast } from "sonner";
+import {completeProfile} from '../services/api.js'
 
 const CompleteProfileInstructor = () => {
   const navigate = useNavigate();
@@ -41,14 +42,21 @@ const CompleteProfileInstructor = () => {
     setFormData(prev => ({ ...prev, bankInfo }));
   };
 
-  const handleNext = () => {
-    if (currentStep < totalSteps) {
-      setCurrentStep(currentStep + 1);
-    } else {
-      toast.success("Votre profil a été complété avec succès!");
-        setTimeout(() => navigate("/login"), 1500);
-    }
-  };
+    const handleNext = () => {
+        if (currentStep < totalSteps) {
+            setCurrentStep(currentStep + 1);
+        } else {
+            // Call the API to save the profile
+            completeProfile('instructor',formData)
+                .then(() => {
+                    toast.success("profil instructor a été complété avec succès! Redirection vers la page de connexion...");
+                    setTimeout(() => navigate("/login"), 1500);
+                })
+                .catch(() => {
+                    toast.error("Erreur lors de la sauvegarde du profil.");
+                });
+        }
+    };
 
   const handleBack = () => {
     if (currentStep > 1) {

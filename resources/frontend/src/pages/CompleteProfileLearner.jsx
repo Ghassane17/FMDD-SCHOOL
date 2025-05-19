@@ -8,9 +8,9 @@ import BankInfoForm  from "@/components/formateurs/profile-completion-formateur/
 import { ChevronLeft, ChevronRight } from "lucide-react";
 import { useNavigate } from "react-router-dom";
 import { toast } from "sonner";
-import { completeLearnerProfile } from "../services/api.js";
+import { completeProfile } from "../services/api.js";
 
-const CompleteProfileInstructor = () => {
+const CompleteProfileLearner = () => {
     const navigate = useNavigate();
     const [currentStep, setCurrentStep] = useState(1);
     const totalSteps = 4;
@@ -47,9 +47,9 @@ const CompleteProfileInstructor = () => {
             setCurrentStep(currentStep + 1);
         } else {
             // Call the API to save the profile
-            completeLearnerProfile(formData)
+            completeProfile('learner',formData)
                 .then(() => {
-                    toast.success("Votre profil a été complété avec succès! Redirection vers la page de connexion...");
+                    toast.success("profil learner a été complété avec succès! Redirection vers la page de connexion...");
                     setTimeout(() => navigate("/login"), 1500);
                 })
                 .catch(() => {
@@ -162,4 +162,4 @@ const CompleteProfileInstructor = () => {
     );
 };
 
-export default CompleteProfileInstructor;
+export default CompleteProfileLearner;
