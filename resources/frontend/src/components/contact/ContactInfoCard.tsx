@@ -1,5 +1,5 @@
 import React from "react";
-import { Card, CardContent } from "../ui/card";
+import { Card, CardContent } from "../ui/card"; // Adjust the import path as necessary
 import { Mail, MapPin, Phone, Clock } from "lucide-react"; // Added Clock icon for hours
 
 /**

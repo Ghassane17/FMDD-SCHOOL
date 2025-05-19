@@ -6,6 +6,7 @@ import Propos from '../components/Acceuil/propos.jsx';
 import Contact from '../pages/Contact.jsx';
 import Login from '../pages/Login.jsx';
 import Register from '../pages/Register.jsx';
+import CompleteProfileInstructor from '../pages/CompleteProfileInstructor.jsx';
 
 const PublicRoutes = {
     element: <MainLayout />,
@@ -33,6 +34,10 @@ const PublicRoutes = {
         {
             path: 'contact',
             element: <Contact />,
+        },
+        {
+            path: 'complete',
+            element: <CompleteProfileInstructor />,
         },
         {
             path: '*',
