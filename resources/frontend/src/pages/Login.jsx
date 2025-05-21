@@ -1,4 +1,4 @@
-import { useState } from 'react';
+import { useState, useEffect } from 'react';
 import { login, setToken, setUser } from '../services/api';
 import { useNavigate } from 'react-router-dom';
 
@@ -7,7 +7,20 @@ function Login() {
   const [error, setError] = useState('');
   const [loading, setLoading] = useState(false);
   const navigate = useNavigate();
-
+  useEffect(() => {
+    const userStr = localStorage.getItem('user');
+    if (userStr) {
+      const user = JSON.parse(userStr);
+      console.log('User from localStorage:', user);
+      console.log('User role:', user.role);
+      if (user.role === 'instructor') {
+        navigate('/instructor');
+      }
+      else if (user.role === 'learner') {
+        navigate('/learner');
+      }
+    }
+  }, [navigate]);
     const handleSubmit = async (e) => {
         e.preventDefault();
         setError('');
@@ -63,6 +76,7 @@ function Login() {
     };
 
     return (
+    
         <div className="min-h-screen flex items-center justify-center bg-gray-100">
             <div className="bg-white p-8 rounded-xl shadow-lg w-full max-w-md">
                 <h2 className="text-2xl font-bold text-gray-800 mb-6 text-center">Login</h2>

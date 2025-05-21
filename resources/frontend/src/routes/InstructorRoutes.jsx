@@ -4,9 +4,9 @@ import CreateCourse from '../pages/CreateCourse.jsx';
 import NotFoundPage from '../pages/404.jsx';
 import ErrorBoundary from '../components/ErrorBoundary.jsx';
 import Contact from '../pages/Contact.jsx';
-
+import InstructorLayout from '../Layouts/InstructorLayout.jsx';
 const InstructorRoutes = {
-    element : <MainLayout />,
+    element : <InstructorLayout />,
     errorElement: <ErrorBoundary />,
     children: [
 
