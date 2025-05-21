@@ -3,7 +3,7 @@ import { useParams, useNavigate } from 'react-router-dom';
 import CourseHeader from '../components/LearnerCourse/CourseHeader';
 import CourseSidebar from '../components/LearnerCourse/CourseSidebar';
 import CourseContent from '../components/LearnerCourse/CourseContent';
-import { getCourseById, isAuthenticated } from '../services/api.js';
+import {  isAuthenticated } from '../services/api.js';
 
 /**
  * Course Player Component
@@ -28,9 +28,7 @@ const LearnerCourse = () => {
         const fetchCourse = async () => {
             setLoading(true);
             try {
-                const data = await getCourseById(courseId);
-                setCourseData(data);
-                setLoading(false);
+            return  false ;
             } catch (err) {
                 console.error('Failed to fetch course:', err);
                 setError('Impossible de charger le cours. Veuillez vérifier votre inscription ou réessayer.');

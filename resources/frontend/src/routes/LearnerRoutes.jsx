@@ -8,6 +8,7 @@ import MyCourses from '../components/Learner/MyCourses.jsx';
 import SuggestedCourses from '../components/Learner/SuggestedCourses.jsx';
 import LearnerCourse from '../pages/LearnerCourse.jsx';
 import ErrorBoundary from '../components/ErrorBoundary.jsx';
+import EnrollementPage from "@/pages/EnrollementPage.jsx";
 
 const LearnerRoutes = {
     element: <CourseLayout />,
@@ -35,9 +36,13 @@ const LearnerRoutes = {
             path: 'contact',
             element: <Contact />,
         },
-        {
+        /*{
             path: 'courses/:Id',
             element: <LearnerCourse />,
+        } ,*/
+        {
+            path: 'courses/:id',
+            element: <EnrollementPage />,
         } ,
        /* {
             path: 'courses/:courseId/quiz', //useless i guess

@@ -394,41 +394,31 @@ export const updateLearnerSettings = async (data) => {
     }
 };
 export const submitContactForm = async (data) => {
-    if (!isAuthenticated()) {
-        console.error('Cannot submit contact form: User not authenticated');
-        throw new Error('Authentication required');
-    }
-
     try {
-        console.log('Submitting contact form with:', data);
-        const response = await api.post('/learner/contact', data);
-        console.log('Contact form submitted successfully:', response.data);
-        return response;
+        return await api.post('/contact', data);
     } catch (error) {
-        console.error('Failed to submit contact form');
-        throw error;
+        throw error; // Let ContactForm handle the error
     }
 };
-
 
 export const courseDetails = async (courseId) => {
     try {
-        const response = await axios.get(`/courses/${courseId}`);
+        const response = await api.get(`/courses/${courseId}`);
         return response.data;
     } catch (error) {
-        throw new Error(error.response?.data?.message || 'Failed to fetch course details');
+        throw error; // Let the caller (EnrollmentPage) handle errors
     }
 };
 
+// Enroll in a course
 export const enrollNow = async (courseId) => {
     try {
-        const response = await axios.post(`/enroll`, { course_id: courseId });
+        const response = await api.post(`/courses/${courseId}/enroll`);
         return response.data;
     } catch (error) {
-        throw new Error(error.response?.data?.message || 'Enrollment failed');
+        throw error; // Let the caller handle errors
     }
 };
-
 export const getAllCourses = async () => {
     try {
         const response = await api.get('/learner/all-courses');

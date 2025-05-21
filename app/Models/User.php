@@ -62,6 +62,11 @@ class User extends Authenticatable
 		'notifications',
 	];
 
+
+    public function courses()
+    {
+        return $this->belongsToMany(Course::class, 'courseLearner', 'user_id', 'course_id');
+    }
 	public function learner(): \Illuminate\Database\Eloquent\Relations\HasOne
 	{
 		return $this->hasOne(Learner::class);

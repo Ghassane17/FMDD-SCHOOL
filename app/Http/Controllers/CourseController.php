@@ -2,6 +2,7 @@
 
 namespace App\Http\Controllers;
 
+use App\Http\Resources\CourseResource;
 use App\Models\Course;
 use App\Models\Learner;
 use Illuminate\Http\JsonResponse;
@@ -68,35 +69,55 @@ class CourseController extends Controller
         }
     }
 
-    public function getCourseDetails($id)
+    public function getCourseDetails($id): JsonResponse
     {
-        $course = Course::with('instructor')->findOrFail($id);
+        // Validate the ID
+        $id = filter_var($id, FILTER_VALIDATE_INT);
+        if (!$id) {
+            return response()->json(['message' => 'Invalid course ID'], 400);
+        }
+
+        // Fetch course with instructor (user) relationship
+        $course = Course::with(['instructor' => function ($query) {
+            $query->select('id', 'name'); // Only fetch the necessary fields
+        }])->findOrFail($id);
+
+        // Check enrollment status for authenticated user
+        $isEnrolled = auth()->check() ? auth()->user()->courses()->where('course_id', $id)->exists() : false;
 
         return response()->json([
-            'course' => $course,
-            'is_enrolled' => auth()->user()->courses()->where('course_id', $id)->exists()
+            'course' => new CourseResource($course),
+            'is_enrolled' => $isEnrolled
         ]);
     }
 
-    public function enroll(Request $request)
+    public function enrollNow($id)
     {
-        $request->validate(['course_id' => 'required|integer|exists:courses,id']);
-
-        $learner = auth()->user();
-        $courseId = $request->course_id;
-
-        // Vérifier si déjà inscrit
-        if ($learner->courses()->where('course_id', $courseId)->exists()) {
-            return response()->json(['message' => 'Already enrolled'], 409);
+        // Validate the ID
+        $id = filter_var($id, FILTER_VALIDATE_INT);
+        if (!$id) {
+            return response()->json(['message' => 'Invalid course ID'], 400);
         }
 
-        // Insérer dans course_learner
-        $learner->courses()->attach($courseId, [
-            'enrolled_at' => now(),
-            'progress' => 0
-        ]);
+        // Ensure user is authenticated
+        $user = auth()->user();
+        if (!$user) {
+            return response()->json(['message' => 'Unauthorized'], 401);
+        }
 
-        return response()->json(['message' => 'Enrollment successful']);
+        // Find the course
+        $course = Course::findOrFail($id);
+
+        // Check if already enrolled
+        if ($user->courses()->where('course_id', $id)->exists()) {
+            return response()->json(['message' => 'Already enrolled'], 400);
+        }
+
+        // Enroll the user
+        $user->courses()->attach($id);
+        $course->increment('students'); // Update students count
+
+        return response()->json(['message' => 'Enrolled successfully']);
     }
 
 

@@ -7,7 +7,6 @@ import { Button } from "../ui/button";
 import { toast } from "@/hooks/use-toast.js";
 import { Check, Send } from "lucide-react";
 import { submitContactForm } from "@/services/api.js";
-import { useNavigate } from "react-router-dom";
 
 // Available subjects for the dropdown
 const SUBJECTS = [
@@ -19,8 +18,6 @@ const SUBJECTS = [
 
 const ContactForm = () => {
     const [submitted, setSubmitted] = useState(false);
-    const navigate = useNavigate();
-
     const {
         register,
         handleSubmit,
@@ -36,17 +33,6 @@ const ContactForm = () => {
     });
 
     const onSubmit = async (data) => {
-        const user = JSON.parse(localStorage.getItem('user'));
-        if (!user || user.role !== 'learner') {
-            toast({
-                title: "Erreur",
-                description: "Veuillez vous connecter en tant qu'apprenant.",
-                variant: "destructive"
-            });
-            setTimeout(() => navigate('/login'), 2000);
-            return;
-        }
-
         try {
             await submitContactForm(data);
             setSubmitted(true);
@@ -54,7 +40,12 @@ const ContactForm = () => {
                 title: "Merci",
                 description: "Nous vous répondrons bientôt !"
             });
-            reset();
+            reset({
+                name: "",
+                email: "",
+                subject: "",
+                message: ""
+            });
         } catch (error) {
             toast({
                 title: "Erreur",
@@ -91,9 +82,10 @@ const ContactForm = () => {
                                 placeholder="Votre nom"
                                 className={`transition-all ${errors.name ? "border-red-500 focus-visible:ring-red-300" : "focus-visible:ring-brand-teal/40"}`}
                                 disabled={isSubmitting}
+                                aria-describedby={errors.name ? "name-error" : undefined}
                             />
                             {errors.name && (
-                                <div className="text-sm text-red-500 flex items-center gap-1">
+                                <div id="name-error" className="text-sm text-red-500 flex items-center gap-1">
                                     {errors.name.message}
                                 </div>
                             )}
@@ -116,9 +108,10 @@ const ContactForm = () => {
                                 placeholder="ex: contact@fmdd.org"
                                 className={`transition-all ${errors.email ? "border-red-500 focus-visible:ring-red-300" : "focus-visible:ring-brand-teal/40"}`}
                                 disabled={isSubmitting}
+                                aria-describedby={errors.email ? "email-error" : undefined}
                             />
                             {errors.email && (
-                                <div className="text-sm text-red-500 flex items-center gap-1">
+                                <div id="email-error" className="text-sm text-red-500 flex items-center gap-1">
                                     {errors.email.message}
                                 </div>
                             )}
@@ -138,6 +131,7 @@ const ContactForm = () => {
                   bg-background focus-visible:outline-none focus-visible:ring-2
                   ${errors.subject ? "focus-visible:ring-red-300" : "focus-visible:ring-brand-teal/40"}`}
                                 disabled={isSubmitting}
+                                aria-describedby={errors.subject ? "subject-error" : undefined}
                             >
                                 <option value="">Sélectionnez un sujet</option>
                                 {SUBJECTS.map((subject) => (
@@ -145,7 +139,7 @@ const ContactForm = () => {
                                 ))}
                             </select>
                             {errors.subject && (
-                                <div className="text-sm text-red-500 flex items-center gap-1">
+                                <div id="subject-error" className="text-sm text-red-500 flex items-center gap-1">
                                     {errors.subject.message}
                                 </div>
                             )}
@@ -168,9 +162,10 @@ const ContactForm = () => {
                                 placeholder="Votre message"
                                 className={`transition-all ${errors.message ? "border-red-500 focus-visible:ring-red-300" : "focus-visible:ring-brand-teal/40"}`}
                                 disabled={isSubmitting}
+                                aria-describedby={errors.message ? "message-error" : undefined}
                             />
                             {errors.message && (
-                                <div className="text-sm text-red-500 flex items-center gap-1">
+                                <div id="message-error" className="text-sm text-red-500 flex items-center gap-1">
                                     {errors.message.message}
                                 </div>
                             )}
@@ -198,13 +193,16 @@ const ContactForm = () => {
                             >
                                 {isSubmitting ? (
                                     <span className="flex items-center justify-center gap-2">
-                    Envoi en cours…
-                  </span>
+                                        <svg className="animate-spin h-5 w-5" viewBox="0 0 24 24">
+                                            <circle cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="4" fill="none" />
+                                        </svg>
+                                        Envoi en cours…
+                                    </span>
                                 ) : (
                                     <span className="flex items-center justify-center gap-2">
-                    <Send size={16} />
-                    Envoyer
-                  </span>
+                                        <Send size={16} />
+                                        Envoyer
+                                    </span>
                                 )}
                             </Button>
                         </div>
