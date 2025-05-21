@@ -49,12 +49,15 @@ const CourseLayout = () => {
         <Box sx={{ minHeight: '100vh' }}>
             <CssBaseline />
             <Header
-                school={dashboardData?.school || 'FMDD SCHOOL'}
+                school= 'FMDD SCHOOL'
                 userName={currentLearner?.username || 'Learner'}
                 avatar={currentLearner?.avatar || 'https://via.placeholder.com/50'}
                 notifications={currentLearner?.notifications || []}
             />
-            <Box component="main" sx={{ p: 3, mt: '64px', backgroundColor: '#f5f7fa' }}>
+            <Box component="main" sx={{ 
+                mt: '10px',
+                minHeight: 'calc(100vh - 64px)'
+            }}>
                 <Outlet />
             </Box>
             <Footer />

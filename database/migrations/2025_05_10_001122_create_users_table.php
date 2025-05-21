@@ -15,6 +15,7 @@ return new class extends Migration {
             $table->timestamp('email_verified_at')->nullable();
             $table->string('password');
             $table->string('phone')->nullable();
+            $table->json('notifications')->nullable() ;
             $table->enum('role', ['learner', 'instructor'])->default('learner');
             $table->string('avatar')->nullable();
             $table->text('bio')->nullable() ;

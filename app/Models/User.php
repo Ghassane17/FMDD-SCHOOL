@@ -8,8 +8,10 @@ namespace App\Models;
 
 use Carbon\Carbon;
 use Illuminate\Database\Eloquent\Collection;
-use Illuminate\Database\Eloquent\Model;
+use Illuminate\Foundation\Auth\User as Authenticatable;
+use Illuminate\Notifications\Notifiable;
 use Laravel\Sanctum\HasApiTokens;
+use Illuminate\Database\Eloquent\Model;
 
 /**
  * Class User
@@ -32,14 +34,16 @@ use Laravel\Sanctum\HasApiTokens;
  *
  * @package App\Models
  */
-class User extends Model
+class User extends Authenticatable
 {
+	use HasApiTokens, Notifiable;
 
-    use HasApiTokens ;
 	protected $table = 'users';
 
 	protected $casts = [
-		'email_verified_at' => 'datetime'
+		'email_verified_at' => 'datetime',
+		'password' => 'hashed',
+		'notifications' => 'array',
 	];
 
 	protected $hidden = [
@@ -51,35 +55,35 @@ class User extends Model
 		'username',
 		'email',
 		'password',
-        'role'  ,
+		'role',
 		'avatar',
-		'bio' ,
-        'phone',
-        'email_verified_at',
-        'remember_token'
+		'bio',
+		'phone',
+		'notifications',
 	];
 
-
-
 	public function learner(): \Illuminate\Database\Eloquent\Relations\HasOne
-    {
+	{
 		return $this->hasOne(Learner::class);
 	}
-    public function instructor(): \Illuminate\Database\Eloquent\Relations\HasOne
-    {
-        return $this->hasOne(Instructor::class);
-    }
-    public function isLearner(): bool
-    {
-        return $this->role === 'learner';
-    }
-    public function isInstructor(): bool
-    {
-        return $this->role === 'instructor';
-    }
+
+	public function instructor(): \Illuminate\Database\Eloquent\Relations\HasOne
+	{
+		return $this->hasOne(Instructor::class);
+	}
+
+	public function isLearner(): bool
+	{
+		return $this->role === 'learner';
+	}
+
+	public function isInstructor(): bool
+	{
+		return $this->role === 'instructor';
+	}
 
 	public function sessions(): \Illuminate\Database\Eloquent\Relations\HasMany
-    {
+	{
 		return $this->hasMany(Session::class);
 	}
 }

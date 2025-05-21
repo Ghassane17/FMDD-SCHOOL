@@ -14,10 +14,17 @@ return new class extends Migration
             $table->string('title');
             $table->text('description');
             $table->string('course_thumbnail')->nullable();
-           $table->string('level')->default('débutant') ;
-           $table->integer('students')->default(0);
-           $table->float('rating')->nullable();
+            $table->enum('level', ['débutant', 'intermédiaire', 'avancé'])->default('débutant');
+            $table->string('category')->nullable();
+            $table->unsignedInteger('students')->default(0);
+            $table->float('rating')->nullable(); // Statique
+            $table->boolean('is_published')->default(true);
+            $table->integer('duration_hours')->nullable();
+            //$table->string('language')->default('fr');
             $table->timestamps();
+
+            $table->index('instructor_id');
+
         });
     }
 

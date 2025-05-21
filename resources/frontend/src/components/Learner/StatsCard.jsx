@@ -1,6 +1,6 @@
 /* StatsCard.jsx */
 const StatsCard = ({ totalCourses, completedCourses, lastActivity }) => (
-  <div className="bg-white p-6 rounded-xl shadow-md mb-8 hover:shadow-lg transition-shadow">
+  <div className="p-6 mb-8">
     <h3 className="text-lg font-semibold text-gray-800 mb-4">Votre progression</h3>
     <div className="grid grid-cols-1 sm:grid-cols-3 gap-4">
       <div className="flex items-center space-x-3">

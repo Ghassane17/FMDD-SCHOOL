@@ -9,8 +9,8 @@ use App\Http\Controllers\InstructorController;
 
 // Authentication Routes
 Route::post('/register', [RegisterController::class, 'register'])->name('register');
-Route::patch('/learner/profile', [LearnerController::class, 'profile'] )->name('learner.profile');
-//Route::patch('/instructor/profile', [InstructorController::class, 'profile'] )->name('instructor.profile'); THIS ROUTE IS TO MODIFY
+Route::patch('/learner/profile', [LearnerController::class, 'profile'])->name('learner.profile');
+Route::patch('/instructor/profile', [InstructorController::class, 'profile'] )->name('instructor.profile');
 
 
 Route::post('/login', [LoginController::class, 'login'])->name('login');
@@ -18,18 +18,23 @@ Route::post('/logout', [LoginController::class, 'logout'])->middleware('auth:san
 
 // Protected Routes
 Route::middleware('auth:sanctum')->group(function () {
+    //Account completion
+    Route::patch('/learner/profile', [LearnerController::class, 'profile'])->name('learner.profile');
+    Route::patch('/instructor/profile', [InstructorController::class, 'profile'])->name('instructor.profile');
 
-    Route::patch('/learner/profile', [LearnerController::class, 'profile'] )->name('learner.profile');
-    Route::patch('/instructor/profile', [InstructorController::class, 'profile'] )->name('instructor.profile');
-
-    // Learner Routes
+    //Dashboard get
     Route::get('/learner', [LearnerController::class, 'dashboard'])->name('learner.dashboard');
 
-    Route::get('/learner/all-enrolled-courses', [CourseController::class, 'getEnrolledCourses'])->name('learner.enrolled-courses');
-    Route::get('/courses/{id}', [CourseController::class, 'show'])->name('courses.show');
-
+    //courses routes
+    Route::get('/learner/all-courses', [CourseController::class, 'getAllCourses'])->name('learner.enrolled-courses');
+     Route::get('/learner/all-enrolled-courses', [CourseController::class, 'getEnrolledCourses'])->name('learner.enrolled-courses');
+    Route::get('/courses/{id}', [CourseController::class, 'getCourseDetails']);
+    Route::post('/enroll', [CourseController::class, 'enroll']);
+    //settings
     Route::get('/learner/settings', [LearnerController::class, 'settings'])->name('learner.settings');
     Route::patch('/learner/settings', [LearnerController::class, 'updateSettings'])->name('learner.settings.update');
+
+    //Contact
     Route::post('/learner/contact', [LearnerController::class, 'contact'])->name('learner.contact');
 
     // Instructor Routes

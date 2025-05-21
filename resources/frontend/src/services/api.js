@@ -6,6 +6,7 @@ console.log('Using API base URL:', apiBaseUrl);
 
 const api = axios.create({
     baseURL: apiBaseUrl,
+
     headers: {
         'Content-Type': 'application/json',
         'X-Requested-With': 'XMLHttpRequest',
@@ -357,16 +358,41 @@ export const updateLearnerSettings = async (data) => {
             new_password: '********',
             new_password_confirmation: '********'
         });
-        const response = await api.patch('/learner/settings', data);
+
+        // Use FormData for file upload
+        const formattedData = new FormData();
+        Object.keys(data).forEach(key => {
+            if (key === 'avatar' && data[key] instanceof File) {
+                formattedData.append('avatar', data[key]);
+            } else if (key === 'notifications') {
+                formattedData.append(key, JSON.stringify(data[key]));
+            } else if (key === 'languages' || key === 'certifications' || key === 'fields_of_interest' || key === 'bank_info') {
+                if (data[key] !== null && data[key] !== undefined) {
+                    formattedData.append(key, JSON.stringify(data[key]));
+                }
+            } else if (key === 'current_password' || key === 'new_password' || key === 'new_password_confirmation') {
+                if (data[key]) {
+                    formattedData.append(key, data[key]);
+                }
+            } else {
+                formattedData.append(key, data[key] !== undefined ? data[key] : '');
+            }
+        });
+
+        const response = await api.patch('/learner/settings', formattedData, {
+            headers: {
+                'Accept': 'application/json',
+                'Content-Type': 'multipart/form-data'
+            }
+        });
         console.log('Updated learner settings:', response.data);
-        settingsCache = null; // Clear cache to fetch updated settings
+        settingsCache = null; // Clear cache
         return response;
     } catch (error) {
-        console.error('Failed to update learner settings');
+        console.error('Failed to update learner settings:', error.response?.data || error.message);
         throw error;
     }
-}; //fix later
-
+};
 export const submitContactForm = async (data) => {
     if (!isAuthenticated()) {
         console.error('Cannot submit contact form: User not authenticated');
@@ -384,28 +410,60 @@ export const submitContactForm = async (data) => {
     }
 };
 
-export const getCourseById = async (courseId) => {
-    if (!isAuthenticated()) {
-        console.error('Cannot fetch course: User not authenticated');
-        throw new Error('Authentication required');
-    }
 
+export const courseDetails = async (courseId) => {
     try {
-        console.log(`Fetching course with ID: ${courseId}`);
-        const response = await api.get(`/courses/${courseId}`);
-        console.log('Course fetched:', response.data);
+        const response = await axios.get(`/courses/${courseId}`);
         return response.data;
     } catch (error) {
-        console.error(`Failed to fetch course with ID ${courseId}:`, error);
-        if (error.response?.status === 401) {
-            console.error('Unauthorized: Invalid or missing token');
-            removeToken();
-            removeUser();
-        } else if (error.response?.status === 404) {
-            console.error('Course not found');
-        } else if (error.response?.status === 403) {
-            console.error('Forbidden: User not enrolled in course');
-        }
+        throw new Error(error.response?.data?.message || 'Failed to fetch course details');
+    }
+};
+
+export const enrollNow = async (courseId) => {
+    try {
+        const response = await axios.post(`/enroll`, { course_id: courseId });
+        return response.data;
+    } catch (error) {
+        throw new Error(error.response?.data?.message || 'Enrollment failed');
+    }
+};
+
+export const getAllCourses = async () => {
+    try {
+        const response = await api.get('/learner/all-courses');
+        return response;
+    } catch (error) {
+        console.error('Failed to fetch all courses:', error);
+        throw error;
+    }
+};
+
+// Notification functions
+export const getLearnerNotifications = async () => {
+    try {
+        const response = await axios.get('/api/learner/notifications', {
+            headers: {
+                'Authorization': `Bearer ${localStorage.getItem('token')}`
+            }
+        });
+        return response;
+    } catch (error) {
+        console.error('Error fetching notifications:', error);
+        throw error;
+    }
+};
+
+export const markNotificationAsRead = async (notificationId) => {
+    try {
+        const response = await axios.patch(`/api/learner/notifications/${notificationId}/read`, {}, {
+            headers: {
+                'Authorization': `Bearer ${localStorage.getItem('token')}`
+            }
+        });
+        return response;
+    } catch (error) {
+        console.error('Error marking notification as read:', error);
         throw error;
     }
 };

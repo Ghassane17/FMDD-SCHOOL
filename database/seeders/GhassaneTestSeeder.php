@@ -4,9 +4,7 @@ namespace Database\Seeders;
 
 use Illuminate\Database\Seeder;
 use App\Models\User;
-use App\Models\Learner;
-use App\Models\Ghassane_test_instructor;
-use App\Models\Instructor ;
+use App\Models\Instructor;
 use App\Models\Course;
 use Illuminate\Support\Facades\Hash;
 
@@ -14,86 +12,165 @@ class GhassaneTestSeeder extends Seeder
 {
     public function run(): void
     {
-        $user = User::create([
-            'username' => 'Ghassane',
-            'email' => 'ghassane@example.com',
-            'password' => Hash::make('191192'),
-            'role' => 'learner',
-            'avatar' => 'https://via.placeholder.com/50',
-            'bio' => 'Passionate about tech and data',
-        ]);
-
-       /* $AmineInstructor = User::create(
-            ['id' => 4 ,
+        // Create instructor users
+        $instructorUsers = [
+            [
                 'username' => 'Amine',
-                'email' =>'amine@example.com' ,
+                'email' => 'amine@example.com',
                 'password' => Hash::make('password'),
                 'role' => 'instructor',
-                'avatar' => 'https://via.placeholder.com/50',
-                'bio' => 'Passionate about tech and data',
-            ]);*/
-
-
-
-        $learner = Learner::create([
-            'user_id' => $user->id,
-            'courses_enrolled' => 3,
-            'courses_completed' => 1,
-            'last_connection' => now(),
-        ]);
-
-        $instructor1 = Ghassane_test_instructor::create([
-            'username' => 'Hassane',
-            'email' => 'instructor1@example.com',
-            'avatar' => 'https://via.placeholder.com/60'
-        ]);
-
-        $instructor2 = Ghassane_test_instructor::create([
-            'username' => 'Amina',
-            'email' => 'instructor2@example.com',
-            'avatar' => 'https://via.placeholder.com/61'
-        ]);
-
-
-
-        $courses = [
+                'avatar' => 'https://via.placeholder.com/51',
+                'bio' => 'Expert en développement web et mobile',
+            ],
             [
-                'title' => 'Programming 101',
-                'description' => 'Learn the basics of coding',
-                'instructor_id' => $instructor1->id,
-                'course_thumbnail' => 'https://via.placeholder.com/51',
-                'level' => 'débutant',
-                'students' => 150,
+                'username' => 'Sarah',
+                'email' => 'sarah@example.com',
+                'password' => Hash::make('password'),
+                'role' => 'instructor',
+                'avatar' => 'https://via.placeholder.com/52',
+                'bio' => 'Spécialiste en Data Science et Machine Learning',
+            ],
+            [
+                'username' => 'Karim',
+                'email' => 'karim@example.com',
+                'password' => Hash::make('password'),
+                'role' => 'instructor',
+                'avatar' => 'https://via.placeholder.com/53',
+                'bio' => 'Expert en cybersécurité et réseaux',
+            ]
+        ];
+
+        $instructors = [];
+        foreach ($instructorUsers as $userData) {
+            $user = User::create($userData);
+            $instructor = Instructor::create([
+                'user_id' => $user->id,
+                'skills' => [
+                    $userData['username'] === 'Amine' ? ['JavaScript', 'React', 'Node.js', 'MongoDB'] : ($userData['username'] === 'Sarah' ? ['Python', 'TensorFlow', 'Pandas', 'Scikit-learn'] :
+                        ['Network Security', 'Ethical Hacking', 'Linux', 'Cloud Security'])
+                ],
+                'languages' => [
+                    ['name' => 'Français', 'code' => 'FR'],
+                    ['name' => 'Anglais', 'code' => 'EN']
+                ],
+                'certifications' => [
+                    $userData['username'] === 'Amine' ? [
+                        ['name' => 'Full Stack Developer', 'institution' => 'MongoDB University'],
+                        ['name' => 'React Advanced', 'institution' => 'Meta']
+                    ] : ($userData['username'] === 'Sarah' ? [
+                        ['name' => 'Data Science Professional', 'institution' => 'IBM'],
+                        ['name' => 'Machine Learning Engineer', 'institution' => 'Google']
+                    ] : [
+                        ['name' => 'Certified Ethical Hacker', 'institution' => 'EC-Council'],
+                        ['name' => 'CISSP', 'institution' => 'ISC2']
+                    ])
+                ],
+                'availability' => [
+                    ['day' => 'Lundi', 'slots' => ['10:00', '14:00', '16:00']],
+                    ['day' => 'Mercredi', 'slots' => ['09:00', '11:00']],
+                    ['day' => 'Vendredi', 'slots' => ['10:00', '13:00']]
+                ],
+                'bank_info' => [
+                    'iban' => 'FR76 **** **** **** **** 1234',
+                    'bankName' => 'CIH Bank',
+                    'paymentMethod' => 'Virement bancaire'
+                ]
+            ]);
+            $instructors[] = $instructor;
+        }
+
+        // Create courses
+        $courses = [
+            // Amine's courses (Web Development)
+            [
+                'title' => 'Développement Web Full Stack',
+                'description' => 'Apprenez à créer des applications web modernes avec React, Node.js et MongoDB',
+                'instructor_id' => $instructors[0]->id,
+                'course_thumbnail' => 'https://via.placeholder.com/150',
+                'level' => 'intermédiaire',
+                'students' => 250,
+                'rating' => 4.8,
+            ],
+            [
+                'title' => 'React.js Avancé',
+                'description' => 'Maîtrisez les concepts avancés de React et Redux pour créer des applications robustes',
+                'instructor_id' => $instructors[0]->id,
+                'course_thumbnail' => 'https://via.placeholder.com/151',
+                'level' => 'avancé',
+                'students' => 180,
                 'rating' => 4.7,
             ],
             [
-                'title' => 'Web Development',
-                'description' => 'Build modern websites',
-                'instructor_id' => $instructor1->id,
-                'course_thumbnail' => 'https://via.placeholder.com/52',
+                'title' => 'Introduction au Développement Web',
+                'description' => 'Les bases du HTML, CSS et JavaScript pour débutants',
+                'instructor_id' => $instructors[0]->id,
+                'course_thumbnail' => 'https://via.placeholder.com/152',
+                'level' => 'débutant',
+                'students' => 350,
+                'rating' => 4.6,
+            ],
+
+            // Sarah's courses (Data Science)
+            [
+                'title' => 'Data Science avec Python',
+                'description' => 'Analyse de données et visualisation avec Python, Pandas et Matplotlib',
+                'instructor_id' => $instructors[1]->id,
+                'course_thumbnail' => 'https://via.placeholder.com/153',
                 'level' => 'intermédiaire',
-                'students' => 100,
-                'rating' => 4.5,
+                'students' => 200,
+                'rating' => 4.9,
             ],
             [
-                'title' => 'Data Science Intro',
-                'description' => 'Explore data analysis',
-                'instructor_id' => $instructor2->id,
-                'course_thumbnail' => 'https://via.placeholder.com/53',
+                'title' => 'Machine Learning Fondamentaux',
+                'description' => 'Introduction aux algorithmes de machine learning et leur implémentation',
+                'instructor_id' => $instructors[1]->id,
+                'course_thumbnail' => 'https://via.placeholder.com/154',
                 'level' => 'avancé',
-                'students' => 80,
-                'rating' => 4.3,
+                'students' => 150,
+                'rating' => 4.8,
             ],
+            [
+                'title' => 'Python pour Débutants',
+                'description' => 'Apprenez les bases de Python pour la science des données',
+                'instructor_id' => $instructors[1]->id,
+                'course_thumbnail' => 'https://via.placeholder.com/155',
+                'level' => 'débutant',
+                'students' => 300,
+                'rating' => 4.7,
+            ],
+
+            // Karim's courses (Cybersecurity)
+            [
+                'title' => 'Cybersécurité Essentielle',
+                'description' => 'Protection des systèmes et réseaux contre les menaces cybernétiques',
+                'instructor_id' => $instructors[2]->id,
+                'course_thumbnail' => 'https://via.placeholder.com/156',
+                'level' => 'intermédiaire',
+                'students' => 180,
+                'rating' => 4.8,
+            ],
+            [
+                'title' => 'Ethical Hacking',
+                'description' => 'Techniques de test d\'intrusion et de sécurité offensive',
+                'instructor_id' => $instructors[2]->id,
+                'course_thumbnail' => 'https://via.placeholder.com/157',
+                'level' => 'avancé',
+                'students' => 120,
+                'rating' => 4.9,
+            ],
+            [
+                'title' => 'Sécurité des Réseaux',
+                'description' => 'Fondamentaux de la sécurité réseau et des protocoles',
+                'instructor_id' => $instructors[2]->id,
+                'course_thumbnail' => 'https://via.placeholder.com/158',
+                'level' => 'débutant',
+                'students' => 250,
+                'rating' => 4.7,
+            ]
         ];
 
         foreach ($courses as $courseData) {
             Course::create($courseData);
         }
-
-        $learner->courses()->attach([
-            1 => ['progress' => 80, 'last_accessed' => '2025-05-11 13:31:36'],
-            2 => ['progress' => 50, 'last_accessed' => '2025-05-11 13:31:36'],
-            3 => ['progress' => 20, 'last_accessed' => '2025-05-11 13:31:36'],
-        ]);
     }
 }

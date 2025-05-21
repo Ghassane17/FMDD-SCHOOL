@@ -36,7 +36,7 @@ const LearnerRoutes = {
             element: <Contact />,
         },
         {
-            path: 'all-enrolled-courses/:courseId',
+            path: 'courses/:Id',
             element: <LearnerCourse />,
         } ,
        /* {

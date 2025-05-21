@@ -9,43 +9,22 @@ return new class extends Migration
     public function up(): void
     {
         Schema::create('course_learner', function (Blueprint $table) {
-            $table->id();
-            $table->foreignId('learner_id')->constrained('learners')->onDelete('cascade');
-            $table->foreignId('course_id')->constrained('courses')->onDelete('cascade');
-            $table->unsignedInteger('progress')->default(0);
-           $table->timestamp('last_accessed')->nullable();
-            $table->timestamps();
-            $table->timestamp('enrolled_at')->useCurrent();
-//            $table->timestamp('last_accessed_at')->nullable();
-//            $table->timestamp('completed_at')->nullable();
-//
-//            // Progress tracking
-//            $table->float('progress_percentage')->default(0); // 0-100%
-//            $table->integer('completed_lessons_count')->default(0);
-//            $table->integer('total_time_spent_seconds')->default(0); // Track time spent in course
-//
-//            // Access and last position
-//            $table->foreignId('last_lesson_id')->nullable()->constrained('lessons')->nullOnDelete();
-//            $table->string('last_position')->nullable(); // For video: timestamp, for text: paragraph ID
-//
-//            // Performance metrics
-//            $table->float('average_quiz_score')->nullable();
-//            $table->integer('attempts_count')->default(0); // Count of quiz attempts
-//
-//            // Status and flags
-//            $table->enum('status', ['not_started', 'in_progress', 'completed', 'dropped'])->default('not_started');
-//            $table->boolean('certificate_issued')->default(false);
-//            $table->timestamp('certificate_issued_at')->nullable();
-//            $table->string('certificate_number')->nullable();
-//
-//            // Feedback
-//            $table->integer('rating')->nullable(); // User's rating of the course (1-5)
-//            $table->text('feedback')->nullable(); // User's feedback on the course
-//
-//
-//
-//            // Prevent duplicate enrollments
-//            $table->unique(['learner_id', 'course_id']);
+
+            // Clés étrangères
+            $table->foreignId('learner_id')->constrained('learners')->cascadeOnDelete();
+            $table->foreignId('course_id')->constrained('courses')->cascadeOnDelete();
+
+            // Métadonnées
+            $table->timestamp('enrolled_at')->useCurrent(); // Date d'inscription
+            $table->unsignedInteger('progress')->default(0); // Progression en % (0-100)
+            $table->timestamp('last_accessed')->nullable(); // Dernière activité (affichée dans l'UI)
+            $table->timestamps(); // created_at et updated_at conservés
+
+            // Contraintes
+            $table->primary(['course_id', 'learner_id']);
+            $table->index('learner_id');
+            $table->index('course_id'); // Optimisation pour les requêtes instructeurs
+
         });
     }
 
