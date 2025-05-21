@@ -1,8 +1,10 @@
 import React, { useState, useEffect } from 'react';
 import { updateInstructorProfile } from '../../services/api_instructor';
+import { Loader2 } from 'lucide-react';
 
 export default function AccountSettings({ instructorData }) {
-  const [loading, setLoading] = useState(false);
+  const [profileLoading, setProfileLoading] = useState(false);
+  const [passwordLoading, setPasswordLoading] = useState(false);
   const [error, setError] = useState(null);
   const [success, setSuccess] = useState(null);
 
@@ -26,7 +28,7 @@ export default function AccountSettings({ instructorData }) {
 
   const handleProfileUpdate = async (e) => {
     e.preventDefault();
-    setLoading(true);
+    setProfileLoading(true);
     setError(null);
     setSuccess(null);
 
@@ -49,7 +51,7 @@ export default function AccountSettings({ instructorData }) {
     } catch (err) {
       setError(err.response?.data?.message || 'Une erreur est survenue lors de la mise à jour du profil');
     } finally {
-      setLoading(false);
+      setProfileLoading(false);
     }
   };
 
@@ -65,7 +67,7 @@ export default function AccountSettings({ instructorData }) {
       return;
     }
 
-    setLoading(true);
+    setPasswordLoading(true);
     setError(null);
     setSuccess(null);
 
@@ -80,7 +82,7 @@ export default function AccountSettings({ instructorData }) {
     } catch (err) {
       setError(err.response?.data?.message || 'Une erreur est survenue lors du changement de mot de passe');
     } finally {
-      setLoading(false);
+      setPasswordLoading(false);
     }
   };
 
@@ -147,10 +149,11 @@ export default function AccountSettings({ instructorData }) {
 
           <button
             type="submit"
-            className="px-4 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700 disabled:opacity-50"
-            disabled={loading}
+            className="px-4 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700 disabled:opacity-50 flex items-center"
+            disabled={profileLoading}
           >
-            {loading ? 'Enregistrement...' : 'Enregistrer les modifications'}
+            {profileLoading && <Loader2 className="w-4 h-4 mr-2 animate-spin" />}
+            {profileLoading ? 'Enregistrement...' : 'Enregistrer les modifications'}
           </button>
         </form>
       </div>
@@ -190,10 +193,11 @@ export default function AccountSettings({ instructorData }) {
 
           <button
             type="submit"
-            className="mt-4 px-4 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700 disabled:opacity-50"
-            disabled={loading}
+            className="mt-4 px-4 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700 disabled:opacity-50 flex items-center"
+            disabled={passwordLoading}
           >
-            {loading ? 'Mise à jour...' : 'Mettre à jour le mot de passe'}
+            {passwordLoading && <Loader2 className="w-4 h-4 mr-2 animate-spin" />}
+            {passwordLoading ? 'Mise à jour...' : 'Mettre à jour le mot de passe'}
           </button>
         </form>
       </div>

@@ -1,8 +1,6 @@
-
 import React from 'react';
-import { trainerData } from '../../data/trainerData';
 
-const InstructorCalendar = () => {
+const InstructorCalendar = ({ availability = [] }) => {
   const days = ['Lun', 'Mar', 'Mer', 'Jeu', 'Ven', 'Sam', 'Dim'];
   const currentMonth = 'Avril 2025';
   
@@ -58,21 +56,25 @@ const InstructorCalendar = () => {
       <div>
         <h3 className="font-medium mb-3">Créneaux disponibles</h3>
         
-        {trainerData.availability.map((day, i) => (
-          <div key={i} className="mb-4">
-            <h4 className="font-medium text-gray-700 mb-2">{day.day}</h4>
-            <div className="flex flex-wrap gap-2">
-              {day.slots.map((slot, j) => (
-                <button 
-                  key={j}
-                  className="px-3 py-1 border border-blue-200 text-blue-700 rounded-md hover:bg-blue-50"
-                >
-                  {slot}
-                </button>
-              ))}
+        {availability.length > 0 ? (
+          availability.map((day, i) => (
+            <div key={i} className="mb-4">
+              <h4 className="font-medium text-gray-700 mb-2">{day.day}</h4>
+              <div className="flex flex-wrap gap-2">
+                {day.slots.map((slot, j) => (
+                  <button 
+                    key={j}
+                    className="px-3 py-1 border border-blue-200 text-blue-700 rounded-md hover:bg-blue-50"
+                  >
+                    {slot}
+                  </button>
+                ))}
+              </div>
             </div>
-          </div>
-        ))}
+          ))
+        ) : (
+          <p className="text-gray-500">Aucun créneau disponible pour le moment</p>
+        )}
         
         <button className="w-full mt-4 bg-blue-600 hover:bg-blue-700 text-white font-medium py-2 px-4 rounded-lg transition-colors">
           Gérer mes disponibilités
