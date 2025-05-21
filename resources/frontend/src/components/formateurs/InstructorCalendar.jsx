@@ -2,7 +2,7 @@
 import React from 'react';
 import { trainerData } from '../../data/trainerData';
 
-const TrainerCalendar = () => {
+const InstructorCalendar = () => {
   const days = ['Lun', 'Mar', 'Mer', 'Jeu', 'Ven', 'Sam', 'Dim'];
   const currentMonth = 'Avril 2025';
   
@@ -82,4 +82,4 @@ const TrainerCalendar = () => {
   );
 };
 
-export default TrainerCalendar;
+export default InstructorCalendar;

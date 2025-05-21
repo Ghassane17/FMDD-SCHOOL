@@ -1,42 +1,6 @@
-import React, { useEffect, useState } from 'react';
-import axios from 'axios';
+import React from 'react';
 
-const PaymentSection = () => {
-  const [payments, setPayments] = useState([]);
-  const [bankInfo, setBankInfo] = useState(null);
-  const [loading, setLoading] = useState(true);
-
-  useEffect(() => {
-    axios.get('/api/instructor/dashboard', {
-      headers: {
-        Authorization: `Bearer ${localStorage.getItem('token')}`,
-      },
-    })
-    .then(({ data }) => {
-      // Ensure payments is always an array
-      const paymentList = Array.isArray(data.payments) ? data.payments : [];
-      setPayments(paymentList);
-
-      // Bank info should be an object or null
-      setBankInfo(data.bank_info && typeof data.bank_info === 'object'
-        ? data.bank_info
-        : null
-      );
-    })
-    .catch(err => {
-      console.error('Erreur lors du chargement des paiements :', err);
-      setPayments([]);
-      setBankInfo(null);
-    })
-    .finally(() => setLoading(false));
-  }, []);
-
-  if (loading) {
-    return (
-      <div className="p-6 text-center text-gray-500">Chargement des données…</div>
-    );
-  }
-
+const PaymentSection = ({ payments = [], bankInfo = null }) => {
   return (
     <>
       {/* Bank Information */}
@@ -76,7 +40,7 @@ const PaymentSection = () => {
           <table className="min-w-full divide-y divide-gray-200">
             <thead>
               <tr>
-                {['Date','Description','Montant','Actions'].map((label) => (
+                {['Date', 'Description', 'Montant', 'Actions'].map((label) => (
                   <th
                     key={label}
                     className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider"
@@ -89,17 +53,18 @@ const PaymentSection = () => {
             <tbody className="bg-white divide-y divide-gray-200">
               {payments?.length > 0 ? (
                 payments.map((payment) => (
-                  <tr key={payment.id ?? payment.month}>
+                  <tr key={payment.id}>
                     <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-900">
-                      {payment.month}
+                      {payment.date}
                     </td>
                     <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-900">
-                      Paiement mensuel
+                      {payment.description}
                     </td>
                     <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-900 text-right">
                       {typeof payment.amount === 'number'
                         ? payment.amount.toFixed(2)
-                        : payment.amount}{' '}€
+                        : payment.amount}{' '}
+                      €
                     </td>
                     <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-900 text-right">
                       <button className="text-blue-600 hover:text-blue-800">

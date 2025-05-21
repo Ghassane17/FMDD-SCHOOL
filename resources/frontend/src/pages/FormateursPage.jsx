@@ -1,9 +1,9 @@
 
 import React from 'react';
-import TrainerDashboard from '../components/formateurs/TrainerDashboard';
+import InstructorDashboard from '../components/formateurs/InstructorDashboard';
 
 const Index = () => {
-  return <TrainerDashboard />;
+  return <InstructorDashboard />;
 };
 
 export default Index;

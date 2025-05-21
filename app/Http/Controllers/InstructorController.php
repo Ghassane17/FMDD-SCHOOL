@@ -5,102 +5,140 @@ namespace App\Http\Controllers;
 use Illuminate\Http\Request;
 use App\Models\Instructor;
 use Illuminate\Support\Facades\Auth;
+use Illuminate\Support\Facades\Log;
+use Illuminate\Support\Facades\Hash;
+use Illuminate\Validation\Rule;
 
 class InstructorController extends Controller
 {
     public function dashboard(Request $request)
     {
-        $user = Auth::user();
+        try {
+            $user = Auth::user();
 
-        // 1) Only allow instructors
-        if ($user->role !== 'instructor') {
-            return response()->json(['message' => 'Unauthorized'], 403);
+            // 1) Only allow instructors
+            if ($user->role !== 'instructor') {
+                return response()->json(['message' => 'Unauthorized'], 403);
+            }
+
+            // 2) Load instructor, courses & payments
+            $instructor = Instructor::with([
+                'courses:id,title,description,students,rating,course_thumbnail,level,instructor_id',
+                'payments:id,instructor_id,date,amount,description'
+            ])->where('user_id', $user->id)->first();
+
+            if (!$instructor) {
+                return response()->json(['message' => 'Instructor profile not found'], 404);
+            }
+
+            // 3) Build response
+            return response()->json([
+                'instructor_id'  => $instructor->id,
+                'user'           => [
+                    'name'   => $user->name ?? $user->username,
+                    'email'  => $user->email,
+                    'avatar' => $user->avatar,
+                    'bio'    => $user->bio,
+                ],
+                'skills'         => $instructor->skills ?? [],
+                'languages'      => $instructor->languages ?? [],
+                'certifications' => $instructor->certifications ?? [],
+                'availability'   => $instructor->availability ?? [],
+                'bank_info'      => $instructor->bank_info ?? null,
+                'school'         => 'FMDD SCHOOL',
+                'total_courses'  => $instructor->courses->count(),
+                'total_students' => $instructor->courses->sum('students'),
+                'average_rating' => round($instructor->courses->avg('rating'), 1),
+
+                'courses'        => $instructor->courses->map(fn($c) => [
+                    'id'          => $c->id,
+                    'title'       => $c->title,
+                    'description' => $c->description,
+                    'students'    => $c->students,
+                    'rating'      => $c->rating,
+                    'image'       => $c->course_thumbnail,
+                    'level'       => $c->level,
+                ]),
+
+                'payments'       => $instructor->payments->map(fn($p) => [
+                    'id'          => $p->id,
+                    'date'        => $p->date,
+                    'amount'      => $p->amount,
+                    'description' => $p->description,
+                ]),
+            ], 200);
+
+        } catch (\Exception $e) {
+            Log::error('Instructor dashboard error: ' . $e->getMessage());
+            return response()->json([
+                'message' => 'An error occurred while fetching instructor data',
+                'error' => $e->getMessage()
+            ], 500);
         }
-
-        // 2) Load instructor, courses & payments
-        $instructor = Instructor::with([
-            'courses:id,title,description,students,rating,image,level,instructor_id',
-            'payments:id,instructor_id,month,amount'
-        ])->where('user_id', $user->id)->first();
-
-        if (!$instructor) {
-            return response()->json(['message' => 'Instructor profile not found'], 404);
-        }
-        // 3) Build response
-        return response()->json([
-            'instructor_id'  => $instructor->id,
-            'user'           => [
-                'name'   => $user->name,
-                'avatar' => $user->avatar,
-                'bio'    => $user->bio,
-            ],
-            'skills'         => json_decode($instructor->skills, true)      ?? [],
-            'languages'      => json_decode($instructor->languages, true)   ?? [],
-            'school'         => 'FMDD SCHOOL',
-            'total_courses'  => $instructor->courses->count(),
-            'total_students' => $instructor->courses->sum('students'),
-            'average_rating' => round($instructor->courses->avg('rating'), 1),
-
-            'courses'        => $instructor->courses->map(fn($c) => [
-                'id'          => $c->id,
-                'title'       => $c->title,
-                'description' => $c->description,
-                'students'    => $c->students,
-                'rating'      => $c->rating,
-                'image'       => $c->image,
-                'level'       => $c->level,
-            ]),
-
-            'payments'       => $instructor->payments->map(fn($p) => [
-                'id'     => $p->id,
-                'month'  => $p->month,
-                'amount' => $p->amount,
-            ]),
-
-            'bank_info'      => json_decode($instructor->bank_info, true)   ?? null,
-        ], 200);
     }
 
-
-    public function profile(Request $request): \Illuminate\Http\JsonResponse
+    public function profile(Request $request)
     {
-        $user = $request->user();
-        if (!$user || $user->role !== 'instructor') {
-            return response()->json(['message' => 'Unauthorized.'], 403);
+        try {
+            $user = Auth::user();
+
+            // 1) Only allow instructors
+            if ($user->role !== 'instructor') {
+                return response()->json(['message' => 'Unauthorized'], 403);
+            }
+
+            // 2) Validate the request
+            $validated = $request->validate([
+                'name' => 'sometimes|string|max:255',
+                'email' => [
+                    'sometimes',
+                    'email',
+                    'max:255',
+                    Rule::unique('users')->ignore($user->id)
+                ],
+                'bio' => 'sometimes|string|max:1000',
+                'current_password' => 'required_with:new_password|string',
+                'new_password' => 'required_with:current_password|string|min:8|confirmed',
+            ]);
+
+            // 3) Handle password change if requested
+            if (isset($validated['current_password'])) {
+                if (!Hash::check($validated['current_password'], $user->password)) {
+                    return response()->json(['message' => 'Current password is incorrect'], 422);
+                }
+                $user->password = Hash::make($validated['new_password']);
+            }
+
+            // 4) Update user profile
+            if (isset($validated['name'])) $user->username = $validated['name'];
+            if (isset($validated['email'])) $user->email = $validated['email'];
+            if (isset($validated['bio'])) $user->bio = $validated['bio'];
+            $user->save();
+
+            // 5) Return updated user data
+            return response()->json([
+                'message' => 'Profile updated successfully',
+                'instructor' => [
+                    'user' => [
+                        'name' => $user->username,
+                        'email' => $user->email,
+                        'bio' => $user->bio,
+                        'avatar' => $user->avatar,
+                    ]
+                ]
+            ]);
+
+        } catch (\Illuminate\Validation\ValidationException $e) {
+            return response()->json([
+                'message' => 'Validation failed',
+                'errors' => $e->errors()
+            ], 422);
+        } catch (\Exception $e) {
+            Log::error('Instructor profile update error: ' . $e->getMessage());
+            return response()->json([
+                'message' => 'An error occurred while updating the profile',
+                'error' => $e->getMessage()
+            ], 500);
         }
-
-        $validated = $request->validate([
-            'skills' => 'nullable|array',
-            'skills.*' => 'string|max:255',
-
-            'languages' => 'nullable|array',
-            'languages.*.name' => 'required|string|max:255',
-            'languages.*.code' => 'nullable|string|max:10',
-
-            'certifications' => 'nullable|array',
-            'certifications.*.name' => 'required|string|max:255',
-            'certifications.*.institution' => 'nullable|string|max:255',
-
-            'availability' => 'nullable|array',
-            // You can add more detailed validation for availability if needed
-
-            'bank_info' => 'nullable|array',
-            'bank_info.iban' => 'nullable|string|max:255',
-            'bank_info.bankName' => 'nullable|string|max:255',
-            'bank_info.paymentMethod' => 'nullable|string|max:255',
-        ]);
-
-        $instructor = \App\Models\Instructor::where('user_id', $user->id)->first();
-
-        if (!$instructor) {
-            return response()->json(['message' => 'Instructor profile not found.'], 404);
-        }
-
-        $instructor->update($validated);
-
-        return response()->json([
-            'message' => 'Profile updated successfully.',
-            'instructor' => $instructor->fresh()
-        ]);
     }
 }

@@ -1,47 +1,112 @@
 import React, { useState, useEffect } from 'react';
+import { updateInstructorProfile } from '../../services/api_instructor';
 
-export default function AccountSettings() {
-  // Grab user and instructor data from localStorage
-  const user = JSON.parse(localStorage.getItem('user')) || {};
-  const instructor = JSON.parse(localStorage.getItem('instructor')) || {};
+export default function AccountSettings({ instructorData }) {
+  const [loading, setLoading] = useState(false);
+  const [error, setError] = useState(null);
+  const [success, setSuccess] = useState(null);
 
-  // Local state for form fields
-  const [username, setUsername] = useState(user.username || '');
-  const [email, setEmail] = useState(user.email || '');
-  const [bio, setBio] = useState(user.bio || '');
-  const [avatar, setAvatar] = useState(user.avatar || '');
-  const [notificationsEmail, setNotificationsEmail] = useState(true);
-  const [notificationsApp, setNotificationsApp] = useState(true);
+  // Form states
+  const [formData, setFormData] = useState({
+    name: instructorData?.user?.name || '',
+    email: instructorData?.user?.email || '',
+    bio: instructorData?.user?.bio || ''
+  });
 
+  // Update form data when instructorData changes
   useEffect(() => {
-    // Initialize toggles if stored in instructor settings
-    if (instructor.notifications) {
-      setNotificationsEmail(instructor.notifications.email);
-      setNotificationsApp(instructor.notifications.app);
+    if (instructorData?.user) {
+      setFormData({
+        name: instructorData.user.name || '',
+        email: instructorData.user.email || '',
+        bio: instructorData.user.bio || ''
+      });
     }
-  }, [instructor.notifications]);
+  }, [instructorData]);
 
-  const handleProfileUpdate = (e) => {
+  const handleProfileUpdate = async (e) => {
     e.preventDefault();
-    // TODO: implement API call to update profile
-    console.log('Updating profile', { username, email, bio, avatar });
+    setLoading(true);
+    setError(null);
+    setSuccess(null);
+
+    try {
+      const response = await updateInstructorProfile({
+        name: formData.name,
+        email: formData.email,
+        bio: formData.bio
+      });
+
+      setSuccess('Profil mis à jour avec succès');
+      // Update local state with new data
+      if (response.instructor) {
+        setFormData({
+          name: response.instructor.user.name,
+          email: response.instructor.user.email,
+          bio: response.instructor.user.bio
+        });
+      }
+    } catch (err) {
+      setError(err.response?.data?.message || 'Une erreur est survenue lors de la mise à jour du profil');
+    } finally {
+      setLoading(false);
+    }
   };
 
-  const handleChangePassword = (e) => {
+  const handleChangePassword = async (e) => {
     e.preventDefault();
-    // TODO: implement API call to change password
-    console.log('Changing password');
+    const formData = new FormData(e.target);
+    const currentPassword = formData.get('currentPassword');
+    const newPassword = formData.get('newPassword');
+    const confirmPassword = formData.get('confirmPassword');
+
+    if (newPassword !== confirmPassword) {
+      setError('Les mots de passe ne correspondent pas');
+      return;
+    }
+
+    setLoading(true);
+    setError(null);
+    setSuccess(null);
+
+    try {
+      await updateInstructorProfile({
+        current_password: currentPassword,
+        new_password: newPassword,
+        new_password_confirmation: confirmPassword
+      });
+      setSuccess('Mot de passe mis à jour avec succès');
+      e.target.reset();
+    } catch (err) {
+      setError(err.response?.data?.message || 'Une erreur est survenue lors du changement de mot de passe');
+    } finally {
+      setLoading(false);
+    }
   };
 
-  const handleToggle = (type) => {
-    if (type === 'email') setNotificationsEmail(!notificationsEmail);
-    if (type === 'app') setNotificationsApp(!notificationsApp);
-    // TODO: implement API call to update notification settings
+  const handleInputChange = (e) => {
+    const { name, value } = e.target;
+    setFormData(prev => ({
+      ...prev,
+      [name]: value
+    }));
   };
 
   return (
     <div className="bg-white rounded-lg shadow-md p-6 mb-6">
       <h2 className="text-xl font-bold mb-4">Paramètres du compte</h2>
+
+      {error && (
+        <div className="mb-4 p-4 bg-red-50 border border-red-200 rounded-lg">
+          <p className="text-red-600">{error}</p>
+        </div>
+      )}
+
+      {success && (
+        <div className="mb-4 p-4 bg-green-50 border border-green-200 rounded-lg">
+          <p className="text-green-600">{success}</p>
+        </div>
+      )}
 
       <div className="mb-6">
         <h3 className="text-lg font-medium mb-4">Modifier mes informations</h3>
@@ -51,18 +116,20 @@ export default function AccountSettings() {
               <label className="block text-gray-700 mb-2">Nom complet</label>
               <input
                 type="text"
+                name="name"
                 className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500"
-                value={username}
-                onChange={e => setUsername(e.target.value)}
+                value={formData.name}
+                onChange={handleInputChange}
               />
             </div>
             <div>
               <label className="block text-gray-700 mb-2">Email</label>
               <input
                 type="email"
+                name="email"
                 className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500"
-                value={email}
-                onChange={e => setEmail(e.target.value)}
+                value={formData.email}
+                onChange={handleInputChange}
               />
             </div>
           </div>
@@ -70,40 +137,20 @@ export default function AccountSettings() {
           <div className="mb-4">
             <label className="block text-gray-700 mb-2">Biographie</label>
             <textarea
+              name="bio"
               className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500"
               rows="3"
-              value={bio}
-              onChange={e => setBio(e.target.value)}
+              value={formData.bio}
+              onChange={handleInputChange}
             />
-          </div>
-
-          <div className="mb-4">
-            <label className="block text-gray-700 mb-2">Photo de profil</label>
-            <div className="flex items-center">
-              {avatar && (
-                <img
-                  src={avatar}
-                  alt="Profile"
-                  className="w-20 h-20 rounded-full object-cover mr-4"
-                />
-              )}
-              <button
-                type="button"
-                className="px-4 py-2 border border-gray-300 rounded-lg hover:bg-gray-50"
-                onClick={() => {
-                  // TODO: open file selector and update avatar state
-                }}
-              >
-                Changer la photo
-              </button>
-            </div>
           </div>
 
           <button
             type="submit"
-            className="px-4 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700"
+            className="px-4 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700 disabled:opacity-50"
+            disabled={loading}
           >
-            Enregistrer les modifications
+            {loading ? 'Enregistrement...' : 'Enregistrer les modifications'}
           </button>
         </form>
       </div>
@@ -116,88 +163,39 @@ export default function AccountSettings() {
               <label className="block text-gray-700 mb-2">Mot de passe actuel</label>
               <input
                 type="password"
+                name="currentPassword"
                 className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500"
+                required
               />
             </div>
             <div>
               <label className="block text-gray-700 mb-2">Nouveau mot de passe</label>
               <input
                 type="password"
+                name="newPassword"
                 className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500"
+                required
               />
             </div>
             <div>
               <label className="block text-gray-700 mb-2">Confirmer le nouveau mot de passe</label>
               <input
                 type="password"
-                className="w-full px-3 py-2:border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500"
+                name="confirmPassword"
+                className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500"
+                required
               />
             </div>
           </div>
 
           <button
             type="submit"
-            className="mt-4 px-4 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700"
+            className="mt-4 px-4 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700 disabled:opacity-50"
+            disabled={loading}
           >
-            Mettre à jour le mot de passe
+            {loading ? 'Mise à jour...' : 'Mettre à jour le mot de passe'}
           </button>
         </form>
-      </div>
-
-      <div className="pt-6 border-t">
-        <h3 className="text-lg font-medium mb-4">Notifications</h3>
-
-        <div className="space-y-4">
-          <div className="flex items-center justify-between">
-            <div>
-              <h4 className="font-medium">Notifications par email</h4>
-              <p className="text-gray-600 text-sm">Recevoir des emails sur les activités importantes</p>
-            </div>
-            <div className="relative inline-block w-12 h-6">
-              <input
-                type="checkbox"
-                className="opacity-0 w-0 h-0"
-                id="email-toggle"
-                checked={notificationsEmail}
-                onChange={() => handleToggle('email')}
-              />
-              <label
-                htmlFor="email-toggle"
-                className="block absolute cursor-pointer top-0 left-0 right-0 bottom-0 rounded-full transition-colors duration-300"
-                style={{ backgroundColor: notificationsEmail ? '#2563EB' : '#ccc' }}
-              >
-                <span
-                  className={`absolute left-1 top-1 bg-white w-4 h-4 rounded-full transition-all duration-300 ${notificationsEmail ? 'translate-x-6' : ''}`}
-                ></span>
-              </label>
-            </div>
-          </div>
-
-          <div className="flex items-center justify-between">
-            <div>
-              <h4 className="font-medium">Notifications dans l'application</h4>
-              <p className="text-gray-600 text-sm">Recevoir des notifications dans la plateforme</p>
-            </div>
-            <div className="relative inline-block w-12 h-6">
-              <input
-                type="checkbox"
-                className="opacity-0 w-0 h-0"
-                id="app-toggle"
-                checked={notificationsApp}
-                onChange={() => handleToggle('app')}
-              />
-              <label
-                htmlFor="app-toggle"
-                className="block absolute cursor-pointer top-0 left-0 right-0 bottom-0 rounded-full transition-colors duration-300"
-                style={{ backgroundColor: notificationsApp ? '#2563EB' : '#ccc' }}
-              >
-                <span
-                  className={`absolute left-1 top-1 bg-white w-4 h-4 rounded-full transition-all duration-300 ${notificationsApp ? 'translate-x-6' : ''}`}
-                ></span>
-              </label>
-            </div>
-          </div>
-        </div>
       </div>
     </div>
   );
