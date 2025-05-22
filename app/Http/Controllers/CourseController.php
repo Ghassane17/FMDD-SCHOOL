@@ -31,7 +31,7 @@ class CourseController extends Controller
         //do the job
         try {
             $learner = Learner::with(['courses' => function ($query) {
-                $query->select('courses.id', 'courses.title', 'courses.course_thumbnail', 'courses.level', 'courses.students', 'courses.rating', 'course_learner.progress', 'course_learner.last_accessed')
+                $query->select('courses.id', 'courses.title', 'courses.course_thumbnail', 'courses.level', 'courses.rating', 'course_learner.progress', 'course_learner.last_accessed')
                     ->orderBy('course_learner.progress', 'desc');
             }])->where('user_id', $user->id)->first();
 
@@ -48,7 +48,7 @@ class CourseController extends Controller
                     'last_accessed' => $course->pivot->last_accessed,
                     'image' => $course->course_thumbnail,
                     'level' => $course->level,
-                    'students' => $course->students,
+                    'students' => $course->students_count,
                     'rating' => $course->rating,
                 ];
             });
@@ -77,13 +77,19 @@ class CourseController extends Controller
             return response()->json(['message' => 'Invalid course ID'], 400);
         }
 
-        // Fetch course with instructor (user) relationship
-        $course = Course::with(['instructor' => function ($query) {
-            $query->select('id', 'name'); // Only fetch the necessary fields
+        // Fetch course with instructor and user relationships
+        $course = Course::with(['instructor.user' => function ($query) {
+            $query->select('id', 'username');
         }])->findOrFail($id);
 
         // Check enrollment status for authenticated user
-        $isEnrolled = auth()->check() ? auth()->user()->courses()->where('course_id', $id)->exists() : false;
+        $isEnrolled = false;
+        if (Auth::check()) {
+            $learner = Learner::where('user_id', Auth::id())->first();
+            if ($learner) {
+                $isEnrolled = $learner->courses()->where('course_id', $id)->exists();
+            }
+        }
 
         return response()->json([
             'course' => new CourseResource($course),
@@ -100,22 +106,27 @@ class CourseController extends Controller
         }
 
         // Ensure user is authenticated
-        $user = auth()->user();
+        $user = Auth::user();
         if (!$user) {
             return response()->json(['message' => 'Unauthorized'], 401);
+        }
+
+        // Get the learner profile
+        $learner = Learner::where('user_id', $user->id)->first();
+        if (!$learner) {
+            return response()->json(['message' => 'Learner profile not found'], 404);
         }
 
         // Find the course
         $course = Course::findOrFail($id);
 
         // Check if already enrolled
-        if ($user->courses()->where('course_id', $id)->exists()) {
+        if ($learner->courses()->where('course_id', $id)->exists()) {
             return response()->json(['message' => 'Already enrolled'], 400);
         }
 
-        // Enroll the user
-        $user->courses()->attach($id);
-        $course->increment('students'); // Update students count
+        // Enroll the learner
+        $learner->courses()->attach($id);
 
         return response()->json(['message' => 'Enrolled successfully']);
     }
@@ -165,7 +176,6 @@ class CourseController extends Controller
                     'description',
                     'course_thumbnail',
                     'level',
-                    'students',
                     'rating',
                     'instructor_id'
                 ])
@@ -177,7 +187,7 @@ class CourseController extends Controller
                         'description' => $course->description,
                         'course_thumbnail' => $course->course_thumbnail,
                         'level' => $course->level,
-                        'students' => $course->students,
+                        'students' => $course->students_count,
                         'rating' => $course->rating,
                         'instructor' => [
                             'name' => $course->instructor->user->username ?? 'Unknown Instructor'

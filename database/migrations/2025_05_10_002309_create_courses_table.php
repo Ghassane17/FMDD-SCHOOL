@@ -16,7 +16,6 @@ return new class extends Migration
             $table->string('course_thumbnail')->nullable();
             $table->enum('level', ['débutant', 'intermédiaire', 'avancé'])->default('débutant');
             $table->string('category')->nullable();
-            $table->unsignedInteger('students')->default(0);
             $table->float('rating')->nullable(); // Statique
             $table->boolean('is_published')->default(true);
             $table->integer('duration_hours')->nullable();

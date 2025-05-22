@@ -6,12 +6,9 @@ use Illuminate\Database\Eloquent\Model;
 
 class Course extends Model
 {
-    protected $fillable = ['title', 'description', 'instructor_id', 'course_thumbnail', 'level', 'students', 'rating'];
+    protected $fillable = ['title', 'description', 'instructor_id', 'course_thumbnail', 'level', 'rating', 'duration_hours', 'category'];
 
-    public function instructor(): \Illuminate\Database\Eloquent\Relations\BelongsTo
-    {
-        return $this->belongsTo(Instructor::class, 'instructor_id');
-    }
+
 
     public function instructorProfile(): \Illuminate\Database\Eloquent\Relations\HasOneThrough
     {
@@ -32,9 +29,24 @@ class Course extends Model
 
     public function learners()
     {
-        return $this->belongsToMany(Learner::class, 'course_learner')
+        return $this->belongsToMany(Learner::class, 'course_learner', 'course_id', 'learner_id')
             ->withPivot('progress', 'last_accessed')
             ->withTimestamps()
             ->using(CourseLearner::class);
+    }
+
+    public function instructor()
+    {
+        return $this->belongsTo(Instructor::class);
+    }
+
+    /**
+     * Get the number of students enrolled in this course
+     *
+     * @return int
+     */
+    public function getStudentsCountAttribute(): int
+    {
+        return $this->enrollments()->count();
     }
 }

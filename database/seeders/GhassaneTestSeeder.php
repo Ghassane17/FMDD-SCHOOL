@@ -6,12 +6,42 @@ use Illuminate\Database\Seeder;
 use App\Models\User;
 use App\Models\Instructor;
 use App\Models\Course;
+use App\Models\Learner;
 use Illuminate\Support\Facades\Hash;
 
 class GhassaneTestSeeder extends Seeder
 {
     public function run(): void
     {
+        // Create test learner user
+        $learnerUser = User::create([
+            'username' => 'ghassane',
+            'email' => 'ghassane@example.com',
+            'password' => Hash::make('123456789'),
+            'role' => 'learner',
+            'avatar' => 'https://via.placeholder.com/50',
+            'bio' => 'Test learner account',
+            'notifications' => [
+                'email' => true,
+                'push' => true
+            ]
+        ]);
+
+        // Create learner profile
+        Learner::create([
+            'user_id' => $learnerUser->id,
+            'fields_of_interest' => ['Web Development', 'Data Science'],
+            'languages' => [
+                ['name' => 'Français', 'code' => 'FR'],
+                ['name' => 'Anglais', 'code' => 'EN']
+            ],
+            'courses_enrolled' => 0,
+            'courses_completed' => 0,
+            'last_connection' => now(),
+            'certifications' => [],
+            'bank_info' => null
+        ]);
+
         // Create instructor users
         $instructorUsers = [
             [

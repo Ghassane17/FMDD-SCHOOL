@@ -63,10 +63,13 @@ class User extends Authenticatable
 	];
 
 
-    public function courses()
-    {
-        return $this->belongsToMany(Course::class, 'courseLearner', 'user_id', 'course_id');
-    }
+	public function courses()
+	{
+		return $this->belongsToMany(Course::class, 'course_learner', 'learner_id', 'course_id')
+			->withPivot('progress', 'last_accessed')
+			->withTimestamps()
+			->using(CourseLearner::class);
+	}
 	public function learner(): \Illuminate\Database\Eloquent\Relations\HasOne
 	{
 		return $this->hasOne(Learner::class);

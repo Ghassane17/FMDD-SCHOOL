@@ -105,7 +105,7 @@ const EnrollmentPage = () => {
                         {course.description}
                     </Typography>
                     <Typography variant="body2" color="text.secondary" paragraph>
-                        Instructor: {course.instructor.name}
+                        Instructor: {course.instructor.username}
                     </Typography>
                     <Box sx={{ display: 'flex', gap: 2, mt: 2 }}>
                         <Typography color="text.secondary">
