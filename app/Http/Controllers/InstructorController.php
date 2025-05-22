@@ -141,4 +141,78 @@ class InstructorController extends Controller
             ], 500);
         }
     }
+
+    public function availability(Request $request)
+    {
+        try {
+            $user = Auth::user();
+
+            // 1) Only allow instructors
+            if ($user->role !== 'instructor') {
+                return response()->json(['message' => 'Unauthorized'], 403);
+            }
+
+            // 2) Validate the request
+            $validated = $request->validate([
+                'availability' => 'required|array',
+                'availability.*' => 'required|string|max:255',
+            ]);
+
+            // 3) Update instructor availability
+            $instructor = Instructor::where('user_id', $user->id)->first();
+            $instructor->availability = $validated['availability'];
+            $instructor->save();
+
+            // 4) Return updated availability
+            return response()->json([
+                'message' => 'Availability updated successfully',
+                'availability' => $instructor->availability,
+            ], 200);
+
+        } catch (\Exception $e) {
+            Log::error('Instructor availability update error: ' . $e->getMessage());
+            return response()->json([
+                'message' => 'An error occurred while updating the availability',
+                'error' => $e->getMessage()
+            ], 500);
+        }
+    }
+
+    public function bankInfo(Request $request)
+    {
+        try {
+            $user = Auth::user();
+
+            // 1) Only allow instructors
+            if ($user->role !== 'instructor') {
+                return response()->json(['message' => 'Unauthorized'], 403);
+            }
+
+            // 2) Validate the request
+            $validated = $request->validate([
+                'bank_info' => 'required|array',
+                'bank_info.*' => 'required|string|max:255',
+            ]);
+
+            // 3) Update instructor bank information
+            $instructor = Instructor::where('user_id', $user->id)->first();
+            $instructor->bank_info = $validated['bank_info'];
+            $instructor->save();
+
+            // 4) Return updated bank information
+            return response()->json([
+                'message' => 'Bank information updated successfully',
+                'bank_info' => $instructor->bank_info,
+            ], 200);
+
+        } catch (\Exception $e) {
+            Log::error('Instructor bank info update error: ' . $e->getMessage());
+            return response()->json([
+                'message' => 'An error occurred while updating the bank information',
+                'error' => $e->getMessage()
+            ], 500);
+        }
+    }
 }
+
+        

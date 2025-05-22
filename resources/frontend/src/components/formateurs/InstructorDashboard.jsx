@@ -31,6 +31,13 @@ const InstructorDashboard = () => {
     fetchData();
   }, []);
 
+  const handleBankInfoUpdate = (newBankInfo) => {
+    setInstructorData(prev => ({
+      ...prev,
+      bank_info: newBankInfo
+    }));
+  };
+
   // Render the appropriate content based on the active tab
   const renderContent = () => {
     if (loading) {
@@ -79,7 +86,13 @@ const InstructorDashboard = () => {
       case 'calendar':
         return <InstructorCalendar availability={instructorData.availability} />;
       case 'payments':
-        return <PaymentSection payments={instructorData.payments} bankInfo={instructorData.bank_info} />;
+        return (
+          <PaymentSection 
+            payments={instructorData.payments} 
+            bankInfo={instructorData.bank_info} 
+            onUpdate={handleBankInfoUpdate}
+          />
+        );
       case 'settings':
         return <AccountSettings instructorData={instructorData} />;
       default:
@@ -92,36 +105,10 @@ const InstructorDashboard = () => {
   };
 
   return (
-    <div className="min-h-screen pb-12">
-      <div className="bg-white shadow">
-        <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
-          <div className="flex justify-between h-16 items-center">
-            <div className="flex-shrink-0 flex items-center">
-              <h1 className="text-2xl font-bold text-blue-600">Formateur Section</h1>
-            </div>
-            <div className="flex items-center">
-              <button className="p-1 rounded-full text-gray-400 hover:text-gray-500 focus:outline-none">
-                <Bell className="h-6 w-6" />
-              </button>
-              <div className="ml-3 relative">
-                <div>
-                  <img
-                    className="h-8 w-8 rounded-full object-cover"
-                    src={instructorData?.user?.avatar || 'https://via.placeholder.com/150'}
-                    alt={instructorData?.user?.name || 'User'}
-                  />
-                </div>
-              </div>
-            </div>
-          </div>
-        </div>
-      </div>
-
-      <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8">
-        <Navigation activeTab={activeTab} setActiveTab={setActiveTab} />
-        <div className="mt-6">
-          {renderContent()}
-        </div>
+    <div className="min-h-screen bg-gray-50">
+      <Navigation activeTab={activeTab} setActiveTab={setActiveTab} />
+      <div className="container mx-auto px-4 py-8">
+        {renderContent()}
       </div>
     </div>
   );

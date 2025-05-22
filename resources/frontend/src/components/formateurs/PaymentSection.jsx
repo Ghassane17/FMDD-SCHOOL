@@ -1,13 +1,27 @@
 import React, { useState } from 'react';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
+import { updateInstructorBankAccount } from '../../services/api_instructor';
+import { toast } from 'react-hot-toast';
 
-const PaymentSection = ({ payments = [], bankInfo = null }) => {
+const PaymentSection = ({ payments = [], bankInfo = null, onUpdate }) => {
   const [isModalOpen, setIsModalOpen] = useState(false);
-  const [editedBankInfo, setEditedBankInfo] = useState(bankInfo || {
+  const [isLoading, setIsLoading] = useState(false);
+  const [showSuccess, setShowSuccess] = useState(false);
+  const [editedBankInfo, setEditedBankInfo] = useState({
     iban: '',
-    bankName: '',
-    paymentMethod: ''
+    bankName: bankInfo?.bankName || '',
+    paymentMethod: bankInfo?.paymentMethod || ''
   });
+
+  // Function to mask IBAN
+  const maskIBAN = (iban) => {
+    if (!iban) return '';
+    if (iban.length <= 8) return iban;
+    const firstFour = iban.substring(0, 4);
+    const lastFour = iban.substring(iban.length - 4);
+    const masked = '*'.repeat(iban.length - 8);
+    return `${firstFour}${masked}${lastFour}`;
+  };
 
   const handleInputChange = (e) => {
     const { name, value } = e.target;
@@ -24,11 +38,38 @@ const PaymentSection = ({ payments = [], bankInfo = null }) => {
     }));
   };
 
-  const handleSubmit = (e) => {
+  const handleSubmit = async (e) => {
     e.preventDefault();
-    // Here you would typically make an API call to update the bank info
-    console.log('Updated bank info:', editedBankInfo);
-    setIsModalOpen(false);
+    try {
+      setIsLoading(true);
+      // If IBAN is empty and we have existing bank info, use the existing IBAN
+      const dataToSubmit = {
+        ...editedBankInfo,
+        iban: editedBankInfo.iban || bankInfo?.iban
+      };
+      const response = await updateInstructorBankAccount({ bank_info: dataToSubmit });
+      
+      // Update the parent component with new data
+      if (onUpdate) {
+        onUpdate(response.bank_info);
+      }
+      
+      // Show success state
+      setShowSuccess(true);
+      toast.success('Informations bancaires mises à jour avec succès');
+
+      // Close modal after 2 seconds
+      setTimeout(() => {
+        setShowSuccess(false);
+        setIsModalOpen(false);
+      }, 2000);
+
+    } catch (error) {
+      console.error('Error updating bank info:', error);
+      toast.error('Erreur lors de la mise à jour des informations bancaires');
+    } finally {
+      setIsLoading(false);
+    }
   };
 
   const paymentMethods = ["Virement bancaire"];
@@ -43,7 +84,7 @@ const PaymentSection = ({ payments = [], bankInfo = null }) => {
             <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
               <div>
                 <p className="text-sm text-gray-500">IBAN</p>
-                <p className="font-medium">{bankInfo.iban}</p>
+                <p className="font-medium">{maskIBAN(bankInfo.iban)}</p>
               </div>
               <div>
                 <p className="text-sm text-gray-500">Banque</p>
@@ -83,6 +124,7 @@ const PaymentSection = ({ payments = [], bankInfo = null }) => {
                   name="iban"
                   value={editedBankInfo.iban}
                   onChange={handleInputChange}
+                  placeholder={bankInfo ? maskIBAN(bankInfo.iban) : "Entrez votre IBAN"}
                   className="w-full px-4 py-3 text-base border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500"
                   required
                 />
@@ -125,15 +167,38 @@ const PaymentSection = ({ payments = [], bankInfo = null }) => {
                 <button
                   type="button"
                   onClick={() => setIsModalOpen(false)}
-                  className="px-6 py-3 text-base font-medium text-gray-700 bg-gray-100 rounded-md hover:bg-gray-200"
+                  disabled={isLoading || showSuccess}
+                  className="px-6 py-3 text-base font-medium text-gray-700 bg-gray-100 rounded-md hover:bg-gray-200 disabled:opacity-50"
                 >
                   Annuler
                 </button>
                 <button
                   type="submit"
-                  className="px-6 py-3 text-base font-medium text-white bg-blue-600 rounded-md hover:bg-blue-700"
+                  disabled={isLoading || showSuccess}
+                  className={`px-6 py-3 text-base font-medium text-white rounded-md flex items-center gap-2 ${
+                    showSuccess 
+                      ? 'bg-green-600'
+                      : 'bg-blue-600 hover:bg-blue-700'
+                  } disabled:opacity-50`}
                 >
-                  Enregistrer
+                  {isLoading ? (
+                    <>
+                      <svg className="animate-spin h-5 w-5 text-white" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24">
+                        <circle className="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="4"></circle>
+                        <path className="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"></path>
+                      </svg>
+                      Enregistrement...
+                    </>
+                  ) : showSuccess ? (
+                    <>
+                      <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                        <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M5 13l4 4L19 7" />
+                      </svg>
+                      Enregistré !
+                    </>
+                  ) : (
+                    'Enregistrer'
+                  )}
                 </button>
               </div>
             </form>

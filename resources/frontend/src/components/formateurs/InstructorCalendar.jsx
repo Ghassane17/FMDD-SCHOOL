@@ -1,6 +1,20 @@
-import React from 'react';
+import React, { useState } from 'react';
+import AvailabilityModal from './AvailabilityModal';
 
 const InstructorCalendar = ({ availability = [] }) => {
+  const [isModalOpen, setIsModalOpen] = useState(false);
+  const [localAvailability, setLocalAvailability] = useState(() => {
+    // Parse the JSON strings from the availability array
+    return availability.map(item => {
+      try {
+        return typeof item === 'string' ? JSON.parse(item) : item;
+      } catch (e) {
+        console.error('Error parsing availability item:', e);
+        return { day: '', slots: [] };
+      }
+    });
+  });
+  
   const days = ['Lun', 'Mar', 'Mer', 'Jeu', 'Ven', 'Sam', 'Dim'];
   const currentMonth = 'Avril 2025';
   
@@ -9,6 +23,10 @@ const InstructorCalendar = ({ availability = [] }) => {
     day: i + 1,
     hasEvent: [3, 7, 12, 15, 18, 22, 26].includes(i + 1)
   }));
+
+  const handleSaveAvailability = (newAvailability) => {
+    setLocalAvailability(newAvailability);
+  };
   
   return (
     <div className="bg-white rounded-lg shadow-md p-6 mb-6">
@@ -56,8 +74,8 @@ const InstructorCalendar = ({ availability = [] }) => {
       <div>
         <h3 className="font-medium mb-3">Créneaux disponibles</h3>
         
-        {availability.length > 0 ? (
-          availability.map((day, i) => (
+        {localAvailability.length > 0 ? (
+          localAvailability.map((day, i) => (
             <div key={i} className="mb-4">
               <h4 className="font-medium text-gray-700 mb-2">{day.day}</h4>
               <div className="flex flex-wrap gap-2">
@@ -76,10 +94,20 @@ const InstructorCalendar = ({ availability = [] }) => {
           <p className="text-gray-500">Aucun créneau disponible pour le moment</p>
         )}
         
-        <button className="w-full mt-4 bg-blue-600 hover:bg-blue-700 text-white font-medium py-2 px-4 rounded-lg transition-colors">
+        <button 
+          onClick={() => setIsModalOpen(true)}
+          className="w-full mt-4 bg-blue-600 hover:bg-blue-700 text-white font-medium py-2 px-4 rounded-lg transition-colors"
+        >
           Gérer mes disponibilités
         </button>
       </div>
+
+      <AvailabilityModal
+        isOpen={isModalOpen}
+        onClose={() => setIsModalOpen(false)}
+        onSave={handleSaveAvailability}
+        initialAvailability={availability}
+      />
     </div>
   );
 };

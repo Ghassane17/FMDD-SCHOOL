@@ -73,4 +73,36 @@ export const updateInstructorProfile = async (profileData) => {
     }
 };
 
+/**
+ * Update instructor availability
+ * @param {Object} availabilityData - The availability data to update
+ * @returns {Promise} Promise object containing updated availability data
+ */
+export const updateInstructorAvailability = async (availabilityData) => {
+    try {
+        const response = await api.patch('/instructor/availability', {
+            availability: availabilityData.availability
+        });
+        return response.data;
+    } catch (error) {
+        console.error('Error updating instructor availability:', error);
+        throw error;
+    }
+};
+
+/**
+ * Update instructor Bank information
+ * @param {Object} bankInfo - The bank information data to update
+ * @returns {Promise} Promise object containing updated bank information data
+ */
+export const updateInstructorBankAccount = async (bankInfo) => {
+    try {
+        const response = await api.patch('/instructor/bankInfo', bankInfo);
+        return response.data;
+    } catch (error) {
+        console.error('Error updating instructor bank information:', error);
+        throw error;
+    }
+};
+
 

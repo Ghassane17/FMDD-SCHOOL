@@ -23,7 +23,8 @@ Route::middleware('auth:sanctum')->group(function () {
     //Account completion
     Route::patch('/learner/profile', [LearnerController::class, 'profile'])->name('learner.profile');
     Route::patch('/instructor/profile', [InstructorController::class, 'profile'])->name('instructor.profile');
-
+    Route::patch('/instructor/availability', [InstructorController::class, 'availability'])->name('instructor.availability');
+    Route::patch('/instructor/bankInfo', [InstructorController::class, 'bankInfo'])->name('instructor.bankInfo');
     //Dashboard get
     Route::get('/learner', [LearnerController::class, 'dashboard'])->name('learner.dashboard');
 
