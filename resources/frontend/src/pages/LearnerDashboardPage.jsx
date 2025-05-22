@@ -206,7 +206,7 @@ const LearnerDashboardPage = () => {
             </Box>
 
             {/* Stats and Profile Section */}
-            <Grid container spacing={4} sx={{ mb: 6 }}>
+           {/* <Grid container spacing={4} sx={{ mb: 6 }}>
                 <Grid item xs={12} md={4}>
                     <Paper elevation={4} sx={{
                         p: 4,
@@ -247,7 +247,7 @@ const LearnerDashboardPage = () => {
                         />
                     </Paper>
                 </Grid>
-            </Grid>
+            </Grid>*/}
 
             {/* Combined Courses Section with Tabs */}
             <Paper elevation={4} sx={{ mb: 6, borderRadius: 3 }}>

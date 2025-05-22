@@ -9,6 +9,7 @@ use Illuminate\Http\JsonResponse;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Auth;
 use Illuminate\Support\Facades\Log;
+use Illuminate\Support\Facades\DB;
 
 class CourseController extends Controller
 {
@@ -125,8 +126,11 @@ class CourseController extends Controller
             return response()->json(['message' => 'Already enrolled'], 400);
         }
 
-        // Enroll the learner
-        $learner->courses()->attach($id);
+        // Enroll the learner and update courses_enrolled count
+        DB::transaction(function () use ($learner, $id) {
+            $learner->courses()->attach($id);
+            $learner->increment('courses_enrolled');
+        });
 
         return response()->json(['message' => 'Enrolled successfully']);
     }

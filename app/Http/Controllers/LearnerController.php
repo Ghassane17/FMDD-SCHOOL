@@ -11,6 +11,7 @@ use Illuminate\Support\Facades\Log;
 use Illuminate\Support\Facades\DB;
 use App\Models\User;
 use Illuminate\Support\Facades\Storage;
+use Illuminate\Validation\ValidationException;
 
 class LearnerController extends Controller
 {
@@ -262,7 +263,8 @@ class LearnerController extends Controller
 
         try {
             $learner = Learner::with(['courses' => function ($query) {
-                $query->select('courses.id', 'courses.title', 'courses.course_thumbnail', 'courses.level', 'courses.students', 'courses.rating', 'course_learner.progress', 'course_learner.last_accessed')
+                $query->select('courses.id', 'courses.title', 'courses.course_thumbnail', 'courses.level', 'courses.rating', 'course_learner.progress', 'course_learner.last_accessed')
+                    ->withCount('learners as students_count')
                     ->orderBy('course_learner.progress', 'desc');
             }])->where('user_id', $user->id)->first();
 
@@ -279,7 +281,7 @@ class LearnerController extends Controller
                     'last_accessed' => $course->pivot->last_accessed,
                     'image' => $course->course_thumbnail,
                     'level' => $course->level,
-                    'students' => $course->students,
+                    'students' => $course->students_count,
                     'rating' => $course->rating,
                 ];
             });
@@ -309,7 +311,8 @@ class LearnerController extends Controller
 
         try {
             $learner = Learner::with(['courses' => function ($query) {
-                $query->select('courses.id', 'courses.title', 'courses.description', 'courses.course_thumbnail', 'courses.level', 'courses.students', 'courses.rating', 'course_learner.progress', 'course_learner.last_accessed');
+                $query->select('courses.id', 'courses.title', 'courses.description', 'courses.course_thumbnail', 'courses.level', 'courses.rating', 'course_learner.progress', 'course_learner.last_accessed')
+                    ->withCount('learners as students_count');
             }])->where('user_id', $user->id)->first();
 
             if (!$learner) {
@@ -317,10 +320,27 @@ class LearnerController extends Controller
                 return response()->json(['message' => 'Learner profile not found'], 404);
             }
 
+            // Update last_connection
+            $learner->update(['last_connection' => now()]);
+
+            // Recalculate courses_enrolled count
+            $actualEnrolledCount = $learner->courses()->count();
+            if ($actualEnrolledCount !== $learner->courses_enrolled) {
+                $learner->update(['courses_enrolled' => $actualEnrolledCount]);
+            }
+
+            // Calculate completed courses (courses with 100% progress)
+            $completedCourses = $learner->courses->filter(function ($course) {
+                return ($course->pivot->progress ?? 0) >= 100;
+            })->count();
+
+            // Update courses_completed count
+            $learner->update(['courses_completed' => $completedCourses]);
+
             return response()->json([
                 'learner_id' => $learner->id,
-                'courses_enrolled' => $learner->courses_enrolled,
-                'courses_completed' => $learner->courses_completed,
+                'courses_enrolled' => $actualEnrolledCount,
+                'courses_completed' => $completedCourses,
                 'last_connection' => $learner->last_connection,
                 'user' => [
                     'name' => $user->username,
@@ -337,7 +357,7 @@ class LearnerController extends Controller
                         'progress' => $course->pivot->progress ?? 0,
                         'last_accessed' => $course->pivot->last_accessed,
                         'level' => $course->level,
-                        'students' => $course->students,
+                        'students' => $course->students_count,
                         'rating' => $course->rating,
                     ];
                 }),

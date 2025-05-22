@@ -21,23 +21,24 @@ class GhassaneTestSeeder extends Seeder
             'role' => 'learner',
             'avatar' => 'https://via.placeholder.com/50',
             'bio' => 'Test learner account',
+            'phone' => null,
             'notifications' => [
                 'email' => true,
                 'push' => true
             ]
         ]);
 
-        // Create learner profile
-        Learner::create([
+        // Create learner profile with proper initial state
+        $learner = Learner::create([
             'user_id' => $learnerUser->id,
+            'courses_enrolled' => 0,
+            'courses_completed' => 0,
+            'last_connection' => now(),
             'fields_of_interest' => ['Web Development', 'Data Science'],
             'languages' => [
                 ['name' => 'Français', 'code' => 'FR'],
                 ['name' => 'Anglais', 'code' => 'EN']
             ],
-            'courses_enrolled' => 0,
-            'courses_completed' => 0,
-            'last_connection' => now(),
             'certifications' => [],
             'bank_info' => null
         ]);
@@ -51,6 +52,11 @@ class GhassaneTestSeeder extends Seeder
                 'role' => 'instructor',
                 'avatar' => 'https://via.placeholder.com/51',
                 'bio' => 'Expert en développement web et mobile',
+                'phone' => null,
+                'notifications' => [
+                    'email' => true,
+                    'push' => true
+                ]
             ],
             [
                 'username' => 'Sarah',
@@ -59,6 +65,11 @@ class GhassaneTestSeeder extends Seeder
                 'role' => 'instructor',
                 'avatar' => 'https://via.placeholder.com/52',
                 'bio' => 'Spécialiste en Data Science et Machine Learning',
+                'phone' => null,
+                'notifications' => [
+                    'email' => true,
+                    'push' => true
+                ]
             ],
             [
                 'username' => 'Karim',
@@ -67,6 +78,11 @@ class GhassaneTestSeeder extends Seeder
                 'role' => 'instructor',
                 'avatar' => 'https://via.placeholder.com/53',
                 'bio' => 'Expert en cybersécurité et réseaux',
+                'phone' => null,
+                'notifications' => [
+                    'email' => true,
+                    'push' => true
+                ]
             ]
         ];
 
@@ -118,8 +134,10 @@ class GhassaneTestSeeder extends Seeder
                 'instructor_id' => $instructors[0]->id,
                 'course_thumbnail' => 'https://via.placeholder.com/150',
                 'level' => 'intermédiaire',
-                'students' => 250,
-                'rating' => 4.8,
+                'category' => 'Développement Web',
+
+                'is_published' => true,
+                'duration_hours' => 40
             ],
             [
                 'title' => 'React.js Avancé',
@@ -127,8 +145,10 @@ class GhassaneTestSeeder extends Seeder
                 'instructor_id' => $instructors[0]->id,
                 'course_thumbnail' => 'https://via.placeholder.com/151',
                 'level' => 'avancé',
-                'students' => 180,
-                'rating' => 4.7,
+                'category' => 'Développement Web',
+
+                'is_published' => true,
+                'duration_hours' => 30
             ],
             [
                 'title' => 'Introduction au Développement Web',
@@ -136,8 +156,10 @@ class GhassaneTestSeeder extends Seeder
                 'instructor_id' => $instructors[0]->id,
                 'course_thumbnail' => 'https://via.placeholder.com/152',
                 'level' => 'débutant',
-                'students' => 350,
-                'rating' => 4.6,
+                'category' => 'Développement Web',
+
+                'is_published' => true,
+                'duration_hours' => 20
             ],
 
             // Sarah's courses (Data Science)
@@ -147,8 +169,10 @@ class GhassaneTestSeeder extends Seeder
                 'instructor_id' => $instructors[1]->id,
                 'course_thumbnail' => 'https://via.placeholder.com/153',
                 'level' => 'intermédiaire',
-                'students' => 200,
-                'rating' => 4.9,
+                'category' => 'Data Science',
+
+                'is_published' => true,
+                'duration_hours' => 45
             ],
             [
                 'title' => 'Machine Learning Fondamentaux',
@@ -156,8 +180,10 @@ class GhassaneTestSeeder extends Seeder
                 'instructor_id' => $instructors[1]->id,
                 'course_thumbnail' => 'https://via.placeholder.com/154',
                 'level' => 'avancé',
-                'students' => 150,
-                'rating' => 4.8,
+                'category' => 'Data Science',
+
+                'is_published' => true,
+                'duration_hours' => 35
             ],
             [
                 'title' => 'Python pour Débutants',
@@ -165,8 +191,10 @@ class GhassaneTestSeeder extends Seeder
                 'instructor_id' => $instructors[1]->id,
                 'course_thumbnail' => 'https://via.placeholder.com/155',
                 'level' => 'débutant',
-                'students' => 300,
-                'rating' => 4.7,
+                'category' => 'Data Science',
+
+                'is_published' => true,
+                'duration_hours' => 25
             ],
 
             // Karim's courses (Cybersecurity)
@@ -176,8 +204,10 @@ class GhassaneTestSeeder extends Seeder
                 'instructor_id' => $instructors[2]->id,
                 'course_thumbnail' => 'https://via.placeholder.com/156',
                 'level' => 'intermédiaire',
-                'students' => 180,
-                'rating' => 4.8,
+                'category' => 'Cybersécurité',
+
+                'is_published' => true,
+                'duration_hours' => 40
             ],
             [
                 'title' => 'Ethical Hacking',
@@ -185,8 +215,10 @@ class GhassaneTestSeeder extends Seeder
                 'instructor_id' => $instructors[2]->id,
                 'course_thumbnail' => 'https://via.placeholder.com/157',
                 'level' => 'avancé',
-                'students' => 120,
-                'rating' => 4.9,
+                'category' => 'Cybersécurité',
+
+                'is_published' => true,
+                'duration_hours' => 50
             ],
             [
                 'title' => 'Sécurité des Réseaux',
@@ -194,13 +226,17 @@ class GhassaneTestSeeder extends Seeder
                 'instructor_id' => $instructors[2]->id,
                 'course_thumbnail' => 'https://via.placeholder.com/158',
                 'level' => 'débutant',
-                'students' => 250,
-                'rating' => 4.7,
+                'category' => 'Cybersécurité',
+
+                'is_published' => true,
+                'duration_hours' => 30
             ]
         ];
 
         foreach ($courses as $courseData) {
             Course::create($courseData);
         }
+
+
     }
 }
