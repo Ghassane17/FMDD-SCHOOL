@@ -38,7 +38,7 @@ class Course extends Model
 
     public function instructor()
     {
-        return $this->belongsTo(Instructor::class);
+        return $this->belongsTo(Instructor::class)->with('user');
     }
 
     /**
@@ -49,5 +49,15 @@ class Course extends Model
     public function getStudentsCountAttribute(): int
     {
         return $this->enrollments()->count();
+    }
+
+    public function modules()
+    {
+        return $this->hasMany(Module::class)->orderBy('order');
+    }
+
+    public function resources()
+    {
+        return $this->hasManyThrough(Ressource::class, Module::class);
     }
 }

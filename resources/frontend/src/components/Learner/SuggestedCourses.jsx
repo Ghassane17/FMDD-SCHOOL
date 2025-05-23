@@ -41,8 +41,8 @@ const SuggestedCourses = () => {
     }, []);
 
     const getSuggestedCourses = () => {
-        // Filter suggested courses (add your own logic here)
-        const suggested = courses.filter(course => course.isSuggested || course.rating >= 4);
+        // Since we don't have isSuggested or rating in the data, show all courses
+        const suggested = courses;
 
         // Sort the courses
         return [...suggested].sort((a, b) => {
@@ -141,12 +141,11 @@ const SuggestedCourses = () => {
                                 id={course.id}
                                 title={course.title}
                                 description={course.description}
-                                progress={course.progress}
-                                lastAccessed={course.lastAccessed}
-                                image={course.image}
+                                image={course.course_thumbnail}
                                 level={course.level}
-                                students={course.students}
-                                rating={course.rating}
+                                students={course.students || 0}
+                                rating={course.rating || 0}
+                                instructor={course.instructor?.name || 'Unknown Instructor'}
                             />
                         </Grid>
                     ))}

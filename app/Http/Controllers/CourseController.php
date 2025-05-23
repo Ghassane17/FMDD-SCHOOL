@@ -72,30 +72,70 @@ class CourseController extends Controller
 
     public function getCourseDetails($id): JsonResponse
     {
-        // Validate the ID
-        $id = filter_var($id, FILTER_VALIDATE_INT);
-        if (!$id) {
-            return response()->json(['message' => 'Invalid course ID'], 400);
-        }
-
-        // Fetch course with instructor and user relationships
-        $course = Course::with(['instructor.user' => function ($query) {
-            $query->select('id', 'username');
-        }])->findOrFail($id);
-
-        // Check enrollment status for authenticated user
-        $isEnrolled = false;
-        if (Auth::check()) {
-            $learner = Learner::where('user_id', Auth::id())->first();
-            if ($learner) {
-                $isEnrolled = $learner->courses()->where('course_id', $id)->exists();
+        try {
+            // Validate the ID
+            $id = filter_var($id, FILTER_VALIDATE_INT);
+            if (!$id) {
+                return response()->json(['message' => 'Invalid course ID'], 400);
             }
-        }
 
-        return response()->json([
-            'course' => new CourseResource($course),
-            'is_enrolled' => $isEnrolled
-        ]);
+            // Fetch course with instructor and modules
+            $course = Course::with(['instructor.user', 'modules'])->find($id);
+
+            if (!$course) {
+                return response()->json(['message' => 'Course not found'], 404);
+            }
+
+            // Check enrollment status for authenticated user
+            $isEnrolled = false;
+            if (Auth::check()) {
+                $learner = Learner::where('user_id', Auth::id())->first();
+                if ($learner) {
+                    $isEnrolled = $learner->courses()->where('course_id', $id)->exists();
+                }
+            }
+
+            // Format course data
+            $formattedCourse = [
+                'id' => $course->id,
+                'title' => $course->title,
+                'description' => $course->description,
+                'course_thumbnail' => $course->course_thumbnail,
+                'duration_hours' => $course->duration_hours,
+                'level' => $course->level,
+                'rating' => $course->rating,
+                'students_count' => $course->students_count,
+                'instructor' => [
+                    'id' => $course->instructor->id,
+                    'name' => $course->instructor->user->username,
+                    'avatar' => $course->instructor->user->avatar,
+                    'bio' => $course->instructor->user->bio,
+                    'skills' => $course->instructor->skills,
+                    'certifications' => $course->instructor->certifications,
+                    'languages' => $course->instructor->languages
+                ],
+                'modules' => $course->modules->map(function ($module) {
+                    return [
+                        'id' => $module->id,
+                        'title' => $module->title,
+                        'duration' => $module->duration,
+                        'order' => $module->order
+                    ];
+                })
+            ];
+
+            return response()->json([
+                'course' => $formattedCourse,
+                'is_enrolled' => $isEnrolled
+            ]);
+        } catch (\Exception $e) {
+            Log::error('Error in getCourseDetails', [
+                'course_id' => $id,
+                'error' => $e->getMessage(),
+                'trace' => $e->getTraceAsString()
+            ]);
+            return response()->json(['message' => 'Failed to load course details'], 500);
+        }
     }
 
     public function enrollNow($id)
@@ -212,6 +252,35 @@ class CourseController extends Controller
                 'trace' => $e->getTraceAsString()
             ]);
             return response()->json(['message' => 'Internal server error'], 500);
+        }
+    }
+
+    /**
+     * Remove the learner from the course
+     */
+    public function leave(Course $course)
+    {
+        try {
+            $learner = auth()->user()->learner;
+
+            if (!$learner) {
+                return response()->json(['message' => 'Learner not found'], 404);
+            }
+
+            // Remove the enrollment
+            $learner->courses()->detach($course->id);
+
+            // Update learner's enrolled courses count
+            $learner->update([
+                'courses_enrolled' => $learner->courses()->count()
+            ]);
+
+            return response()->json([
+                'message' => 'Successfully left the course',
+                'course' => $course
+            ]);
+        } catch (\Exception $e) {
+            return response()->json(['message' => 'Failed to leave the course'], 500);
         }
     }
 }

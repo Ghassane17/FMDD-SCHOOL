@@ -11,7 +11,7 @@ use App\Http\Controllers\InstructorController;
 // Authentication Routes
 Route::post('/register', [RegisterController::class, 'register'])->name('register');
 Route::patch('/learner/profile', [LearnerController::class, 'profile'])->name('learner.profile');
-Route::patch('/instructor/profile', [InstructorController::class, 'profile'] )->name('instructor.profile');
+Route::patch('/instructor/profile', [InstructorController::class, 'profile'])->name('instructor.profile');
 
 Route::post('/contact', [PublicController::class, 'contact'])->name('contact');
 
@@ -30,9 +30,10 @@ Route::middleware('auth:sanctum')->group(function () {
 
     //courses routes
     Route::get('/learner/all-courses', [CourseController::class, 'getAllCourses'])->name('learner.enrolled-courses');
-     Route::get('/learner/all-enrolled-courses', [CourseController::class, 'getEnrolledCourses'])->name('learner.enrolled-courses');
+    Route::get('/learner/all-enrolled-courses', [CourseController::class, 'getEnrolledCourses'])->name('learner.enrolled-courses');
     Route::get('/courses/{id}', [CourseController::class, 'getCourseDetails']);
     Route::post('/courses/{id}/enroll', [CourseController::class, 'enrollNow']);
+    Route::delete('/courses/{course}/leave', [CourseController::class, 'leave']);
     //settings
     Route::get('/learner/settings', [LearnerController::class, 'settings'])->name('learner.settings');
     Route::patch('/learner/settings', [LearnerController::class, 'updateSettings'])->name('learner.settings.update');
