@@ -234,9 +234,103 @@ class GhassaneTestSeeder extends Seeder
         ];
 
         foreach ($courses as $courseData) {
-            Course::create($courseData);
+            $course = Course::create($courseData);
+
+            // Create modules for each course based on its category
+            $modules = [];
+            if ($courseData['category'] === 'Développement Web') {
+                $modules = [
+                    ['title' => 'Introduction au HTML et CSS', 'duration' => 120, 'order' => 1],
+                    ['title' => 'JavaScript Fondamentaux', 'duration' => 180, 'order' => 2],
+                    ['title' => 'React.js Basics', 'duration' => 240, 'order' => 3],
+                    ['title' => 'Node.js et Express', 'duration' => 180, 'order' => 4],
+                    ['title' => 'MongoDB et Base de Données', 'duration' => 150, 'order' => 5]
+                ];
+            } elseif ($courseData['category'] === 'Data Science') {
+                $modules = [
+                    ['title' => 'Introduction à Python', 'duration' => 120, 'order' => 1],
+                    ['title' => 'Pandas et Numpy', 'duration' => 180, 'order' => 2],
+                    ['title' => 'Visualisation de Données', 'duration' => 150, 'order' => 3],
+                    ['title' => 'Machine Learning Basics', 'duration' => 240, 'order' => 4],
+                    ['title' => 'Projets Pratiques', 'duration' => 180, 'order' => 5]
+                ];
+            } else { // Cybersécurité
+                $modules = [
+                    ['title' => 'Fondamentaux de la Sécurité', 'duration' => 120, 'order' => 1],
+                    ['title' => 'Sécurité des Réseaux', 'duration' => 180, 'order' => 2],
+                    ['title' => 'Cryptographie', 'duration' => 150, 'order' => 3],
+                    ['title' => 'Test d\'Intrusion', 'duration' => 240, 'order' => 4],
+                    ['title' => 'Sécurité des Applications', 'duration' => 180, 'order' => 5]
+                ];
+            }
+
+            // Create modules for the course
+            foreach ($modules as $moduleData) {
+                $module = $course->modules()->create($moduleData);
+
+                // Create resources for each module based on its type
+                $resources = [];
+                if ($courseData['category'] === 'Développement Web') {
+                    $resources = [
+                        [
+                            'title' => 'Vidéo de présentation',
+                            'type' => 'video',
+                            'url' => 'https://example.com/videos/intro.mp4'
+                        ],
+                        [
+                            'title' => 'Documentation PDF',
+                            'type' => 'pdf',
+                            'url' => 'https://example.com/docs/tutorial.pdf'
+                        ],
+                        [
+                            'title' => 'Exercices pratiques',
+                            'type' => 'pdf',
+                            'url' => 'https://example.com/exercises/practice.pdf'
+                        ]
+                    ];
+                } elseif ($courseData['category'] === 'Data Science') {
+                    $resources = [
+                        [
+                            'title' => 'Tutoriel vidéo',
+                            'type' => 'video',
+                            'url' => 'https://example.com/videos/tutorial.mp4'
+                        ],
+                        [
+                            'title' => 'Notebook Jupyter',
+                            'type' => 'notebook',
+                            'url' => 'https://example.com/notebooks/analysis.ipynb'
+                        ],
+                        [
+                            'title' => 'Dataset d\'exercice',
+                            'type' => 'dataset',
+                            'url' => 'https://example.com/datasets/exercise.csv'
+                        ]
+                    ];
+                } else { // Cybersécurité
+                    $resources = [
+                        [
+                            'title' => 'Démonstration vidéo',
+                            'type' => 'video',
+                            'url' => 'https://example.com/videos/demo.mp4'
+                        ],
+                        [
+                            'title' => 'Guide de laboratoire',
+                            'type' => 'pdf',
+                            'url' => 'https://example.com/labs/guide.pdf'
+                        ],
+                        [
+                            'title' => 'Outils de pratique',
+                            'type' => 'tools',
+                            'url' => 'https://example.com/tools/practice.zip'
+                        ]
+                    ];
+                }
+
+                // Create resources for the module
+                foreach ($resources as $resourceData) {
+                    $module->resources()->create($resourceData);
+                }
+            }
         }
-
-
     }
 }

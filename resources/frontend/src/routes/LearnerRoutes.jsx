@@ -27,7 +27,6 @@ const LearnerRoutes = {
             path: 'settings',
             element: <LearnerSettingsPage />,
         },
-       ,
         {
             path: 'suggested-courses',
             element: <SuggestedCourses />,
@@ -36,14 +35,14 @@ const LearnerRoutes = {
             path: 'contact',
             element: <Contact />,
         },
-        /*{
-            path: 'courses/:Id',
+        {
+            path: 'courses/:id/learn',
             element: <LearnerCourse />,
-        } ,*/
+        },
         {
             path: 'courses/:id',
             element: <EnrollementPage />,
-        } ,
+        },
        /* {
             path: 'courses/:courseId/quiz', //useless i guess
             element: <QuizPage />,

@@ -3,14 +3,14 @@ import { useParams, useNavigate } from 'react-router-dom';
 import CourseHeader from '../components/LearnerCourse/CourseHeader';
 import CourseSidebar from '../components/LearnerCourse/CourseSidebar';
 import CourseContent from '../components/LearnerCourse/CourseContent';
-import {  isAuthenticated } from '../services/api.js';
+import { isAuthenticated, courseDetails } from '../services/api.js';
 
 /**
  * Course Player Component
  * Displays a specific enrolled course for the learner
  */
 const LearnerCourse = () => {
-    const { courseId } = useParams(); // Get courseId from URL
+    const { id } = useParams(); // Get courseId from URL
     const navigate = useNavigate();
     const [courseData, setCourseData] = useState(null);
     const [currentModuleIndex, setCurrentModuleIndex] = useState(0);
@@ -21,23 +21,28 @@ const LearnerCourse = () => {
     useEffect(() => {
         if (!isAuthenticated()) {
             console.log('User not authenticated, redirecting to login');
-            navigate('/login');
+            navigate('/login', { state: { from: `/learner/courses/${id}/learn` } });
             return;
         }
 
         const fetchCourse = async () => {
             setLoading(true);
             try {
-            return  false ;
+                const response = await courseDetails(id);
+                if (!response.course || !response.is_enrolled) {
+                    throw new Error('You are not enrolled in this course');
+                }
+                setCourseData(response.course);
             } catch (err) {
                 console.error('Failed to fetch course:', err);
-                setError('Impossible de charger le cours. Veuillez vérifier votre inscription ou réessayer.');
+                setError(err.message || 'Failed to load course. Please check your enrollment or try again.');
+            } finally {
                 setLoading(false);
             }
         };
 
         fetchCourse();
-    }, [courseId, navigate]);
+    }, [id, navigate]);
 
     const toggleSidebar = () => {
         setIsSidebarOpen(!isSidebarOpen);
@@ -71,7 +76,10 @@ const LearnerCourse = () => {
     if (loading) {
         return (
             <div className="min-h-screen flex items-center justify-center bg-gray-50">
-                <p className="text-lg">Chargement du cours...</p>
+                <div className="text-center">
+                    <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-indigo-600 mx-auto mb-4"></div>
+                    <p className="text-lg text-gray-600">Loading course content...</p>
+                </div>
             </div>
         );
     }
@@ -79,14 +87,22 @@ const LearnerCourse = () => {
     if (error || !courseData) {
         return (
             <div className="min-h-screen flex items-center justify-center bg-gray-50">
-                <div className="text-center">
-                    <p className="text-red-500 mb-4">{error || 'Cours non trouvé.'}</p>
-                    <button
-                        onClick={retryFetch}
-                        className="px-4 py-2 bg-indigo-600 text-white rounded hover:bg-indigo-700"
-                    >
-                        Réessayer
-                    </button>
+                <div className="text-center max-w-md p-6 bg-white rounded-lg shadow-lg">
+                    <p className="text-red-500 mb-4">{error || 'Course not found.'}</p>
+                    <div className="space-y-3">
+                        <button
+                            onClick={retryFetch}
+                            className="w-full px-4 py-2 bg-indigo-600 text-white rounded hover:bg-indigo-700 transition-colors"
+                        >
+                            Try Again
+                        </button>
+                        <button
+                            onClick={() => navigate(`/learner/courses/${id}`)}
+                            className="w-full px-4 py-2 bg-gray-100 text-gray-700 rounded hover:bg-gray-200 transition-colors"
+                        >
+                            Back to Course Details
+                        </button>
+                    </div>
                 </div>
             </div>
         );

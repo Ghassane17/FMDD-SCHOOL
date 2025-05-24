@@ -458,4 +458,13 @@ export const markNotificationAsRead = async (notificationId) => {
     }
 };
 
+export const leaveCourse = async (courseId) => {
+    try {
+        const response = await api.delete(`/courses/${courseId}/leave`);
+        return response.data;
+    } catch (error) {
+        throw error;
+    }
+};
+
 export default api;
