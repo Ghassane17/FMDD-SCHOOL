@@ -299,12 +299,12 @@ class GhassaneTestSeeder extends Seeder
                     ],
                     [
                         'name' => 'Notebook Jupyter',
-                        'type' => 'notebook',
+                        'type' => 'pdf',
                         'url' => 'https://example.com/notebooks/analysis.ipynb'
                     ],
                     [
                         'name' => 'Dataset d\'exercice',
-                        'type' => 'dataset',
+                        'type' => 'pdf',
                         'url' => 'https://example.com/datasets/exercise.csv'
                     ]
                 ];
@@ -322,7 +322,7 @@ class GhassaneTestSeeder extends Seeder
                     ],
                     [
                         'name' => 'Outils de pratique',
-                        'type' => 'tools',
+                        'type' => 'pdf',
                         'url' => 'https://example.com/tools/practice.zip'
                     ]
                 ];
