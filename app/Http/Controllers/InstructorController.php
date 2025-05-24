@@ -77,6 +77,57 @@ class InstructorController extends Controller
         }
     }
 
+    //complete register
+    public function completeRegister(Request $request)
+    {
+        $user = $request->user();
+        if (!$user || $user->role !== 'instructor') {
+            return response()->json(['message' => 'Unauthorized.'], 403);
+        }
+
+        $validated = $request->validate([
+            'skills' => 'nullable|array',
+            'skills.*' => 'string|max:255',
+
+            'languages' => 'nullable|array',
+            'languages.*.name' => 'required|string|max:255',
+            'languages.*.code' => 'nullable|string|max:10',
+
+            'certifications' => 'nullable|array',
+            'certifications.*.name' => 'required|string|max:255',
+            'certifications.*.institution' => 'nullable|string|max:255',
+
+            'availability' => 'nullable|array',
+            // You can add more detailed validation for availability if needed
+
+            'bank_info' => 'nullable|array',
+            'bank_info.iban' => 'nullable|string|max:255',
+            'bank_info.bankName' => 'nullable|string|max:255',
+            'bank_info.paymentMethod' => 'nullable|string|max:255',
+        ]);
+
+        $instructor = $user->instructor;
+
+        if (!$instructor) {
+            return response()->json(['message' => 'Instructor profile not found.'], 404);
+        }
+
+        $instructor->update($validated);
+
+        return response()->json([
+            'message' => 'Profile updated successfully.',
+            'instructor' => $instructor->fresh()
+        ]);
+    }
+
+
+
+
+
+
+
+    //profile update (name, email, bio) & password change
+
     public function profile(Request $request)
     {
         try {
@@ -113,7 +164,11 @@ class InstructorController extends Controller
             if (isset($validated['name'])) $user->username = $validated['name'];
             if (isset($validated['email'])) $user->email = $validated['email'];
             if (isset($validated['bio'])) $user->bio = $validated['bio'];
-            $user->save();
+            \App\Models\User::where('id', $user->id)->update([
+                'username' => $user->username,
+                'email' => $user->email,
+                'bio' => $user->bio
+            ]);
 
             // 5) Return updated user data
             return response()->json([

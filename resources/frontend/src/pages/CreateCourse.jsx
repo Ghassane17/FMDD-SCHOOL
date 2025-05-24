@@ -1,4 +1,3 @@
-
 import React, { useState, useEffect } from 'react';
 import { useLocation, useNavigate } from 'react-router-dom';
 import { 
@@ -11,7 +10,8 @@ import {
   ArrowLeft, 
   ArrowRight, 
   Check,
-  FileUp
+  FileUp,
+  Sparkles
 } from 'lucide-react';
 
 // Course Creation Page
@@ -35,6 +35,9 @@ const CreateCourse = () => {
     }
   });
   
+  // Add new state for validation errors
+  const [validationErrors, setValidationErrors] = useState({});
+  
   // Load initial data from navigation state
   useEffect(() => {
     if (location.state?.courseData) {
@@ -47,8 +50,186 @@ const CreateCourse = () => {
     }
   }, [location.state]);
   
-  // Handle navigating between steps
+  // Add validation functions for each step
+  const validateStep1 = () => {
+    const errors = {};
+    if (!courseData.title.trim()) {
+      errors.title = 'Le titre du cours est requis';
+    }
+    if (!courseData.description.trim()) {
+      errors.description = 'La description du cours est requise';
+    }
+    if (!courseData.category) {
+      errors.category = 'La catégorie est requise';
+    }
+    if (!courseData.language) {
+      errors.language = 'La langue est requise';
+    }
+    if (!courseData.image) {
+      errors.image = 'Une image de couverture est requise';
+    }
+    return errors;
+  };
+  
+  // Add new validation functions for modules and questions
+  const validateModuleContent = (module) => {
+    const errors = {};
+    
+    if (!module.title.trim()) {
+      errors.title = 'Le titre du module est requis';
+    }
+
+    switch (module.type) {
+      case 'text':
+        if (!module.content.trim()) {
+          errors.content = 'Le contenu textuel est requis';
+        }
+        break;
+      case 'pdf':
+        if (!module.content) {
+          errors.content = 'Veuillez télécharger un fichier PDF';
+        }
+        break;
+      case 'image':
+        if (!module.content) {
+          errors.content = 'Veuillez télécharger une image';
+        }
+        break;
+      case 'video':
+        if (!module.content) {
+          errors.content = 'Veuillez télécharger une vidéo';
+        }
+        break;
+      case 'quiz':
+        if (!module.content?.questions || module.content.questions.length === 0) {
+          errors.content = 'Le quiz doit contenir au moins une question';
+        } else {
+          module.content.questions.forEach((question, index) => {
+            if (!question.question.trim()) {
+              errors[`quiz_question_${index}`] = 'La question est requise';
+            }
+            if (question.options.some(option => !option.trim())) {
+              errors[`quiz_options_${index}`] = 'Toutes les options doivent être remplies';
+            }
+          });
+        }
+        break;
+    }
+    
+    return errors;
+  };
+  
+  const validateExamQuestions = (questions) => {
+    const errors = {};
+    
+    questions.forEach((question, index) => {
+      if (!question.question.trim()) {
+        errors[`exam_question_${index}`] = 'La question est requise';
+      }
+      
+      // Check each option individually
+      question.options.forEach((option, optionIndex) => {
+        if (!option.trim()) {
+          errors[`exam_option_${index}_${optionIndex}`] = `L'option ${optionIndex + 1} est vide`;
+        }
+      });
+    });
+    
+    return errors;
+  };
+  
+  // Modify validateStep2 to include module content validation
+  const validateStep2 = () => {
+    const errors = {};
+    
+    if (courseData.modules.length === 0) {
+      errors.modules = 'Au moins un module est requis';
+    } else {
+      // Validate each module
+      courseData.modules.forEach((module, index) => {
+        const moduleErrors = validateModuleContent(module);
+        if (Object.keys(moduleErrors).length > 0) {
+          errors[`module_${index}`] = moduleErrors;
+        }
+      });
+    }
+    
+    return errors;
+  };
+  
+  // Modify validateStep3 to include question validation
+  const validateStep3 = () => {
+    const errors = {};
+    
+    if (!courseData.exam.title.trim()) {
+      errors.examTitle = 'Le titre de l\'examen est requis';
+    }
+    if (!courseData.exam.instructions.trim()) {
+      errors.examInstructions = 'Les instructions de l\'examen sont requises';
+    }
+    if (courseData.exam.questions.length === 0) {
+      errors.examQuestions = 'Au moins une question est requise';
+    } else {
+      // Validate each exam question
+      const questionErrors = validateExamQuestions(courseData.exam.questions);
+      Object.assign(errors, questionErrors);
+    }
+    if (courseData.exam.duration < 5) {
+      errors.examDuration = 'La durée minimale est de 5 minutes';
+    }
+    if (courseData.exam.passingScore < 1 || courseData.exam.passingScore > 100) {
+      errors.examPassingScore = 'Le score de passage doit être entre 1 et 100';
+    }
+    
+    return errors;
+  };
+  
+  // Add validation for new quiz question
+  const validateNewQuizQuestion = () => {
+    const errors = {};
+    
+    if (!newQuizQuestion.question.trim()) {
+      errors.question = 'La question est requise';
+    }
+    if (newQuizQuestion.options.some(option => !option.trim())) {
+      errors.options = 'Toutes les options doivent être remplies';
+    }
+    
+    return errors;
+  };
+  
+  // Modify handleNextStep to include validation
   const handleNextStep = () => {
+    let errors = {};
+    
+    // Validate current step
+    switch (currentStep) {
+      case 1:
+        errors = validateStep1();
+        break;
+      case 2:
+        errors = validateStep2();
+        break;
+      case 3:
+        errors = validateStep3();
+        break;
+      default:
+        break;
+    }
+
+    // If there are errors, show them and don't proceed
+    if (Object.keys(errors).length > 0) {
+      setValidationErrors(errors);
+      // Scroll to the first error
+      const firstError = document.querySelector('[data-error]');
+      if (firstError) {
+        firstError.scrollIntoView({ behavior: 'smooth', block: 'center' });
+      }
+      return;
+    }
+
+    // Clear validation errors and proceed
+    setValidationErrors({});
     setCurrentStep(prev => prev + 1);
     window.scrollTo(0, 0);
   };
@@ -74,18 +255,25 @@ const CreateCourse = () => {
     content: ''
   });
   
+  // Modify handleAddModule to include validation
   const handleAddModule = () => {
-    if (newModule.title.trim()) {
-      setCourseData(prevData => ({
-        ...prevData,
-        modules: [...prevData.modules, { ...newModule, id: Date.now() }]
-      }));
-      setNewModule({
-        title: '',
-        type: 'text',
-        content: ''
-      });
+    const errors = validateModuleContent(newModule);
+    
+    if (Object.keys(errors).length > 0) {
+      setValidationErrors(errors);
+      return;
     }
+    
+    setCourseData(prevData => ({
+      ...prevData,
+      modules: [...prevData.modules, { ...newModule, id: Date.now() }]
+    }));
+    setNewModule({
+      title: '',
+      type: 'text',
+      content: ''
+    });
+    setValidationErrors({});
   };
   
   const handleRemoveModule = (moduleId) => {
@@ -102,21 +290,38 @@ const CreateCourse = () => {
     correctAnswer: 0
   });
   
+  // Modify handleAddQuestion to include validation
   const handleAddQuestion = () => {
-    if (newQuestion.question.trim()) {
-      setCourseData(prevData => ({
-        ...prevData,
-        exam: {
-          ...prevData.exam,
-          questions: [...prevData.exam.questions, { ...newQuestion, id: Date.now() }]
-        }
-      }));
-      setNewQuestion({
-        question: '',
-        options: ['', '', '', ''],
-        correctAnswer: 0
-      });
+    const errors = {};
+    
+    if (!newQuestion.question.trim()) {
+      errors.question = 'La question est requise';
     }
+    
+    newQuestion.options.forEach((option, index) => {
+      if (!option.trim()) {
+        errors[`option_${index}`] = `L'option ${index + 1} est vide`;
+      }
+    });
+    
+    if (Object.keys(errors).length > 0) {
+      setValidationErrors(errors);
+      return;
+    }
+    
+    setCourseData(prevData => ({
+      ...prevData,
+      exam: {
+        ...prevData.exam,
+        questions: [...prevData.exam.questions, { ...newQuestion, id: Date.now() }]
+      }
+    }));
+    setNewQuestion({
+      question: '',
+      options: ['', '', '', ''],
+      correctAnswer: 0
+    });
+    setValidationErrors({});
   };
   
   const handleRemoveQuestion = (questionId) => {
@@ -164,50 +369,150 @@ const CreateCourse = () => {
     navigate('/');
   };
   
+  // Add this new state for quiz questions
+  const [newQuizQuestion, setNewQuizQuestion] = useState({
+    question: '',
+    options: ['', '', '', ''],
+    correctAnswer: 0
+  });
+  
+  // Modify handleAddQuizQuestion to include validation
+  const handleAddQuizQuestion = () => {
+    const errors = validateNewQuizQuestion();
+    
+    if (Object.keys(errors).length > 0) {
+      setValidationErrors(errors);
+      return;
+    }
+    
+    setNewModule(prev => ({
+      ...prev,
+      content: {
+        ...prev.content,
+        questions: [...(prev.content?.questions || []), { ...newQuizQuestion, id: Date.now() }]
+      }
+    }));
+    setNewQuizQuestion({
+      question: '',
+      options: ['', '', '', ''],
+      correctAnswer: 0
+    });
+    setValidationErrors({});
+  };
+  
+  const handleRemoveQuizQuestion = (questionId) => {
+    setNewModule(prev => ({
+      ...prev,
+      content: {
+        ...prev.content,
+        questions: prev.content?.questions?.filter(q => q.id !== questionId) || []
+      }
+    }));
+  };
+  
+  const handleQuizQuestionOptionChange = (index, value) => {
+    setNewQuizQuestion(prev => ({
+      ...prev,
+      options: prev.options.map((option, i) => i === index ? value : option)
+    }));
+  };
+  
+  // Add error display component
+  const ErrorMessage = ({ message }) => (
+    <p className="text-red-500 text-sm mt-1 flex items-center">
+      <svg className="w-4 h-4 mr-1" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+        <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M12 8v4m0 4h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z" />
+      </svg>
+      {message}
+    </p>
+  );
+  
+  // Add this new component for error alerts
+  const ErrorAlert = ({ message, type = 'error' }) => (
+    <div className={`p-4 mb-4 rounded-lg ${
+      type === 'error' ? 'bg-red-50 border border-red-200' : 
+      type === 'warning' ? 'bg-yellow-50 border border-yellow-200' : 
+      'bg-blue-50 border border-blue-200'
+    }`}>
+      <div className="flex items-center">
+        <div className={`flex-shrink-0 ${
+          type === 'error' ? 'text-red-400' : 
+          type === 'warning' ? 'text-yellow-400' : 
+          'text-blue-400'
+        }`}>
+          <svg className="h-5 w-5" viewBox="0 0 20 20" fill="currentColor">
+            <path fillRule="evenodd" d="M10 18a8 8 0 100-16 8 8 0 000 16zM8.707 7.293a1 1 0 00-1.414 1.414L8.586 10l-1.293 1.293a1 1 0 101.414 1.414L10 11.414l1.293 1.293a1 1 0 001.414-1.414L11.414 10l1.293-1.293a1 1 0 00-1.414-1.414L10 8.586 8.707 7.293z" clipRule="evenodd" />
+          </svg>
+        </div>
+        <div className="ml-3">
+          <p className={`text-sm font-medium ${
+            type === 'error' ? 'text-red-800' : 
+            type === 'warning' ? 'text-yellow-800' : 
+            'text-blue-800'
+          }`}>
+            {message}
+          </p>
+        </div>
+      </div>
+    </div>
+  );
+  
   // Render the current step
   const renderStep = () => {
     switch (currentStep) {
       case 1:
         return (
-          <div className="space-y-6">
-            <h2 className="text-xl font-bold">Informations générales du cours</h2>
+          <div className="space-y-8">
+            <div className="flex items-center space-x-3 mb-6">
+              <div className="p-2 bg-blue-100 rounded-lg">
+                <Sparkles className="h-6 w-6 text-blue-600" />
+              </div>
+              <h2 className="text-2xl font-bold bg-gradient-to-r from-blue-600 to-purple-600 bg-clip-text text-transparent">
+                Informations générales du cours
+              </h2>
+            </div>
             
-            <div className="grid grid-cols-1 gap-4">
-              <div>
-                <label className="block text-gray-700 mb-2">Titre complet du cours</label>
+            <div className="grid grid-cols-1 gap-6">
+              <div className="transform transition-all duration-300 hover:scale-[1.02]">
+                <label className="block text-gray-700 mb-2 font-medium">Titre complet du cours</label>
                 <input
                   type="text"
                   name="title"
                   value={courseData.title}
                   onChange={handleGeneralInfoChange}
-                  className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500"
+                  className={`w-full px-4 py-3 border ${validationErrors.title ? 'border-red-500' : 'border-gray-300'} rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent transition-all duration-200`}
                   placeholder="Titre complet du cours"
                   required
+                  data-error={validationErrors.title}
                 />
+                {validationErrors.title && <ErrorMessage message={validationErrors.title} />}
               </div>
               
-              <div>
-                <label className="block text-gray-700 mb-2">Description détaillée</label>
+              <div className="transform transition-all duration-300 hover:scale-[1.02]">
+                <label className="block text-gray-700 mb-2 font-medium">Description détaillée</label>
                 <textarea
                   name="description"
                   value={courseData.description}
                   onChange={handleGeneralInfoChange}
-                  className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500"
+                  className={`w-full px-4 py-3 border ${validationErrors.description ? 'border-red-500' : 'border-gray-300'} rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent transition-all duration-200`}
                   rows="5"
                   placeholder="Description détaillée du cours..."
                   required
+                  data-error={validationErrors.description}
                 ></textarea>
+                {validationErrors.description && <ErrorMessage message={validationErrors.description} />}
               </div>
               
-              <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-                <div>
-                  <label className="block text-gray-700 mb-2">Catégorie</label>
+              <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+                <div className="transform transition-all duration-300 hover:scale-[1.02]">
+                  <label className="block text-gray-700 mb-2 font-medium">Catégorie</label>
                   <select
                     name="category"
                     value={courseData.category}
                     onChange={handleGeneralInfoChange}
-                    className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500"
+                    className={`w-full px-4 py-3 border ${validationErrors.category ? 'border-red-500' : 'border-gray-300'} rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent transition-all duration-200`}
                     required
+                    data-error={validationErrors.category}
                   >
                     <option value="">Sélectionner une catégorie</option>
                     <option value="development">Développement</option>
@@ -217,16 +522,18 @@ const CreateCourse = () => {
                     <option value="datascience">Data Science</option>
                     <option value="other">Autre</option>
                   </select>
+                  {validationErrors.category && <ErrorMessage message={validationErrors.category} />}
                 </div>
                 
-                <div>
-                  <label className="block text-gray-700 mb-2">Langue</label>
+                <div className="transform transition-all duration-300 hover:scale-[1.02]">
+                  <label className="block text-gray-700 mb-2 font-medium">Langue</label>
                   <select
                     name="language"
                     value={courseData.language}
                     onChange={handleGeneralInfoChange}
-                    className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500"
+                    className={`w-full px-4 py-3 border ${validationErrors.language ? 'border-red-500' : 'border-gray-300'} rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent transition-all duration-200`}
                     required
+                    data-error={validationErrors.language}
                   >
                     <option value="">Sélectionner une langue</option>
                     <option value="ar">Arabe</option>
@@ -234,28 +541,30 @@ const CreateCourse = () => {
                     <option value="en">Anglais</option>
                     <option value="es">Espagnol</option>
                   </select>
+                  {validationErrors.language && <ErrorMessage message={validationErrors.language} />}
                 </div>
               </div>
               
-              <div>
-                <label className="block text-gray-700 mb-2">Image de couverture</label>
+              <div className="transform transition-all duration-300 hover:scale-[1.02]">
+                <label className="block text-gray-700 mb-2 font-medium">Image de couverture</label>
+                {validationErrors.image && <ErrorMessage message={validationErrors.image} />}
                 {courseData.image ? (
-                  <div className="relative mb-4">
+                  <div className="relative mb-4 group">
                     <img 
                       src={courseData.image} 
                       alt="Course cover" 
-                      className="w-full h-48 object-cover rounded-lg" 
+                      className="w-full h-48 object-cover rounded-lg shadow-md transition-all duration-300 group-hover:shadow-xl" 
                     />
                     <button 
                       type="button" 
                       onClick={() => setCourseData(prev => ({...prev, image: null}))}
-                      className="absolute top-2 right-2 bg-red-500 text-white p-1 rounded-full"
+                      className="absolute top-2 right-2 bg-red-500 text-white p-2 rounded-full opacity-0 group-hover:opacity-100 transition-opacity duration-200 hover:bg-red-600"
                     >
                       <Trash className="h-4 w-4" />
                     </button>
                   </div>
                 ) : (
-                  <div className="border-2 border-dashed border-gray-300 rounded-lg p-4 text-center">
+                  <div className="border-2 border-dashed border-gray-300 rounded-lg p-8 text-center hover:border-blue-500 transition-colors duration-200">
                     <input
                       type="file"
                       id="courseImage"
@@ -272,8 +581,11 @@ const CreateCourse = () => {
                     />
                     <label htmlFor="courseImage" className="cursor-pointer">
                       <div className="flex flex-col items-center">
-                        <ImageIcon className="h-10 w-10 text-gray-400 mb-2" />
-                        <span className="text-gray-500">Cliquez pour ajouter une image</span>
+                        <div className="p-4 bg-blue-50 rounded-full mb-4">
+                          <ImageIcon className="h-8 w-8 text-blue-500" />
+                        </div>
+                        <span className="text-gray-600 font-medium">Cliquez pour ajouter une image</span>
+                        <span className="text-sm text-gray-500 mt-1">PNG, JPG jusqu'à 5MB</span>
                       </div>
                     </label>
                   </div>
@@ -281,14 +593,14 @@ const CreateCourse = () => {
               </div>
             </div>
             
-            <div className="flex justify-end">
+            <div className="flex justify-end mt-8">
               <button
                 type="button"
                 onClick={handleNextStep}
-                className="px-4 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700 flex items-center"
+                className="px-6 py-3 bg-gradient-to-r from-blue-600 to-purple-600 text-white rounded-lg hover:from-blue-700 hover:to-purple-700 transform transition-all duration-200 hover:scale-105 flex items-center font-medium shadow-lg hover:shadow-xl"
               >
                 Continuer
-                <ArrowRight className="ml-2 h-4 w-4" />
+                <ArrowRight className="ml-2 h-5 w-5" />
               </button>
             </div>
           </div>
@@ -304,6 +616,12 @@ const CreateCourse = () => {
                 Chaque module peut contenir du texte, des PDF, des images, des vidéos ou des quiz.
               </p>
             </div>
+            
+            {validationErrors.modules && (
+              <div className="bg-red-50 border border-red-200 rounded-lg p-4 mb-4">
+                <ErrorMessage message={validationErrors.modules} />
+              </div>
+            )}
             
             {courseData.modules.length > 0 && (
               <div className="space-y-4 mb-6">
@@ -383,44 +701,24 @@ const CreateCourse = () => {
                     </div>
                   )}
                   
-                  {(newModule.type === 'pdf' || newModule.type === 'image' || newModule.type === 'video') && (
+                  {newModule.type === 'pdf' && (
                     <div>
-                      <label className="block text-gray-700 mb-2">
-                        Fichier {newModule.type === 'pdf' ? 'PDF' : newModule.type === 'image' ? 'Image' : 'Vidéo'}
-                      </label>
-                      <div className="border-2 border-dashed border-gray-300 rounded-lg p-4 text-center">
+                      <label className="block text-gray-700 mb-2 font-medium">Fichier PDF</label>
+                      {validationErrors.content && <ErrorAlert message={validationErrors.content} />}
+                      <div className="border-2 border-dashed border-gray-300 rounded-lg p-4 text-center hover:border-blue-500 transition-colors duration-200">
                         <input
                           type="file"
                           id="moduleFile"
                           className="hidden"
-                          accept={
-                            newModule.type === 'pdf' ? '.pdf' : 
-                            newModule.type === 'image' ? 'image/*' : 
-                            'video/*'
-                          }
+                          accept=".pdf"
                           onChange={handleFileUpload}
                         />
                         {newModule.content ? (
                           <div className="relative">
-                            {newModule.type === 'image' && (
-                              <img 
-                                src={newModule.content} 
-                                alt="Module content" 
-                                className="w-full h-40 object-contain" 
-                              />
-                            )}
-                            {newModule.type === 'pdf' && (
-                              <div className="flex items-center justify-center bg-gray-100 h-20 rounded">
-                                <FileUp className="h-8 w-8 text-gray-500" />
-                                <span className="ml-2">PDF téléchargé</span>
-                              </div>
-                            )}
-                            {newModule.type === 'video' && (
-                              <div className="flex items-center justify-center bg-gray-100 h-20 rounded">
-                                <Video className="h-8 w-8 text-gray-500" />
-                                <span className="ml-2">Vidéo téléchargée</span>
-                              </div>
-                            )}
+                            <div className="flex items-center justify-center bg-gray-100 h-20 rounded">
+                              <FileUp className="h-8 w-8 text-gray-500" />
+                              <span className="ml-2">PDF téléchargé</span>
+                            </div>
                             <button
                               type="button"
                               onClick={() => setNewModule(prev => ({...prev, content: ''}))}
@@ -432,11 +730,90 @@ const CreateCourse = () => {
                         ) : (
                           <label htmlFor="moduleFile" className="cursor-pointer">
                             <div className="flex flex-col items-center">
-                              {newModule.type === 'pdf' && <FileUp className="h-10 w-10 text-gray-400 mb-2" />}
-                              {newModule.type === 'image' && <ImageIcon className="h-10 w-10 text-gray-400 mb-2" />}
-                              {newModule.type === 'video' && <Video className="h-10 w-10 text-gray-400 mb-2" />}
+                              <FileUp className="h-10 w-10 text-gray-400 mb-2" />
                               <span className="text-gray-500">
-                                Cliquez pour télécharger un {newModule.type === 'pdf' ? 'PDF' : newModule.type === 'image' ? 'une image' : 'une vidéo'}
+                                Cliquez pour télécharger un PDF
+                              </span>
+                            </div>
+                          </label>
+                        )}
+                      </div>
+                    </div>
+                  )}
+                  
+                  {newModule.type === 'image' && (
+                    <div>
+                      <label className="block text-gray-700 mb-2 font-medium">Image</label>
+                      {validationErrors.content && <ErrorAlert message={validationErrors.content} />}
+                      <div className="border-2 border-dashed border-gray-300 rounded-lg p-4 text-center hover:border-blue-500 transition-colors duration-200">
+                        <input
+                          type="file"
+                          id="moduleImage"
+                          className="hidden"
+                          accept="image/*"
+                          onChange={handleFileUpload}
+                        />
+                        {newModule.content ? (
+                          <div className="relative">
+                            <img 
+                              src={newModule.content} 
+                              alt="Module content" 
+                              className="w-full h-40 object-contain" 
+                            />
+                            <button
+                              type="button"
+                              onClick={() => setNewModule(prev => ({...prev, content: ''}))}
+                              className="absolute top-2 right-2 bg-red-500 text-white p-1 rounded-full"
+                            >
+                              <Trash className="h-4 w-4" />
+                            </button>
+                          </div>
+                        ) : (
+                          <label htmlFor="moduleImage" className="cursor-pointer">
+                            <div className="flex flex-col items-center">
+                              <ImageIcon className="h-10 w-10 text-gray-400 mb-2" />
+                              <span className="text-gray-500">
+                                Cliquez pour télécharger une image
+                              </span>
+                            </div>
+                          </label>
+                        )}
+                      </div>
+                    </div>
+                  )}
+                  
+                  {newModule.type === 'video' && (
+                    <div>
+                      <label className="block text-gray-700 mb-2 font-medium">Vidéo</label>
+                      {validationErrors.content && <ErrorAlert message={validationErrors.content} />}
+                      <div className="border-2 border-dashed border-gray-300 rounded-lg p-4 text-center hover:border-blue-500 transition-colors duration-200">
+                        <input
+                          type="file"
+                          id="moduleVideo"
+                          className="hidden"
+                          accept="video/*"
+                          onChange={handleFileUpload}
+                        />
+                        {newModule.content ? (
+                          <div className="relative">
+                            <div className="flex items-center justify-center bg-gray-100 h-20 rounded">
+                              <Video className="h-8 w-8 text-gray-500" />
+                              <span className="ml-2">Vidéo téléchargée</span>
+                            </div>
+                            <button
+                              type="button"
+                              onClick={() => setNewModule(prev => ({...prev, content: ''}))}
+                              className="absolute top-2 right-2 bg-red-500 text-white p-1 rounded-full"
+                            >
+                              <Trash className="h-4 w-4" />
+                            </button>
+                          </div>
+                        ) : (
+                          <label htmlFor="moduleVideo" className="cursor-pointer">
+                            <div className="flex flex-col items-center">
+                              <Video className="h-10 w-10 text-gray-400 mb-2" />
+                              <span className="text-gray-500">
+                                Cliquez pour télécharger une vidéo
                               </span>
                             </div>
                           </label>
@@ -446,18 +823,100 @@ const CreateCourse = () => {
                   )}
                   
                   {newModule.type === 'quiz' && (
-                    <div>
-                      <label className="block text-gray-700 mb-2">Questions du quiz</label>
-                      <textarea
-                        value={newModule.content}
-                        onChange={(e) => setNewModule(prev => ({...prev, content: e.target.value}))}
-                        className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500"
-                        rows="4"
-                        placeholder="Format: Question?|Réponse1|Réponse2|Réponse3|Réponse4|NuméroBonneRéponse"
-                      ></textarea>
-                      <p className="text-xs text-gray-500 mt-1">
-                        Exemple: Quelle est la capitale de la France?|Paris|Londres|Berlin|Madrid|1
-                      </p>
+                    <div className="space-y-6">
+                      <div className="bg-blue-50 p-4 rounded-lg mb-4">
+                        <p className="text-sm text-blue-700">
+                          Créez des questions à choix multiples pour ce quiz. Chaque question doit avoir 4 options et une réponse correcte.
+                        </p>
+                      </div>
+
+                      {newModule.content?.questions?.length > 0 && (
+                        <div className="space-y-4 mb-6">
+                          <h3 className="font-medium">Questions ajoutées</h3>
+                          <div className="space-y-3">
+                            {newModule.content.questions.map((question, index) => (
+                              <div key={question.id} className="border rounded-lg p-4 bg-white shadow-sm hover:shadow-md transition-shadow duration-200">
+                                <div className="flex justify-between items-start mb-2">
+                                  <div className="flex">
+                                    <span className="h-6 w-6 rounded-full bg-blue-100 text-blue-800 flex items-center justify-center text-sm mr-2 mt-1">
+                                      {index + 1}
+                                    </span>
+                                    <div>
+                                      <h4 className="font-medium">{question.question}</h4>
+                                      <ul className="mt-2 space-y-1">
+                                        {question.options.map((option, i) => (
+                                          <li key={i} className="flex items-center">
+                                            <span className={`w-4 h-4 rounded-full mr-2 ${i === question.correctAnswer ? 'bg-green-500' : 'bg-gray-200'}`}></span>
+                                            {option}
+                                          </li>
+                                        ))}
+                                      </ul>
+                                    </div>
+                                  </div>
+                                  <button
+                                    type="button"
+                                    onClick={() => handleRemoveQuizQuestion(question.id)}
+                                    className="text-red-500 hover:text-red-700 ml-2 transition-colors duration-200"
+                                  >
+                                    <Trash className="h-4 w-4" />
+                                  </button>
+                                </div>
+                              </div>
+                            ))}
+                          </div>
+                        </div>
+                      )}
+
+                      <div className="border rounded-lg p-6 bg-white shadow-sm">
+                        <h3 className="font-medium mb-4">Ajouter une nouvelle question</h3>
+                        <div className="space-y-4">
+                          <div>
+                            <label className="block text-gray-700 mb-2 font-medium">Question</label>
+                            <input
+                              type="text"
+                              value={newQuizQuestion.question}
+                              onChange={(e) => setNewQuizQuestion(prev => ({...prev, question: e.target.value}))}
+                              className={`w-full px-4 py-3 border ${validationErrors.question ? 'border-red-500' : 'border-gray-300'} rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent transition-all duration-200`}
+                              placeholder="Votre question..."
+                            />
+                            {validationErrors.question && <ErrorAlert message={validationErrors.question} />}
+                          </div>
+                          
+                          <div>
+                            <label className="block text-gray-700 mb-2 font-medium">Options</label>
+                            {validationErrors.options && <ErrorAlert message={validationErrors.options} />}
+                            {newQuizQuestion.options.map((option, index) => (
+                              <div key={index} className="flex items-center mb-3">
+                                <input
+                                  type="radio"
+                                  name="correctAnswer"
+                                  checked={newQuizQuestion.correctAnswer === index}
+                                  onChange={() => setNewQuizQuestion(prev => ({...prev, correctAnswer: index}))}
+                                  className="mr-3 h-4 w-4 text-blue-600 focus:ring-blue-500 border-gray-300"
+                                />
+                                <input
+                                  type="text"
+                                  value={option}
+                                  onChange={(e) => handleQuizQuestionOptionChange(index, e.target.value)}
+                                  className={`w-full px-4 py-3 border ${validationErrors.options ? 'border-red-500' : 'border-gray-300'} rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent transition-all duration-200`}
+                                  placeholder={`Option ${index + 1}`}
+                                />
+                              </div>
+                            ))}
+                          </div>
+                          
+                          <div>
+                            <button
+                              type="button"
+                              onClick={handleAddQuizQuestion}
+                              className="px-4 py-2 bg-green-600 text-white rounded-lg hover:bg-green-700 flex items-center transition-colors duration-200"
+                            >
+                              <Plus className="h-4 w-4 mr-2" />
+                              Ajouter cette question
+                            </button>
+                          </div>
+                        </div>
+                      </div>
                     </div>
                   )}
                 </div>
@@ -505,6 +964,36 @@ const CreateCourse = () => {
                 Créez un examen final pour évaluer les connaissances acquises dans ce cours.
               </p>
             </div>
+            
+            {validationErrors.examTitle && (
+              <div className="bg-red-50 border border-red-200 rounded-lg p-4 mb-4">
+                <ErrorAlert message={validationErrors.examTitle} />
+              </div>
+            )}
+            
+            {validationErrors.examInstructions && (
+              <div className="bg-red-50 border border-red-200 rounded-lg p-4 mb-4">
+                <ErrorAlert message={validationErrors.examInstructions} />
+              </div>
+            )}
+            
+            {validationErrors.examQuestions && (
+              <div className="bg-red-50 border border-red-200 rounded-lg p-4 mb-4">
+                <ErrorAlert message={validationErrors.examQuestions} />
+              </div>
+            )}
+            
+            {validationErrors.examDuration && (
+              <div className="bg-red-50 border border-red-200 rounded-lg p-4 mb-4">
+                <ErrorAlert message={validationErrors.examDuration} />
+              </div>
+            )}
+            
+            {validationErrors.examPassingScore && (
+              <div className="bg-red-50 border border-red-200 rounded-lg p-4 mb-4">
+                <ErrorAlert message={validationErrors.examPassingScore} />
+              </div>
+            )}
             
             <div className="space-y-4 mb-6">
               <div>
@@ -563,7 +1052,7 @@ const CreateCourse = () => {
                 <h3 className="font-medium">Questions ajoutées</h3>
                 <div className="space-y-3">
                   {courseData.exam.questions.map((question, index) => (
-                    <div key={question.id} className="border rounded-lg p-4 bg-white">
+                    <div key={question.id} className="border rounded-lg p-4 bg-white shadow-sm hover:shadow-md transition-shadow duration-200">
                       <div className="flex justify-between items-start mb-2">
                         <div className="flex">
                           <span className="h-6 w-6 rounded-full bg-blue-100 text-blue-800 flex items-center justify-center text-sm mr-2 mt-1">
@@ -579,12 +1068,15 @@ const CreateCourse = () => {
                                 </li>
                               ))}
                             </ul>
+                            {validationErrors[`exam_option_${index}_0`] && (
+                              <ErrorAlert message="Toutes les options doivent être remplies" />
+                            )}
                           </div>
                         </div>
                         <button
                           type="button"
                           onClick={() => handleRemoveQuestion(question.id)}
-                          className="text-red-500 hover:text-red-700 ml-2"
+                          className="text-red-500 hover:text-red-700 ml-2 transition-colors duration-200"
                         >
                           <Trash className="h-4 w-4" />
                         </button>
@@ -595,38 +1087,46 @@ const CreateCourse = () => {
               </div>
             )}
             
-            <div className="border rounded-lg p-4">
+            <div className="border rounded-lg p-6 bg-white shadow-sm">
               <h3 className="font-medium mb-4">Ajouter une nouvelle question</h3>
               <div className="space-y-4">
                 <div>
-                  <label className="block text-gray-700 mb-2">Question</label>
+                  <label className="block text-gray-700 mb-2 font-medium">Question</label>
                   <input
                     type="text"
                     value={newQuestion.question}
                     onChange={(e) => setNewQuestion(prev => ({...prev, question: e.target.value}))}
-                    className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500"
+                    className={`w-full px-4 py-3 border ${validationErrors.question ? 'border-red-500' : 'border-gray-300'} rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent transition-all duration-200`}
                     placeholder="Votre question..."
                   />
+                  {validationErrors.question && <ErrorAlert message={validationErrors.question} />}
                 </div>
                 
                 <div>
-                  <label className="block text-gray-700 mb-2">Options</label>
+                  <label className="block text-gray-700 mb-2 font-medium">Options</label>
                   {newQuestion.options.map((option, index) => (
-                    <div key={index} className="flex items-center mb-2">
+                    <div key={index} className="flex items-center mb-3">
                       <input
                         type="radio"
                         name="correctAnswer"
                         checked={newQuestion.correctAnswer === index}
                         onChange={() => setNewQuestion(prev => ({...prev, correctAnswer: index}))}
-                        className="mr-2"
+                        className="mr-3 h-4 w-4 text-blue-600 focus:ring-blue-500 border-gray-300"
                       />
-                      <input
-                        type="text"
-                        value={option}
-                        onChange={(e) => handleQuestionOptionChange(index, e.target.value)}
-                        className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500"
-                        placeholder={`Option ${index + 1}`}
-                      />
+                      <div className="flex-1">
+                        <input
+                          type="text"
+                          value={option}
+                          onChange={(e) => handleQuestionOptionChange(index, e.target.value)}
+                          className={`w-full px-4 py-3 border ${
+                            validationErrors[`option_${index}`] ? 'border-red-500' : 'border-gray-300'
+                          } rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent transition-all duration-200`}
+                          placeholder={`Option ${index + 1}`}
+                        />
+                        {validationErrors[`option_${index}`] && (
+                          <ErrorAlert message={validationErrors[`option_${index}`]} />
+                        )}
+                      </div>
                     </div>
                   ))}
                 </div>
@@ -635,7 +1135,7 @@ const CreateCourse = () => {
                   <button
                     type="button"
                     onClick={handleAddQuestion}
-                    className="px-4 py-2 bg-green-600 text-white rounded-lg hover:bg-green-700 flex items-center"
+                    className="px-4 py-2 bg-green-600 text-white rounded-lg hover:bg-green-700 flex items-center transition-colors duration-200"
                   >
                     <Plus className="h-4 w-4 mr-2" />
                     Ajouter cette question
@@ -776,16 +1276,18 @@ const CreateCourse = () => {
   };
   
   return (
-    <div className="min-h-screen bg-gray-50 pb-12">
-      <div className="bg-white shadow">
+    <div className="min-h-screen bg-gradient-to-br from-blue-50 via-white to-purple-50 pb-12">
+      <div className="bg-white/80 backdrop-blur-sm shadow-lg sticky top-0 z-50">
         <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
           <div className="flex justify-between h-16 items-center">
             <div className="flex-shrink-0 flex items-center">
-              <h1 className="text-2xl font-bold text-blue-600">Cours Section</h1>
+              <h1 className="text-2xl font-bold bg-gradient-to-r from-blue-600 to-purple-600 bg-clip-text text-transparent">
+                Cours Section
+              </h1>
             </div>
             <button 
               onClick={() => navigate('/formateurs')}
-              className="text-gray-500 hover:text-gray-700"
+              className="text-gray-500 hover:text-gray-700 transition-colors duration-200"
             >
               Annuler
             </button>
@@ -797,12 +1299,14 @@ const CreateCourse = () => {
         <div className="flex items-center mb-8">
           <button
             onClick={() => navigate('/')}
-            className="flex items-center text-gray-500 hover:text-gray-700 mr-4"
+            className="flex items-center text-gray-500 hover:text-gray-700 mr-4 transition-colors duration-200"
           >
             <ArrowLeft className="h-4 w-4 mr-2" />
             Retour
           </button>
-          <h1 className="text-2xl font-bold">Création d'un nouveau cours</h1>
+          <h1 className="text-3xl font-bold bg-gradient-to-r from-blue-600 to-purple-600 bg-clip-text text-transparent">
+            Création d'un nouveau cours
+          </h1>
         </div>
         
         {/* Progress bar */}
@@ -811,11 +1315,11 @@ const CreateCourse = () => {
             {['Informations', 'Modules', 'Examen', 'Publication'].map((step, index) => (
               <div 
                 key={step} 
-                className={`flex-1 text-center ${index < currentStep ? 'text-blue-600' : 'text-gray-500'} ${index === 3 ? '' : 'border-b-2'} ${index < currentStep ? 'border-blue-600' : 'border-gray-200'}`}
+                className={`flex-1 text-center ${index < currentStep ? 'text-blue-600' : 'text-gray-500'} ${index === 3 ? '' : 'border-b-2'} ${index < currentStep ? 'border-blue-600' : 'border-gray-200'} transition-all duration-300`}
               >
                 <div 
-                  className={`w-8 h-8 mx-auto rounded-full flex items-center justify-center ${
-                    index + 1 === currentStep ? 'bg-blue-600 text-white' : 
+                  className={`w-10 h-10 mx-auto rounded-full flex items-center justify-center transform transition-all duration-300 ${
+                    index + 1 === currentStep ? 'bg-blue-600 text-white scale-110 shadow-lg' : 
                     index + 1 < currentStep ? 'bg-blue-100 text-blue-600' : 'bg-gray-100'
                   } mb-2`}
                 >
@@ -825,13 +1329,13 @@ const CreateCourse = () => {
                     <span>{index + 1}</span>
                   )}
                 </div>
-                <div className="text-xs sm:text-sm pb-2">{step}</div>
+                <div className="text-xs sm:text-sm pb-2 font-medium">{step}</div>
               </div>
             ))}
           </div>
         </div>
         
-        <div className="bg-white rounded-lg shadow-md p-6 mb-6">
+        <div className="bg-white/80 backdrop-blur-sm rounded-xl shadow-xl p-8 mb-6 transform transition-all duration-300 hover:shadow-2xl">
           {renderStep()}
         </div>
       </div>

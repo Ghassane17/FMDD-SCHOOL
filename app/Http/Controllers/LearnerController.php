@@ -46,7 +46,7 @@ class LearnerController extends Controller
             'bank_info.paymentMethod' => 'nullable|string|max:255',
         ]);
 
-        $learner = \App\Models\Learner::where('user_id', $user->id)->first();
+        $learner = $user->learner;
 
         if (!$learner) {
             return response()->json(['message' => 'Learner profile not found.'], 404);
@@ -154,7 +154,7 @@ class LearnerController extends Controller
 
             // Update user data if not empty
             if (!empty($validatedUser)) {
-                $user->update($validatedUser);
+                \App\Models\User::where('id', $user->id)->update($validatedUser);
                 Log::info('Updated user data', ['user_id' => $user->id, 'data' => $validatedUser]);
             }
 

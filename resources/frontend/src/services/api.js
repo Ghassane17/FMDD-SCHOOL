@@ -249,7 +249,7 @@ export const register = async (data) => {
 };
 
 export const completeProfile = async (role, data) => {
-    const endpoint = role === 'learner' ? '/learner/profile' : '/instructor/profile';
+    const endpoint = role === 'learner' ? '/learner/profile' : '/instructor/completeRegister';
     try {
         const response = await api.patch(endpoint, data);
         return response.data;
