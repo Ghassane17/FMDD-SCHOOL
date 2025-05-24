@@ -25,7 +25,9 @@ const CreateCourse = () => {
     image: null,
     category: '',
     language: '',
+    level: '',
     modules: [],
+    resources: [],
     exam: {
       title: '',
       instructions: '',
@@ -64,6 +66,9 @@ const CreateCourse = () => {
     }
     if (!courseData.language) {
       errors.language = 'La langue est requise';
+    }
+    if (!courseData.level) {
+      errors.level = 'Le niveau de difficulté est requis';
     }
     if (!courseData.image) {
       errors.image = 'Une image de couverture est requise';
@@ -184,6 +189,25 @@ const CreateCourse = () => {
     return errors;
   };
   
+  const validateStep4 = () => {
+    const errors = {};
+    
+    // Validate each resource
+    courseData.resources.forEach((resource, index) => {
+      if (!resource.name.trim()) {
+        errors[`resource_${index}_name`] = 'Le nom de la ressource est requis';
+      }
+      if (['pdf', 'video', 'image'].includes(resource.type) && !resource.file) {
+        errors[`resource_${index}_file`] = 'Un fichier est requis pour ce type de ressource';
+      }
+      if (['link', 'other'].includes(resource.type) && !resource.url) {
+        errors[`resource_${index}_url`] = 'Une URL est requise pour ce type de ressource';
+      }
+    });
+    
+    return errors;
+  };
+  
   // Add validation for new quiz question
   const validateNewQuizQuestion = () => {
     const errors = {};
@@ -212,6 +236,9 @@ const CreateCourse = () => {
         break;
       case 3:
         errors = validateStep3();
+        break;
+      case 4:
+        errors = validateStep4();
         break;
       default:
         break;
@@ -457,6 +484,14 @@ const CreateCourse = () => {
     </div>
   );
   
+  // Add new state for resource form
+  const [newResource, setNewResource] = useState({
+    name: '',
+    type: 'pdf',
+    file: null,
+    url: ''
+  });
+  
   // Render the current step
   const renderStep = () => {
     switch (currentStep) {
@@ -543,6 +578,24 @@ const CreateCourse = () => {
                   </select>
                   {validationErrors.language && <ErrorMessage message={validationErrors.language} />}
                 </div>
+              </div>
+              
+              <div className="transform transition-all duration-300 hover:scale-[1.02]">
+                <label className="block text-gray-700 mb-2 font-medium">Niveau de difficulté</label>
+                <select
+                  name="level"
+                  value={courseData.level}
+                  onChange={handleGeneralInfoChange}
+                  className={`w-full px-4 py-3 border ${validationErrors.level ? 'border-red-500' : 'border-gray-300'} rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent transition-all duration-200`}
+                  required
+                  data-error={validationErrors.level}
+                >
+                  <option value="">Sélectionner un niveau de difficulté</option>
+                  <option value="beginner">Débutant</option>
+                  <option value="intermediate">Intermédiaire</option>
+                  <option value="advanced">Avancé</option>
+                </select>
+                {validationErrors.level && <ErrorMessage message={validationErrors.level} />}
               </div>
               
               <div className="transform transition-all duration-300 hover:scale-[1.02]">
@@ -1168,6 +1221,217 @@ const CreateCourse = () => {
       case 4:
         return (
           <div className="space-y-6">
+            <h2 className="text-xl font-bold">Ressources Additionnelles</h2>
+            <div className="bg-blue-50 p-4 rounded-lg mb-4">
+              <p className="text-sm text-blue-700">
+                Ajoutez des ressources supplémentaires pour enrichir votre cours (PDF, vidéos, images, liens externes).
+              </p>
+            </div>
+
+            {validationErrors.resources && (
+              <div className="bg-red-50 border border-red-200 rounded-lg p-4 mb-4">
+                <ErrorAlert message={validationErrors.resources} />
+              </div>
+            )}
+
+            {courseData.resources.length > 0 && (
+              <div className="space-y-4 mb-6">
+                <h3 className="font-medium">Ressources ajoutées</h3>
+                <div className="space-y-3">
+                  {courseData.resources.map((resource, index) => (
+                    <div key={resource.id} className="border rounded-lg p-4 bg-white shadow-sm hover:shadow-md transition-shadow duration-200">
+                      <div className="flex justify-between items-center">
+                        <div className="flex items-center">
+                          <span className="h-6 w-6 rounded-full bg-blue-100 text-blue-800 flex items-center justify-center text-sm mr-2">
+                            {index + 1}
+                          </span>
+                          <div>
+                            <h4 className="font-medium">{resource.name}</h4>
+                            <span className="text-sm text-gray-500 capitalize">{resource.type}</span>
+                          </div>
+                        </div>
+                        <button
+                          type="button"
+                          onClick={() => {
+                            setCourseData(prev => ({
+                              ...prev,
+                              resources: prev.resources.filter(r => r.id !== resource.id)
+                            }));
+                          }}
+                          className="text-red-500 hover:text-red-700"
+                        >
+                          <Trash className="h-4 w-4" />
+                        </button>
+                      </div>
+                    </div>
+                  ))}
+                </div>
+              </div>
+            )}
+
+            <div className="border rounded-lg p-6 bg-white shadow-sm">
+              <h3 className="font-medium mb-4">Ajouter une nouvelle ressource</h3>
+              <div className="space-y-4">
+                <div>
+                  <label className="block text-gray-700 mb-2">Nom de la ressource</label>
+                  <input
+                    type="text"
+                    value={newResource.name}
+                    onChange={(e) => setNewResource(prev => ({...prev, name: e.target.value}))}
+                    className={`w-full px-3 py-2 border ${validationErrors.resource_name ? 'border-red-500' : 'border-gray-300'} rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500`}
+                    placeholder="Nom de la ressource"
+                    data-error={validationErrors.resource_name}
+                  />
+                  {validationErrors.resource_name && <ErrorMessage message={validationErrors.resource_name} />}
+                </div>
+
+                <div>
+                  <label className="block text-gray-700 mb-2">Type de ressource</label>
+                  <select
+                    value={newResource.type}
+                    onChange={(e) => setNewResource(prev => ({...prev, type: e.target.value, file: null, url: ''}))}
+                    className={`w-full px-3 py-2 border ${validationErrors.resource_type ? 'border-red-500' : 'border-gray-300'} rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500`}
+                    data-error={validationErrors.resource_type}
+                  >
+                    <option value="pdf">PDF</option>
+                    <option value="video">Vidéo</option>
+                    <option value="image">Image</option>
+                    <option value="link">Lien externe</option>
+                    <option value="other">Autre</option>
+                  </select>
+                  {validationErrors.resource_type && <ErrorMessage message={validationErrors.resource_type} />}
+                </div>
+
+                {['pdf', 'video', 'image'].includes(newResource.type) ? (
+                  <div>
+                    <label className="block text-gray-700 mb-2">Fichier</label>
+                    {validationErrors.resource_file && <ErrorAlert message={validationErrors.resource_file} />}
+                    <div className="border-2 border-dashed border-gray-300 rounded-lg p-4 text-center hover:border-blue-500 transition-colors duration-200">
+                      <input
+                        type="file"
+                        id="resourceFile"
+                        className="hidden"
+                        accept={newResource.type === 'pdf' ? '.pdf' : newResource.type === 'video' ? 'video/*' : 'image/*'}
+                        onChange={(e) => {
+                          if (e.target.files[0]) {
+                            setNewResource(prev => ({
+                              ...prev,
+                              file: e.target.files[0]
+                            }));
+                          }
+                        }}
+                        data-error={validationErrors.resource_file}
+                      />
+                      {newResource.file ? (
+                        <div className="flex items-center justify-center">
+                          <span className="text-gray-600">{newResource.file.name}</span>
+                          <button
+                            type="button"
+                            onClick={() => setNewResource(prev => ({...prev, file: null}))}
+                            className="ml-2 text-red-500 hover:text-red-700"
+                          >
+                            <Trash className="h-4 w-4" />
+                          </button>
+                        </div>
+                      ) : (
+                        <label htmlFor="resourceFile" className="cursor-pointer">
+                          <div className="flex flex-col items-center">
+                            <FileUp className="h-10 w-10 text-gray-400 mb-2" />
+                            <span className="text-gray-500">
+                              Cliquez pour télécharger un fichier
+                            </span>
+                          </div>
+                        </label>
+                      )}
+                    </div>
+                  </div>
+                ) : (
+                  <div>
+                    <label className="block text-gray-700 mb-2">URL</label>
+                    <input
+                      type="url"
+                      value={newResource.url}
+                      onChange={(e) => setNewResource(prev => ({...prev, url: e.target.value}))}
+                      className={`w-full px-3 py-2 border ${validationErrors.resource_url ? 'border-red-500' : 'border-gray-300'} rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500`}
+                      placeholder={newResource.type === 'link' ? "https://formation.fmdd.ma" : "Description de la ressource"}
+                      data-error={validationErrors.resource_url}
+                    />
+                    {validationErrors.resource_url && <ErrorMessage message={validationErrors.resource_url} />}
+                  </div>
+                )}
+
+                <div>
+                  <button
+                    type="button"
+                    onClick={() => {
+                      const errors = {};
+                      if (!newResource.name.trim()) {
+                        errors.resource_name = 'Le nom de la ressource est requis';
+                      }
+                      if (['pdf', 'video', 'image'].includes(newResource.type) && !newResource.file) {
+                        errors.resource_file = 'Un fichier est requis pour ce type de ressource';
+                      }
+                      if (['link', 'other'].includes(newResource.type) && !newResource.url) {
+                        errors.resource_url = 'Une URL est requise pour ce type de ressource';
+                      }
+
+                      if (Object.keys(errors).length > 0) {
+                        setValidationErrors(errors);
+                        return;
+                      }
+
+                      setCourseData(prev => ({
+                        ...prev,
+                        resources: [...prev.resources, {
+                          id: Date.now(),
+                          name: newResource.name,
+                          type: newResource.type,
+                          file: newResource.file,
+                          url: newResource.url
+                        }]
+                      }));
+
+                      setNewResource({
+                        name: '',
+                        type: 'pdf',
+                        file: null,
+                        url: ''
+                      });
+                      setValidationErrors({});
+                    }}
+                    className="px-4 py-2 bg-green-600 text-white rounded-lg hover:bg-green-700 flex items-center"
+                  >
+                    <Plus className="h-4 w-4 mr-2" />
+                    Ajouter cette ressource
+                  </button>
+                </div>
+              </div>
+            </div>
+
+            <div className="flex justify-between">
+              <button
+                type="button"
+                onClick={handlePrevStep}
+                className="px-4 py-2 border border-gray-300 text-gray-700 rounded-lg hover:bg-gray-50 flex items-center"
+              >
+                <ArrowLeft className="mr-2 h-4 w-4" />
+                Précédent
+              </button>
+              <button
+                type="button"
+                onClick={handleNextStep}
+                className="px-4 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700 flex items-center"
+              >
+                Continuer
+                <ArrowRight className="ml-2 h-4 w-4" />
+              </button>
+            </div>
+          </div>
+        );
+        
+      case 5:
+        return (
+          <div className="space-y-6">
             <h2 className="text-xl font-bold">Résumé & Publication</h2>
             
             <div className="bg-white rounded-lg shadow p-6 mb-4">
@@ -1233,6 +1497,33 @@ const CreateCourse = () => {
               ) : (
                 <div className="text-center py-6 text-gray-500">
                   <p>Aucun examen n'a été configuré.</p>
+                </div>
+              )}
+            </div>
+
+            <div className="bg-white rounded-lg shadow p-6 mb-4">
+              <div className="flex justify-between items-center mb-4">
+                <h3 className="font-bold text-lg">Ressources Additionnelles</h3>
+              </div>
+              {courseData.resources.length > 0 ? (
+                <div className="space-y-3">
+                  {courseData.resources.map((resource, index) => (
+                    <div key={resource.id} className="border rounded-lg p-3">
+                      <div className="flex items-center">
+                        <span className="h-6 w-6 rounded-full bg-blue-100 text-blue-800 flex items-center justify-center text-sm mr-2">
+                          {index + 1}
+                        </span>
+                        <div>
+                          <h4 className="font-medium">{resource.name}</h4>
+                          <span className="text-sm text-gray-500 capitalize">{resource.type}</span>
+                        </div>
+                      </div>
+                    </div>
+                  ))}
+                </div>
+              ) : (
+                <div className="text-center py-6 text-gray-500">
+                  <p>Aucune ressource n'a été ajoutée.</p>
                 </div>
               )}
             </div>
@@ -1312,10 +1603,10 @@ const CreateCourse = () => {
         {/* Progress bar */}
         <div className="mb-8">
           <div className="flex mb-2">
-            {['Informations', 'Modules', 'Examen', 'Publication'].map((step, index) => (
+            {['Informations', 'Modules', 'Examen', 'Ressources', 'Publication'].map((step, index) => (
               <div 
                 key={step} 
-                className={`flex-1 text-center ${index < currentStep ? 'text-blue-600' : 'text-gray-500'} ${index === 3 ? '' : 'border-b-2'} ${index < currentStep ? 'border-blue-600' : 'border-gray-200'} transition-all duration-300`}
+                className={`flex-1 text-center ${index < currentStep ? 'text-blue-600' : 'text-gray-500'} ${index === 4 ? '' : 'border-b-2'} ${index < currentStep ? 'border-blue-600' : 'border-gray-200'} transition-all duration-300`}
               >
                 <div 
                   className={`w-10 h-10 mx-auto rounded-full flex items-center justify-center transform transition-all duration-300 ${

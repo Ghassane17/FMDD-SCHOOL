@@ -56,8 +56,11 @@ class Course extends Model
         return $this->hasMany(Module::class)->orderBy('order');
     }
 
+    /**
+     * Get the resources for the course.
+     */
     public function resources()
     {
-        return $this->hasManyThrough(Ressource::class, Module::class);
+        return $this->hasMany(CourseResource::class);
     }
 }

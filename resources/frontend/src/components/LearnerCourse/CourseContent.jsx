@@ -1,4 +1,3 @@
-
 import React, { useState } from 'react';
 import ContentRenderer from './ContentRenderer';
 import ExercisesPanel from './ExercisesPanel';
@@ -12,6 +11,7 @@ import ProgressBar from './ProgressBar';
  * 
  * @param {Object} props
  * @param {Object} props.currentModule - Current module data
+ * @param {Array} props.courseResources - Array of course resources
  * @param {boolean} props.hasPrevious - Whether there's a previous module
  * @param {boolean} props.hasNext - Whether there's a next module
  * @param {Function} props.onPreviousClick - Handler for previous module button
@@ -19,41 +19,45 @@ import ProgressBar from './ProgressBar';
  */
 const CourseContent = ({ 
   currentModule, 
+  courseResources = [],
   hasPrevious, 
   hasNext, 
   onPreviousClick, 
   onNextClick 
 }) => {
-  // State for storing user notes
   const [notes, setNotes] = useState('');
-  
-  /**
-   * Save notes to local state (could be extended to save to backend)
-   */
-  const handleSaveNotes = (newNotes) => {
-    setNotes(newNotes);
-    // Here you would typically make an API call to save notes
-    console.log('Saving notes:', newNotes);
+  const [isSaving, setIsSaving] = useState(false);
+
+  const handleSaveNotes = async (newNotes) => {
+    setIsSaving(true);
+    try {
+      // TODO: Implement notes saving functionality
+      setNotes(newNotes);
+    } catch (error) {
+      console.error('Failed to save notes:', error);
+    } finally {
+      setIsSaving(false);
+    }
   };
 
   return (
-    <main className="flex-1 bg-gray-50 p-2 lg:p-4 overflow-y-auto">
-      <div className="max-w-5xl mx-auto">
-        {/* Module Progress */}
-        <div className="mb-3">
-          <span className="text-sm text-gray-600 mb-1 block">Progression du module</span>
-          <ProgressBar percent={currentModule.status === 'completed' ? 100 : currentModule.status === 'in-progress' ? 50 : 0} />
-        </div>
-        
-        {/* Module Content Card */}
+    <main className="flex-1 p-4 md:p-6 lg:p-8 overflow-y-auto">
+      <div className="max-w-4xl mx-auto">
+        {/* Progress Bar */}
+        <ProgressBar 
+          currentModule={currentModule.order}
+          totalModules={currentModule.total_modules}
+        />
+
+        {/* Main Content */}
         <div className="bg-white rounded-lg shadow-md p-4 mb-4">
           <h2 className="text-2xl font-bold mb-2">{currentModule.title}</h2>
-          <p className="text-gray-700 mb-3">{currentModule.description}</p>
           
           {/* Content Renderer - handles different content types */}
           <ContentRenderer 
-            contentType={currentModule.contentType} 
-            contentUrl={currentModule.contentUrl}
+            type={currentModule.type}
+            textContent={currentModule.text_content}
+            filePath={currentModule.file_path}
             quizQuestions={currentModule.quizQuestions}
           />
           
@@ -96,7 +100,7 @@ const CourseContent = ({
           />
           
           <ResourcesPanel 
-            resources={currentModule.resources} 
+            resources={courseResources} 
           />
         </div>
       </div>

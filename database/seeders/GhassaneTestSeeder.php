@@ -7,6 +7,7 @@ use App\Models\User;
 use App\Models\Instructor;
 use App\Models\Course;
 use App\Models\Learner;
+use App\Models\CourseResource;
 use Illuminate\Support\Facades\Hash;
 
 class GhassaneTestSeeder extends Seeder
@@ -266,70 +267,75 @@ class GhassaneTestSeeder extends Seeder
 
             // Create modules for the course
             foreach ($modules as $moduleData) {
-                $module = $course->modules()->create($moduleData);
+                $course->modules()->create($moduleData);
+            }
 
-                // Create resources for each module based on its type
-                $resources = [];
-                if ($courseData['category'] === 'Développement Web') {
-                    $resources = [
-                        [
-                            'title' => 'Vidéo de présentation',
-                            'type' => 'video',
-                            'url' => 'https://example.com/videos/intro.mp4'
-                        ],
-                        [
-                            'title' => 'Documentation PDF',
-                            'type' => 'pdf',
-                            'url' => 'https://example.com/docs/tutorial.pdf'
-                        ],
-                        [
-                            'title' => 'Exercices pratiques',
-                            'type' => 'pdf',
-                            'url' => 'https://example.com/exercises/practice.pdf'
-                        ]
-                    ];
-                } elseif ($courseData['category'] === 'Data Science') {
-                    $resources = [
-                        [
-                            'title' => 'Tutoriel vidéo',
-                            'type' => 'video',
-                            'url' => 'https://example.com/videos/tutorial.mp4'
-                        ],
-                        [
-                            'title' => 'Notebook Jupyter',
-                            'type' => 'notebook',
-                            'url' => 'https://example.com/notebooks/analysis.ipynb'
-                        ],
-                        [
-                            'title' => 'Dataset d\'exercice',
-                            'type' => 'dataset',
-                            'url' => 'https://example.com/datasets/exercise.csv'
-                        ]
-                    ];
-                } else { // Cybersécurité
-                    $resources = [
-                        [
-                            'title' => 'Démonstration vidéo',
-                            'type' => 'video',
-                            'url' => 'https://example.com/videos/demo.mp4'
-                        ],
-                        [
-                            'title' => 'Guide de laboratoire',
-                            'type' => 'pdf',
-                            'url' => 'https://example.com/labs/guide.pdf'
-                        ],
-                        [
-                            'title' => 'Outils de pratique',
-                            'type' => 'tools',
-                            'url' => 'https://example.com/tools/practice.zip'
-                        ]
-                    ];
-                }
+            // Create course resources
+            $resources = [];
+            if ($courseData['category'] === 'Développement Web') {
+                $resources = [
+                    [
+                        'name' => 'Vidéo de présentation',
+                        'type' => 'video',
+                        'url' => 'https://example.com/videos/intro.mp4'
+                    ],
+                    [
+                        'name' => 'Documentation PDF',
+                        'type' => 'pdf',
+                        'url' => 'https://example.com/docs/tutorial.pdf'
+                    ],
+                    [
+                        'name' => 'Exercices pratiques',
+                        'type' => 'pdf',
+                        'url' => 'https://example.com/exercises/practice.pdf'
+                    ]
+                ];
+            } elseif ($courseData['category'] === 'Data Science') {
+                $resources = [
+                    [
+                        'name' => 'Tutoriel vidéo',
+                        'type' => 'video',
+                        'url' => 'https://example.com/videos/tutorial.mp4'
+                    ],
+                    [
+                        'name' => 'Notebook Jupyter',
+                        'type' => 'notebook',
+                        'url' => 'https://example.com/notebooks/analysis.ipynb'
+                    ],
+                    [
+                        'name' => 'Dataset d\'exercice',
+                        'type' => 'dataset',
+                        'url' => 'https://example.com/datasets/exercise.csv'
+                    ]
+                ];
+            } else { // Cybersécurité
+                $resources = [
+                    [
+                        'name' => 'Démonstration vidéo',
+                        'type' => 'video',
+                        'url' => 'https://example.com/videos/demo.mp4'
+                    ],
+                    [
+                        'name' => 'Guide de laboratoire',
+                        'type' => 'pdf',
+                        'url' => 'https://example.com/labs/guide.pdf'
+                    ],
+                    [
+                        'name' => 'Outils de pratique',
+                        'type' => 'tools',
+                        'url' => 'https://example.com/tools/practice.zip'
+                    ]
+                ];
+            }
 
-                // Create resources for the module
-                foreach ($resources as $resourceData) {
-                    $module->resources()->create($resourceData);
-                }
+            // Create resources for the course
+            foreach ($resources as $resourceData) {
+                CourseResource::create([
+                    'course_id' => $course->id,
+                    'name' => $resourceData['name'],
+                    'type' => $resourceData['type'],
+                    'url' => $resourceData['url']
+                ]);
             }
         }
     }

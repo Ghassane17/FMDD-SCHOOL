@@ -1,0 +1,41 @@
+<?php
+
+namespace App\Models;
+
+use Illuminate\Database\Eloquent\Model;
+use Illuminate\Database\Eloquent\Relations\BelongsTo;
+use Illuminate\Database\Eloquent\Relations\HasMany;
+
+class Module extends Model
+{
+    protected $fillable = [
+        'course_id',
+        'title',
+        'type',
+        'text_content',
+        'file_path',
+        'order',
+        'duration'
+    ];
+
+    protected $casts = [
+        'order' => 'integer',
+        'duration' => 'integer'
+    ];
+
+    /**
+     * Get the course that owns the module.
+     */
+    public function course(): BelongsTo
+    {
+        return $this->belongsTo(Course::class);
+    }
+
+    /**
+     * Get the quiz questions for this module.
+     */
+    public function quizQuestions(): HasMany
+    {
+        return $this->hasMany(QuizQuestion::class);
+    }
+} 

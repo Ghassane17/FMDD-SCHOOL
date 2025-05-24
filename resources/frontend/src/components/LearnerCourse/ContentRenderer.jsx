@@ -1,168 +1,145 @@
-
 import React, { useState } from 'react';
 import VideoPlayer from './VideoPlayer';
 import { FileText, Image, FileQuestion, Video } from 'lucide-react';
 
 /**
  * ContentRenderer Component
- * Renders different types of content based on the contentType prop
+ * Renders different types of content based on the type prop
  * 
  * @param {Object} props
- * @param {string} props.contentType - Type of content (video, pdf, quiz, image)
- * @param {string} props.contentUrl - URL to the content
- * @param {Array} props.quizQuestions - Array of quiz questions (for quiz content type)
+ * @param {string} props.type - Type of content (text, pdf, image, video, quiz)
+ * @param {string} props.textContent - Text content for text type modules
+ * @param {string} props.filePath - File path for pdf, image, or video type modules
+ * @param {Array} props.quizQuestions - Array of quiz questions (for quiz type)
  */
-const ContentRenderer = ({ contentType, contentUrl, quizQuestions = [] }) => {
+const ContentRenderer = ({ type, textContent, filePath, quizQuestions = [] }) => {
   // State for quiz functionality
   const [currentQuestionIndex, setCurrentQuestionIndex] = useState(0);
   const [selectedAnswer, setSelectedAnswer] = useState(null);
   const [showResult, setShowResult] = useState(false);
   
-  // Content type icon mapping - using correct Lucide icons
+  // Content type icon mapping
   const contentTypeIcons = {
-    video: <Video className="w-8 h-8 text-blue-500" />,
+    text: <FileText className="w-8 h-8 text-blue-500" />,
     pdf: <FileText className="w-8 h-8 text-red-500" />,
     quiz: <FileQuestion className="w-8 h-8 text-green-500" />,
-    image: <Image className="w-8 h-8 text-purple-500" />
+    image: <Image className="w-8 h-8 text-purple-500" />,
+    video: <Video className="w-8 h-8 text-orange-500" />
   };
 
   // Render content based on type
   const renderContent = () => {
-    switch (contentType) {
-      case 'video':
-        return <VideoPlayer videoUrl={contentUrl} />;
-      
-      case 'pdf':
+    switch (type) {
+      case 'text':
         return (
-          <div className="flex flex-col items-center">
-            <div className="flex items-center justify-center bg-gray-100 p-6 rounded-lg mb-4">
-              {contentTypeIcons.pdf}
-              <span className="ml-3 text-lg font-medium">Document PDF</span>
-            </div>
-            <iframe 
-              src={contentUrl} 
-              className="w-full aspect-[4/3] rounded-lg border border-gray-200"
-              title="PDF document" 
-            />
-            <p className="text-sm text-gray-600 mt-2">
-              Si le document ne s'affiche pas correctement, 
-              <a href={contentUrl} target="_blank" rel="noopener noreferrer" className="text-blue-600 ml-1">
-                cliquez ici pour le télécharger
-              </a>.
-            </p>
+          <div className="prose max-w-none">
+            {textContent}
           </div>
         );
       
+      case 'pdf':
+        return (
+          <div className="w-full h-[600px]">
+            <iframe
+              src={filePath}
+              className="w-full h-full border-0"
+              title="PDF Document"
+            />
+          </div>
+        );
+      
+      case 'image':
+        return (
+          <div className="flex justify-center">
+            <img
+              src={filePath}
+              alt="Module content"
+              className="max-w-full h-auto rounded-lg shadow-lg"
+            />
+          </div>
+        );
+      
+      case 'video':
+        return <VideoPlayer url={filePath} />;
+      
       case 'quiz':
         if (quizQuestions.length === 0) {
-          return <div className="text-center text-gray-700 p-8">Pas de questions disponibles pour ce quiz.</div>;
+          return <div>No quiz questions available.</div>;
         }
 
         const currentQuestion = quizQuestions[currentQuestionIndex];
-        const isLastQuestion = currentQuestionIndex === quizQuestions.length - 1;
+        
+        if (showResult) {
+          return (
+            <div className="space-y-4">
+              <div className={`p-4 rounded-lg ${
+                selectedAnswer === currentQuestion.correct_option
+                  ? 'bg-green-100 text-green-800'
+                  : 'bg-red-100 text-red-800'
+              }`}>
+                <p className="font-medium">
+                  {selectedAnswer === currentQuestion.correct_option
+                    ? 'Correct!'
+                    : 'Incorrect. The correct answer is: ' + 
+                      currentQuestion.options[currentQuestion.correct_option]}
+                </p>
+              </div>
+              
+              <button
+                onClick={() => {
+                  if (currentQuestionIndex < quizQuestions.length - 1) {
+                    setCurrentQuestionIndex(currentQuestionIndex + 1);
+                    setSelectedAnswer(null);
+                    setShowResult(false);
+                  }
+                }}
+                className="w-full px-4 py-2 bg-blue-600 text-white rounded hover:bg-blue-700"
+              >
+                {currentQuestionIndex < quizQuestions.length - 1
+                  ? 'Next Question'
+                  : 'Finish Quiz'}
+              </button>
+            </div>
+          );
+        }
 
         return (
-          <div className="bg-gray-50 rounded-lg p-6">
-            <div className="flex items-center mb-6">
-              {contentTypeIcons.quiz}
-              <h3 className="ml-3 text-xl font-medium">Quiz interactif</h3>
-            </div>
+          <div className="space-y-4">
+            <p className="text-lg font-medium">{currentQuestion.question}</p>
             
-            <div className="mb-4 text-sm text-gray-600">
-              Question {currentQuestionIndex + 1} sur {quizQuestions.length}
-            </div>
-
-            <h4 className="text-lg font-medium mb-4">{currentQuestion.question}</h4>
-            
-            <div className="space-y-3">
+            <div className="space-y-2">
               {currentQuestion.options.map((option, index) => (
                 <button
                   key={index}
-                  onClick={() => setSelectedAnswer(index)}
-                  className={`w-full text-left p-3 rounded-md border transition-colors ${
-                    selectedAnswer === index 
-                      ? showResult
-                        ? index === currentQuestion.correctAnswer
-                          ? 'bg-green-100 border-green-500' 
-                          : 'bg-red-100 border-red-500'
-                        : 'bg-blue-100 border-blue-500'
-                      : 'border-gray-300 hover:bg-gray-50'
+                  onClick={() => {
+                    setSelectedAnswer(index);
+                    setShowResult(true);
+                  }}
+                  className={`w-full p-3 text-left rounded-lg border ${
+                    selectedAnswer === index
+                      ? 'border-blue-500 bg-blue-50'
+                      : 'border-gray-200 hover:border-blue-300'
                   }`}
                 >
                   {option}
                 </button>
               ))}
             </div>
-            
-            <div className="mt-6 flex justify-between">
-              <button 
-                onClick={() => {
-                  if (currentQuestionIndex > 0) {
-                    setCurrentQuestionIndex(currentQuestionIndex - 1);
-                    setSelectedAnswer(null);
-                    setShowResult(false);
-                  }
-                }}
-                className="px-4 py-2 border rounded-md hover:bg-gray-50 disabled:opacity-50"
-                disabled={currentQuestionIndex === 0}
-              >
-                Question précédente
-              </button>
-              
-              {selectedAnswer !== null && !showResult ? (
-                <button 
-                  onClick={() => setShowResult(true)}
-                  className="px-4 py-2 bg-blue-600 text-white rounded-md hover:bg-blue-700"
-                >
-                  Vérifier
-                </button>
-              ) : showResult ? (
-                <button 
-                  onClick={() => {
-                    if (!isLastQuestion) {
-                      setCurrentQuestionIndex(currentQuestionIndex + 1);
-                      setSelectedAnswer(null);
-                      setShowResult(false);
-                    }
-                  }}
-                  className="px-4 py-2 bg-blue-600 text-white rounded-md hover:bg-blue-700 disabled:opacity-50"
-                  disabled={isLastQuestion}
-                >
-                  {isLastQuestion ? 'Quiz terminé' : 'Question suivante'}
-                </button>
-              ) : null}
-            </div>
-          </div>
-        );
-      
-      case 'image':
-        return (
-          <div className="flex flex-col">
-            <div className="flex items-center mb-4">
-              {contentTypeIcons.image}
-              <span className="ml-3 text-lg font-medium">Infographie / Image</span>
-            </div>
-            <div className="bg-gray-100 p-2 rounded-lg">
-              <img 
-                src={contentUrl} 
-                alt="Contenu du module" 
-                className="w-full h-auto rounded-md object-contain"
-              />
-            </div>
           </div>
         );
       
       default:
-        return (
-          <div className="text-center text-gray-700 p-8">
-            Type de contenu non pris en charge.
-          </div>
-        );
+        return <div>Unsupported content type.</div>;
     }
   };
 
   return (
-    <div className="content-renderer w-full">
+    <div className="mt-4">
+      <div className="flex items-center gap-2 mb-4">
+        {contentTypeIcons[type]}
+        <h3 className="text-lg font-medium capitalize">{type} Content</h3>
+      </div>
+      
       {renderContent()}
     </div>
   );

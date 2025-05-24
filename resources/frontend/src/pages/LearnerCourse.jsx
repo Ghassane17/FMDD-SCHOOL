@@ -126,6 +126,7 @@ const LearnerCourse = () => {
                 />
                 <CourseContent
                     currentModule={currentModule}
+                    courseResources={courseData.resources}
                     hasPrevious={currentModuleIndex > 0}
                     hasNext={currentModuleIndex < courseData.modules.length - 1}
                     onPreviousClick={goToPreviousModule}

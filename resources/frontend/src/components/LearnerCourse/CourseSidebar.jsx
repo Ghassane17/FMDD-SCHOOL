@@ -1,100 +1,90 @@
-
 import React from 'react';
-import ProgressBar from './ProgressBar';
-import { CheckCircle, Clock } from 'lucide-react';
+import { FileText, Video, Image, FileQuestion, CheckCircle } from 'lucide-react';
 
 /**
  * CourseSidebar Component
- * Left sidebar showing course modules and progress
+ * Displays the course modules navigation
  * 
  * @param {Object} props
- * @param {Array} props.modules - List of course modules
- * @param {number} props.currentModuleIndex - Index of the current active module
- * @param {number} props.progress - Overall course progress percentage
- * @param {boolean} props.isOpen - Whether sidebar is open (for mobile)
+ * @param {Array} props.modules - Array of course modules
+ * @param {number} props.currentModuleIndex - Index of the current module
+ * @param {number} props.progress - Overall course progress
+ * @param {boolean} props.isOpen - Whether the sidebar is open
  * @param {Function} props.onModuleSelect - Handler for module selection
  */
-const CourseSidebar = ({ modules, currentModuleIndex, progress, isOpen, onModuleSelect }) => {
-  /**
-   * Get appropriate status badge based on module status
-   */
-  const renderStatusBadge = (status) => {
-    switch(status) {
-      case 'completed':
-        return (
-          <span className="inline-flex items-center rounded-full bg-green-100 px-2 py-0.5 text-xs font-medium text-green-800">
-            <CheckCircle size={12} className="mr-1" /> Terminé
-          </span>
-        );
-      case 'in-progress':
-        return (
-          <span className="inline-flex items-center rounded-full bg-blue-100 px-2 py-0.5 text-xs font-medium text-blue-800">
-            <Clock size={12} className="mr-1" /> En cours
-          </span>
-        );
-      default:
-        return null;
-    }
+const CourseSidebar = ({ 
+  modules = [], 
+  currentModuleIndex, 
+  progress = 0,
+  isOpen = false,
+  onModuleSelect 
+}) => {
+  // Module type icon mapping
+  const moduleTypeIcons = {
+    text: <FileText className="w-5 h-5 text-blue-500" />,
+    pdf: <FileText className="w-5 h-5 text-red-500" />,
+    quiz: <FileQuestion className="w-5 h-5 text-green-500" />,
+    image: <Image className="w-5 h-5 text-purple-500" />,
+    video: <Video className="w-5 h-5 text-orange-500" />
   };
-  
-  // Calculate completed modules
-  const completedModules = modules.filter(module => module.status === 'completed').length;
+
+  // Default icon for unknown module types
+  const defaultIcon = <FileText className="w-5 h-5 text-gray-500" />;
 
   return (
-    <>
-      {/* Dark overlay for mobile when sidebar is open */}
-      {isOpen && (
-        <div 
-          className="fixed inset-0 bg-black bg-opacity-50 lg:hidden z-20"
-          onClick={() => onModuleSelect(currentModuleIndex)} // Close sidebar when clicking outside
-        />
-      )}
-      
-      {/* Sidebar */}
-      <aside 
-        className={`w-64 bg-white shadow-md z-30 overflow-y-auto transition-all duration-300 ${
-          isOpen ? 'fixed inset-y-0 left-0' : 'fixed -left-64 inset-y-0 lg:left-0 lg:relative'
-        }`}
-      >
-        <div className="p-4">
-          <h2 className="font-bold text-lg mb-4">Modules du cours</h2>
-          
-          {/* Module list */}
-          <ul className="space-y-2">
+    <aside className={`
+      fixed lg:static inset-y-0 left-0 z-30
+      w-80 bg-white shadow-lg transform transition-transform duration-300 ease-in-out
+      ${isOpen ? 'translate-x-0' : '-translate-x-full lg:translate-x-0'}
+    `}>
+      <div className="h-full flex flex-col">
+        {/* Course Progress */}
+        <div className="p-4 border-b">
+          <h3 className="text-lg font-medium mb-2">Course Progress</h3>
+          <div className="w-full bg-gray-200 rounded-full h-2.5">
+            <div 
+              className="bg-blue-600 h-2.5 rounded-full transition-all duration-300"
+              style={{ width: `${progress}%` }}
+            />
+          </div>
+          <p className="text-sm text-gray-600 mt-2">{progress}% Complete</p>
+        </div>
+
+        {/* Modules List */}
+        <div className="flex-1 overflow-y-auto p-4">
+          <h3 className="text-lg font-medium mb-4">Course Modules</h3>
+          <div className="space-y-2">
             {modules.map((module, index) => (
-              <li 
+              <button
                 key={module.id}
-                className={`p-3 rounded-md cursor-pointer transition-colors ${
-                  index === currentModuleIndex 
-                    ? 'bg-blue-50 border-l-4 border-blue-500' 
-                    : 'hover:bg-gray-50'
-                }`}
                 onClick={() => onModuleSelect(index)}
+                className={`
+                  w-full text-left p-3 rounded-lg border transition-colors
+                  ${currentModuleIndex === index
+                    ? 'border-blue-500 bg-blue-50'
+                    : 'border-gray-200 hover:border-blue-300 hover:bg-blue-50'
+                  }
+                `}
               >
-                <div className="flex flex-col">
-                  <span className="font-medium">{module.title}</span>
-                  <div className="flex justify-between items-center mt-1">
-                    <span className="text-xs text-gray-500">{module.duration}</span>
-                    {renderStatusBadge(module.status)}
+                <div className="flex items-center gap-3">
+                  {moduleTypeIcons[module.type] || defaultIcon}
+                  <div className="flex-1">
+                    <p className="font-medium">{module.title}</p>
+                    <p className="text-sm text-gray-500">
+                      {module.type ? module.type.charAt(0).toUpperCase() + module.type.slice(1) : 'Module'}
+                      {module.duration && ` • ${module.duration} min`}
+                    </p>
                   </div>
+                  {module.completed && (
+                    <CheckCircle className="w-5 h-5 text-green-500" />
+                  )}
                 </div>
-              </li>
+              </button>
             ))}
-          </ul>
-          
-          {/* Progress indicator */}
-          <div className="mt-8">
-            <div className="flex justify-between mb-2">
-              <span className="text-sm font-medium">Votre progression</span>
-              <span className="text-sm text-gray-500">
-                {completedModules}/{modules.length} modules
-              </span>
-            </div>
-            <ProgressBar percent={progress} />
           </div>
         </div>
-      </aside>
-    </>
+      </div>
+    </aside>
   );
 };
 
