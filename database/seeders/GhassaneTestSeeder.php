@@ -2,12 +2,16 @@
 
 namespace Database\Seeders;
 
+
+use App\Models\Resource;
 use Illuminate\Database\Seeder;
 use App\Models\User;
 use App\Models\Instructor;
 use App\Models\Course;
 use App\Models\Learner;
-use App\Models\CourseResource;
+
+
+
 use Illuminate\Support\Facades\Hash;
 
 class GhassaneTestSeeder extends Seeder
@@ -241,11 +245,11 @@ class GhassaneTestSeeder extends Seeder
             $modules = [];
             if ($courseData['category'] === 'Développement Web') {
                 $modules = [
-                    ['title' => 'Introduction au HTML et CSS', 'duration' => 120, 'order' => 1],
-                    ['title' => 'JavaScript Fondamentaux', 'duration' => 180, 'order' => 2],
-                    ['title' => 'React.js Basics', 'duration' => 240, 'order' => 3],
-                    ['title' => 'Node.js et Express', 'duration' => 180, 'order' => 4],
-                    ['title' => 'MongoDB et Base de Données', 'duration' => 150, 'order' => 5]
+                    ['title' => 'Introduction au HTML et CSS', 'duration' => 120, 'order' => 1 , 'file_path'=>storage_path('app/public/Enregistrement 2025-05-15 002632.mp4')],
+                    ['title' => 'JavaScript Fondamentaux', 'duration' => 180, 'order' => 2 ,'file_path'=>storage_path('app/public/Enregistrement 2025-05-15 002632.mp4') ],
+                    ['title' => 'React.js Basics', 'duration' => 240, 'order' => 3,'file_path'=>storage_path('app/public/Enregistrement 2025-05-15 002632.mp4')],
+                    ['title' => 'Node.js et Express', 'duration' => 180, 'order' => 4, 'file_path'=>storage_path('app/public/Enregistrement 2025-05-15 002632.mp4')],
+                    ['title' => 'MongoDB et Base de Données', 'duration' => 150, 'order' => 5, 'file_path'=>storage_path('app/public/Enregistrement 2025-05-15 002632.mp4')]
                 ];
             } elseif ($courseData['category'] === 'Data Science') {
                 $modules = [
@@ -330,13 +334,23 @@ class GhassaneTestSeeder extends Seeder
 
             // Create resources for the course
             foreach ($resources as $resourceData) {
-                CourseResource::create([
+                Resource::create([
                     'course_id' => $course->id,
                     'name' => $resourceData['name'],
                     'type' => $resourceData['type'],
                     'url' => $resourceData['url']
                 ]);
             }
+        }
+
+        // Add a test comment for the first course
+        $firstCourse = Course::first();
+        if ($firstCourse) {
+            $firstCourse->comments()->create([
+                'user_id' => $learnerUser->id,
+                'text' => 'Ceci est un commentaire de test.',
+                'rating' => 5
+            ]);
         }
     }
 }

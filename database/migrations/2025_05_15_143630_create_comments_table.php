@@ -13,18 +13,17 @@ return new class extends Migration
     {
         Schema::create('comments', function (Blueprint $table) {
             $table->id();
-            $table->foreignId('instructor_id')
-                  ->constrained('instructors')
-                  ->onDelete('cascade');
+            $table->foreignId('user_id')
+                ->constrained('users')
+                ->onDelete('cascade');
             $table->foreignId('course_id')
-                  ->constrained('courses')
-                  ->onDelete('cascade');
-            $table->string('user');      // nom de l’étudiant
+                ->constrained('courses')
+                ->onDelete('cascade');
             $table->text('text');        // corps du commentaire
-            $table->unsignedTinyInteger('rating'); // 1–5
+            $table->unsignedTinyInteger('rating')->default(0); // 1–5
             $table->timestamps();
         });
-    }    
+    }
 
     /**
      * Reverse the migrations.

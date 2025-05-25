@@ -9,13 +9,14 @@ class Learner extends Model
 {
     use SoftDeletes;
 
-    protected $fillable = ['user_id', 'courses_enrolled', 'courses_completed', 'last_connection' ,'fields_of_interest' ,'languages', 'certifications', 'bank_info'];
+    protected $fillable = ['user_id', 'courses_enrolled', 'courses_completed', 'last_connection', 'fields_of_interest', 'languages', 'certifications', 'bank_info', 'status'];
 
     protected $casts = [
         'fields_of_interest' => 'array',
         'languages' => 'array',
         'certifications' => 'array',
         'bank_info' => 'array',
+        'status' => 'string'
     ];
     public function user()
     {
@@ -31,7 +32,7 @@ class Learner extends Model
     {
         return $this->belongsToMany(Course::class, 'course_learner')
             ->using(CourseLearner::class)
-            ->withPivot('progress' , 'last_accessed')
+            ->withPivot('progress', 'last_accessed')
             ->withTimestamps();
     }
 }

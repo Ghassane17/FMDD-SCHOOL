@@ -36,7 +36,7 @@ const LearnerRoutes = {
             element: <Contact />,
         },
         {
-            path: 'courses/:id/learn',
+            path: 'courses/:id/:module',
             element: <LearnerCourse />,
         },
         {

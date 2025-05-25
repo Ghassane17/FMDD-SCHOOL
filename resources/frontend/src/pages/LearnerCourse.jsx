@@ -3,16 +3,13 @@ import { useParams, useNavigate } from 'react-router-dom';
 import CourseHeader from '../components/LearnerCourse/CourseHeader';
 import CourseSidebar from '../components/LearnerCourse/CourseSidebar';
 import CourseContent from '../components/LearnerCourse/CourseContent';
-import { isAuthenticated, courseDetails } from '../services/api.js';
+import { isAuthenticated, courseDetails, moduleDetails } from '../services/api.js';
 
-/**
- * Course Player Component
- * Displays a specific enrolled course for the learner
- */
 const LearnerCourse = () => {
-    const { id } = useParams(); // Get courseId from URL
+    const { id, moduleId } = useParams();
     const navigate = useNavigate();
     const [courseData, setCourseData] = useState(null);
+    const [currentModuleData, setCurrentModuleData] = useState(null);
     const [currentModuleIndex, setCurrentModuleIndex] = useState(0);
     const [isSidebarOpen, setIsSidebarOpen] = useState(false);
     const [loading, setLoading] = useState(true);
@@ -21,7 +18,7 @@ const LearnerCourse = () => {
     useEffect(() => {
         if (!isAuthenticated()) {
             console.log('User not authenticated, redirecting to login');
-            navigate('/login', { state: { from: `/learner/courses/${id}/learn` } });
+            navigate('/login', { state: { from: `/learner/courses/${id}/${moduleId}` } });
             return;
         }
 
@@ -33,6 +30,13 @@ const LearnerCourse = () => {
                     throw new Error('You are not enrolled in this course');
                 }
                 setCourseData(response.course);
+                // Set initial module index based on moduleId
+                if (moduleId && response.course.modules) {
+                    const index = response.course.modules.findIndex(
+                        (module) => module.id === parseInt(moduleId)
+                    );
+                    setCurrentModuleIndex(index >= 0 ? index : 0);
+                }
             } catch (err) {
                 console.error('Failed to fetch course:', err);
                 setError(err.message || 'Failed to load course. Please check your enrollment or try again.');
@@ -42,7 +46,22 @@ const LearnerCourse = () => {
         };
 
         fetchCourse();
-    }, [id, navigate]);
+    }, [id, moduleId, navigate]);
+
+    useEffect(() => {
+        if (courseData && moduleId) {
+            const fetchModule = async () => {
+                try {
+                    const response = await moduleDetails(id, moduleId);
+                    setCurrentModuleData(response.module);
+                } catch (err) {
+                    console.error('Failed to fetch module:', err);
+                    setError(err.message || 'Failed to load module details.');
+                }
+            };
+            fetchModule();
+        }
+    }, [id, moduleId, courseData]);
 
     const toggleSidebar = () => {
         setIsSidebarOpen(!isSidebarOpen);
@@ -50,18 +69,23 @@ const LearnerCourse = () => {
 
     const goToPreviousModule = () => {
         if (currentModuleIndex > 0) {
-            setCurrentModuleIndex(currentModuleIndex - 1);
+            const newIndex = currentModuleIndex - 1;
+            setCurrentModuleIndex(newIndex);
+            navigate(`/learner/courses/${id}/${courseData.modules[newIndex].id}`);
         }
     };
 
     const goToNextModule = () => {
         if (courseData && currentModuleIndex < courseData.modules.length - 1) {
-            setCurrentModuleIndex(currentModuleIndex + 1);
+            const newIndex = currentModuleIndex + 1;
+            setCurrentModuleIndex(newIndex);
+            navigate(`/learner/courses/${id}/${courseData.modules[newIndex].id}`);
         }
     };
 
     const selectModule = (index) => {
         setCurrentModuleIndex(index);
+        navigate(`/learner/courses/${id}/${courseData.modules[index].id}`);
         if (window.innerWidth < 1024) {
             setIsSidebarOpen(false);
         }
@@ -108,8 +132,6 @@ const LearnerCourse = () => {
         );
     }
 
-    const currentModule = courseData.modules[currentModuleIndex];
-
     return (
         <div className="min-h-screen bg-gray-50 flex flex-col">
             <CourseHeader
@@ -125,8 +147,8 @@ const LearnerCourse = () => {
                     onModuleSelect={selectModule}
                 />
                 <CourseContent
-                    currentModule={currentModule}
-                    courseResources={courseData.resources}
+                    currentModule={currentModuleData || courseData.modules[currentModuleIndex]}
+                    courseResources={currentModuleData?.resources || []}
                     hasPrevious={currentModuleIndex > 0}
                     hasNext={currentModuleIndex < courseData.modules.length - 1}
                     onPreviousClick={goToPreviousModule}
