@@ -2,8 +2,10 @@
 
 namespace App\Models;
 
+use App\Http\Resources\CourseResource;
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Support\Facades\DB;
+use Reliese\Coders\Model\Relations\HasMany;
 
 class Course extends Model
 {
@@ -51,15 +53,20 @@ class Course extends Model
         return $this->enrollments()->count();
     }
 
-    public function modules()
+    public function modules(): \Illuminate\Database\Eloquent\Relations\HasMany|Course
     {
         return $this->hasMany(Module::class)->orderBy('order');
+    }
+
+    public function comments(): \Illuminate\Database\Eloquent\Relations\HasMany|Course
+    {
+        return $this->hasMany(Comment::class);
     }
 
     /**
      * Get the resources for the course.
      */
-    public function resources()
+    public function resources(): \Illuminate\Database\Eloquent\Relations\HasMany|Course
     {
         return $this->hasMany(CourseResource::class);
     }

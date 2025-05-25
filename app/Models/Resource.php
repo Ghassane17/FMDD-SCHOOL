@@ -5,7 +5,7 @@ namespace App\Models;
 use Illuminate\Database\Eloquent\Factories\HasFactory;
 use Illuminate\Database\Eloquent\Model;
 
-class CourseResource extends Model
+class Resource extends Model
 {
     use HasFactory;
 
@@ -33,8 +33,8 @@ class CourseResource extends Model
     /**
      * Get the course that owns the resource.
      */
-    public function course()
+    public function module(): \Illuminate\Database\Eloquent\Relations\BelongsTo
     {
-        return $this->belongsTo(Course::class);
+        return $this->belongsTo(Module::class);
     }
-} 
+}

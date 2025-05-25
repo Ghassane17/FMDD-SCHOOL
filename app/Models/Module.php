@@ -14,6 +14,7 @@ class Module extends Model
         'type',
         'text_content',
         'file_path',
+
         'order',
         'duration'
     ];
@@ -31,6 +32,11 @@ class Module extends Model
         return $this->belongsTo(Course::class);
     }
 
+    public function resources(): HasMany
+    {
+        return $this->hasMany(CourseResource::class);
+    }
+
     /**
      * Get the quiz questions for this module.
      */
@@ -38,4 +44,4 @@ class Module extends Model
     {
         return $this->hasMany(QuizQuestion::class);
     }
-} 
+}

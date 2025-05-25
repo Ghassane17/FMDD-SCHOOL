@@ -94,4 +94,12 @@ class User extends Authenticatable
 	{
 		return $this->hasMany(Session::class);
 	}
+
+	/**
+	 * Get the comments written by the user.
+	 */
+	public function comments(): \Illuminate\Database\Eloquent\Relations\HasMany
+	{
+		return $this->hasMany(Comment::class);
+	}
 }

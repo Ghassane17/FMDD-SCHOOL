@@ -409,6 +409,13 @@ export const courseDetails = async (courseId) => {
         throw error; // Let the caller (EnrollmentPage) handle errors
     }
 };
+export const moduleDetails = async (courseId, moduleId) => {
+    try {
+        const response = await axios.get(`/api/courses/${courseId}/${moduleId}`);
+        return response.data;
+    } catch (error) {
+        throw error;
+    }} ;
 
 // Enroll in a course
 export const enrollNow = async (courseId) => {
@@ -464,6 +471,73 @@ export const leaveCourse = async (courseId) => {
         return response.data;
     } catch (error) {
         throw error;
+    }
+};
+
+/**
+ * Submit a comment for a course
+ * @param {number} courseId - ID of the course
+ * @param {Object} commentData - Comment data including text and rating
+ * @returns {Promise<Object>} Response data
+ */
+export const submitComment = async (courseId, commentData) => {
+    try {
+        const response = await api.post(`/courses/${courseId}/comments`, {
+            text: commentData.text,
+            rating: Math.round(commentData.rating) // Ensure integer for unsignedTinyInteger
+        });
+        return response.data;
+    } catch (error) {
+        if (error.response?.status === 422) {
+            // Validation errors
+            const errors = error.response.data.errors;
+            if (errors.rating) {
+                throw new Error('La note doit être entre 1 et 5 étoiles');
+            }
+            if (errors.text) {
+                throw new Error('Le commentaire doit contenir au moins 3 caractères');
+            }
+        } else if (error.response?.status === 401) {
+            throw new Error('Vous devez être connecté pour laisser un commentaire');
+        } else if (error.response?.status === 403) {
+            throw new Error('Vous devez être inscrit au cours pour laisser un commentaire');
+        } else if (error.response?.status === 404) {
+            throw new Error('Cours non trouvé');
+        } else if (error.response?.status === 500) {
+            throw new Error('Erreur serveur - veuillez réessayer plus tard');
+        } else {
+            throw new Error('Une erreur est survenue lors de l\'envoi du commentaire');
+        }
+    }
+};
+
+/**
+ * Get all resources for a course
+ * @param {number} courseId - The ID of the course
+ * @param moduleId
+ * @returns {Promise<Object>} The course resources
+ */
+export const getCourseResources = async (courseId, moduleId) => {
+    try {
+        const response = await axios.get(`/learner/courses/${courseId}/${moduleId}`);
+        return response.data;
+    } catch (error) {
+        throw handleApiError(error);
+    }
+};
+
+/**
+ * Get a specific resource
+ * @param {number} courseId - The ID of the course
+ * @param {number} resourceId - The ID of the resource
+ * @returns {Promise<Object>} The resource details
+ */
+export const getCourseResource = async (courseId, resourceId) => {
+    try {
+        const response = await axios.get(`/api/courses/${courseId}/resources/${resourceId}`);
+        return response.data;
+    } catch (error) {
+        throw handleApiError(error);
     }
 };
 

@@ -8,18 +8,27 @@ use Illuminate\Database\Eloquent\Relations\BelongsTo;
 class Comment extends Model
 {
     protected $fillable = [
-        'instructor_id',
+        'user_id',
         'course_id',
-        'user',
         'text',
         'rating',
     ];
 
-    public function instructor(): BelongsTo
+    protected $casts = [
+        'rating' => 'integer'
+    ];
+
+    /**
+     * Get the user that wrote the comment.
+     */
+    public function user(): BelongsTo
     {
-        return $this->belongsTo(Instructor::class);
+        return $this->belongsTo(User::class);
     }
 
+    /**
+     * Get the course that the comment belongs to.
+     */
     public function course(): BelongsTo
     {
         return $this->belongsTo(Course::class);

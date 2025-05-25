@@ -24,10 +24,7 @@ return new class extends Migration
             $table->json('languages')->nullable();
             $table->json('certifications')->nullable();
             $table->json('bank_info')->nullable();
-//
-//            $table->enum('status', ['active', 'inactive', 'suspended'])->default('active');
-
-
+            $table->enum('status', ['active', 'inactive', 'suspended'])->default('active');
         });
     }
 
