@@ -13,6 +13,8 @@ import {
   FileUp,
   Sparkles
 } from 'lucide-react';
+import { createCourse } from '../services/api_instructor';
+import { toast } from 'react-hot-toast';
 
 // Course Creation Page
 const CreateCourse = () => {
@@ -151,12 +153,13 @@ const CreateCourse = () => {
       errors.modules = 'Au moins un module est requis';
     } else {
       // Validate each module
-      courseData.modules.forEach((module, index) => {
+      for (let index = 0; index < courseData.modules.length; index++) {
+        const module = courseData.modules[index];
         const moduleErrors = validateModuleContent(module);
         if (Object.keys(moduleErrors).length > 0) {
           errors[`module_${index}`] = moduleErrors;
         }
-      });
+      }
     }
     
     return errors;
@@ -390,10 +393,158 @@ const CreateCourse = () => {
   };
   
   // Handle course publication
-  const handlePublishCourse = () => {
-    console.log('Publishing course:', courseData);
-    // Here you would typically send the data to your backend
-    navigate('/');
+  const handlePublishCourse = async () => {
+    try {
+      // Create FormData object to handle file uploads
+      const formData = new FormData();
+
+      // Add basic course information
+      formData.append('title', courseData.title);
+      formData.append('description', courseData.description);
+      formData.append('category', courseData.category);
+      formData.append('level', courseData.level);
+      formData.append('duration_hours', courseData.duration_hours || 0);
+
+      // Log the data being sent
+      console.log('Course Data:', {
+        title: courseData.title,
+        description: courseData.description,
+        category: courseData.category,
+        level: courseData.level,
+        duration_hours: courseData.duration_hours,
+        modulesCount: courseData.modules.length,
+        examQuestionsCount: courseData.exam.questions.length,
+        resourcesCount: courseData.resources.length
+      });
+
+      // Add course thumbnail
+      if (courseData.image) {
+        // Convert data URL to File object if needed
+        if (courseData.image.startsWith('data:')) {
+          const response = await fetch(courseData.image);
+          const blob = await response.blob();
+          formData.append('course_thumbnail', blob, 'course_thumbnail.jpg');
+        } else {
+          formData.append('course_thumbnail', courseData.image);
+        }
+      }
+
+      // Add modules
+      courseData.modules.forEach((module, index) => {
+        formData.append(`modules[${index}][title]`, module.title);
+        formData.append(`modules[${index}][type]`, module.type);
+        formData.append(`modules[${index}][order]`, index);
+        
+        if (module.type === 'text') {
+          formData.append(`modules[${index}][content]`, module.content);
+        } else if (['pdf', 'image', 'video'].includes(module.type) && module.content) {
+          // Convert data URL to File object if needed
+          if (module.content.startsWith('data:')) {
+            fetch(module.content)
+              .then(response => response.blob())
+              .then(blob => {
+                formData.append(`modules[${index}][file]`, blob, `module_${index}_file`);
+              });
+          } else {
+            formData.append(`modules[${index}][file]`, module.content);
+          }
+        } else if (module.type === 'quiz' && module.content?.questions) {
+          module.content.questions.forEach((question, qIndex) => {
+            formData.append(`modules[${index}][questions][${qIndex}][question]`, question.question);
+            question.options.forEach((option, oIndex) => {
+              formData.append(`modules[${index}][questions][${qIndex}][options][${oIndex}]`, option);
+            });
+            formData.append(`modules[${index}][questions][${qIndex}][correctAnswer]`, question.correctAnswer);
+          });
+        }
+      });
+
+      // Add exam data - Fixed structure to match backend expectations
+      formData.append('exams[title]', courseData.exam.title);
+      formData.append('exams[instructions]', courseData.exam.instructions || '');
+      formData.append('exams[duration_min]', courseData.exam.duration);
+      formData.append('exams[passing_score]', courseData.exam.passingScore);
+
+      // Add exam questions
+      courseData.exam.questions.forEach((question, index) => {
+        formData.append(`exams[questions][${index}][question]`, question.question);
+        question.options.forEach((option, oIndex) => {
+          formData.append(`exams[questions][${index}][options][${oIndex}]`, option);
+        });
+        formData.append(`exams[questions][${index}][correctAnswer]`, question.correctAnswer);
+      });
+
+      // Add course resources - Handle empty case properly
+      if (courseData.resources && courseData.resources.length > 0) {
+        courseData.resources.forEach((resource, index) => {
+          formData.append(`course_resources[${index}][name]`, resource.name);
+          formData.append(`course_resources[${index}][type]`, resource.type);
+          
+          if (['pdf', 'video', 'image'].includes(resource.type) && resource.file) {
+            formData.append(`course_resources[${index}][file]`, resource.file);
+          } else if (['link', 'other'].includes(resource.type) && resource.url) {
+            formData.append(`course_resources[${index}][url]`, resource.url);
+          }
+        });
+      } else {
+        // Add a single empty resource to satisfy validation
+        formData.append('course_resources[0][name]', '');
+        formData.append('course_resources[0][type]', 'other');
+        formData.append('course_resources[0][url]', '');
+      }
+
+      // Show loading state with progress
+      const loadingToast = toast.loading('Création du cours en cours... (0%)');
+
+      // Create a progress tracking function
+      const updateProgress = (progress) => {
+        toast.loading(`Création du cours en cours... (${progress}%)`, { id: loadingToast });
+      };
+
+      // Send request to create course with progress tracking
+      const response = await createCourse(formData, updateProgress);
+
+      // Update loading toast to success
+      toast.dismiss(loadingToast);
+      toast.success('Cours créé avec succès!');
+
+      // Navigate to instructor dashboard or course page
+      navigate('/instructor/courses');
+
+    } catch (error) {
+      console.error('Error creating course:', error);
+      
+      // Show error message with more specific details
+      let errorMessage = 'Une erreur est survenue lors de la création du cours';
+      
+      if (error.response?.data?.errors) {
+        // Handle validation errors
+        const errors = error.response.data.errors;
+        const firstError = Object.values(errors)[0];
+        if (Array.isArray(firstError)) {
+          errorMessage = firstError[0];
+        } else {
+          errorMessage = firstError;
+        }
+        
+        // Set validation errors in state
+        setValidationErrors(errors);
+        
+        // Scroll to the first error
+        const firstErrorElement = document.querySelector('[data-error]');
+        if (firstErrorElement) {
+          firstErrorElement.scrollIntoView({ behavior: 'smooth', block: 'center' });
+        }
+      } else if (error.message.includes('too long to complete')) {
+        errorMessage = 'Le temps de téléchargement a dépassé la limite. Veuillez réduire la taille des fichiers ou vérifier votre connexion internet.';
+      } else if (error.message.includes('too large')) {
+        errorMessage = 'Les fichiers que vous essayez de télécharger sont trop volumineux. Veuillez réduire leur taille et réessayer.';
+      } else if (error.response?.data?.message) {
+        errorMessage = error.response.data.message;
+      }
+      
+      toast.error(errorMessage);
+    }
   };
   
   // Add this new state for quiz questions
@@ -1469,9 +1620,6 @@ const CreateCourse = () => {
                           {index + 1}
                         </span>
                         <h4 className="font-medium">{module.title}</h4>
-                        <span className="ml-3 px-2 py-1 bg-gray-100 rounded text-xs text-gray-600 capitalize">
-                          {module.type}
-                        </span>
                       </div>
                     </div>
                   ))}

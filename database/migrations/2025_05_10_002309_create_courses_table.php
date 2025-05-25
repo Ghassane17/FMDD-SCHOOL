@@ -14,7 +14,7 @@ return new class extends Migration
             $table->string('title');
             $table->text('description');
             $table->string('course_thumbnail')->nullable();
-            $table->enum('level', ['débutant', 'intermédiaire', 'avancé'])->default('débutant');
+            $table->enum('level', ['beginner', 'intermediate', 'advanced'])->default('beginner');
             $table->string('category')->nullable(); //that one should be an enum with the categories of the courses
             $table->float('rating')->nullable(); // Statique
             $table->boolean('is_published')->default(true); //Going to be used for the admin panel

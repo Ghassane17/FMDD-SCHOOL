@@ -134,7 +134,7 @@ class GhassaneTestSeeder extends Seeder
                 'description' => 'Apprenez à créer des applications web modernes avec React, Node.js et MongoDB',
                 'instructor_id' => $instructors[0]->id,
                 'course_thumbnail' => 'https://via.placeholder.com/150',
-                'level' => 'intermédiaire',
+                'level' => 'intermediate',
                 'category' => 'Développement Web',
 
                 'is_published' => true,
@@ -145,7 +145,7 @@ class GhassaneTestSeeder extends Seeder
                 'description' => 'Maîtrisez les concepts avancés de React et Redux pour créer des applications robustes',
                 'instructor_id' => $instructors[0]->id,
                 'course_thumbnail' => 'https://via.placeholder.com/151',
-                'level' => 'avancé',
+                'level' => 'advanced',
                 'category' => 'Développement Web',
 
                 'is_published' => true,
@@ -156,7 +156,7 @@ class GhassaneTestSeeder extends Seeder
                 'description' => 'Les bases du HTML, CSS et JavaScript pour débutants',
                 'instructor_id' => $instructors[0]->id,
                 'course_thumbnail' => 'https://via.placeholder.com/152',
-                'level' => 'débutant',
+                'level' => 'beginner',
                 'category' => 'Développement Web',
 
                 'is_published' => true,
@@ -169,7 +169,7 @@ class GhassaneTestSeeder extends Seeder
                 'description' => 'Analyse de données et visualisation avec Python, Pandas et Matplotlib',
                 'instructor_id' => $instructors[1]->id,
                 'course_thumbnail' => 'https://via.placeholder.com/153',
-                'level' => 'intermédiaire',
+                'level' => 'intermediate',
                 'category' => 'Data Science',
 
                 'is_published' => true,
@@ -180,7 +180,7 @@ class GhassaneTestSeeder extends Seeder
                 'description' => 'Introduction aux algorithmes de machine learning et leur implémentation',
                 'instructor_id' => $instructors[1]->id,
                 'course_thumbnail' => 'https://via.placeholder.com/154',
-                'level' => 'avancé',
+                'level' => 'advanced',
                 'category' => 'Data Science',
 
                 'is_published' => true,
@@ -191,7 +191,7 @@ class GhassaneTestSeeder extends Seeder
                 'description' => 'Apprenez les bases de Python pour la science des données',
                 'instructor_id' => $instructors[1]->id,
                 'course_thumbnail' => 'https://via.placeholder.com/155',
-                'level' => 'débutant',
+                'level' => 'beginner',
                 'category' => 'Data Science',
 
                 'is_published' => true,
@@ -204,7 +204,7 @@ class GhassaneTestSeeder extends Seeder
                 'description' => 'Protection des systèmes et réseaux contre les menaces cybernétiques',
                 'instructor_id' => $instructors[2]->id,
                 'course_thumbnail' => 'https://via.placeholder.com/156',
-                'level' => 'intermédiaire',
+                'level' => 'intermediate',
                 'category' => 'Cybersécurité',
 
                 'is_published' => true,
@@ -215,7 +215,7 @@ class GhassaneTestSeeder extends Seeder
                 'description' => 'Techniques de test d\'intrusion et de sécurité offensive',
                 'instructor_id' => $instructors[2]->id,
                 'course_thumbnail' => 'https://via.placeholder.com/157',
-                'level' => 'avancé',
+                'level' => 'advanced',
                 'category' => 'Cybersécurité',
 
                 'is_published' => true,
@@ -226,7 +226,7 @@ class GhassaneTestSeeder extends Seeder
                 'description' => 'Fondamentaux de la sécurité réseau et des protocoles',
                 'instructor_id' => $instructors[2]->id,
                 'course_thumbnail' => 'https://via.placeholder.com/158',
-                'level' => 'débutant',
+                'level' => 'beginner',
                 'category' => 'Cybersécurité',
 
                 'is_published' => true,

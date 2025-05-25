@@ -16,7 +16,7 @@ return new class extends Migration
             $table->foreignId('course_id')->constrained()->onDelete('cascade');
             $table->string('name');
             $table->enum('type', ['pdf','video','image','link','other']);
-            $table->string('url', 500);
+            $table->string('url', 500)->nullable();
             $table->timestamps();
         });
     }

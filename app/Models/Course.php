@@ -7,7 +7,17 @@ use Illuminate\Support\Facades\DB;
 
 class Course extends Model
 {
-    protected $fillable = ['title', 'description', 'instructor_id', 'course_thumbnail', 'level', 'rating', 'duration_hours', 'category'];
+    protected $fillable = [
+        'title', 
+        'description', 
+        'instructor_id', 
+        'course_thumbnail', 
+        'level', 
+        'rating', 
+        'duration_hours', 
+        'category',
+        'is_published'
+    ];
 
     protected $appends = ['students_count'];
 

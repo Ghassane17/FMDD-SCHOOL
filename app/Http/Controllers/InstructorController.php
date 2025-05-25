@@ -23,9 +23,11 @@ class InstructorController extends Controller
 
             // 2) Load instructor, courses & payments
             $instructor = Instructor::with([
-                'courses:id,title,description,students,rating,course_thumbnail,level,instructor_id',
+                'courses:id,title,description,rating,course_thumbnail,level,instructor_id',
                 'payments:id,instructor_id,date,amount,description'
-            ])->where('user_id', $user->id)->first();
+            ])
+            ->with(['courses.learners'])
+            ->where('user_id', $user->id)->first();
 
             if (!$instructor) {
                 return response()->json(['message' => 'Instructor profile not found'], 404);
@@ -47,14 +49,14 @@ class InstructorController extends Controller
                 'bank_info'      => $instructor->bank_info ?? null,
                 'school'         => 'FMDD SCHOOL',
                 'total_courses'  => $instructor->courses->count(),
-                'total_students' => $instructor->courses->sum('students'),
+                'total_students' => $instructor->courses->sum(fn($c) => $c->learners->count()),
                 'average_rating' => round($instructor->courses->avg('rating'), 1),
 
                 'courses'        => $instructor->courses->map(fn($c) => [
                     'id'          => $c->id,
                     'title'       => $c->title,
                     'description' => $c->description,
-                    'students'    => $c->students,
+                    'students'    => $c->learners->count(),
                     'rating'      => $c->rating,
                     'image'       => $c->course_thumbnail,
                     'level'       => $c->level,

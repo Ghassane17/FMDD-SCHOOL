@@ -105,4 +105,71 @@ export const updateInstructorBankAccount = async (bankInfo) => {
     }
 };
 
+/**
+ * Create a new course
+ * @param {FormData} courseData - The course data including files
+ * @returns {Promise} Promise object containing created course data
+ */
+export const createCourse = async (courseData) => {
+    try {
+        const token = localStorage.getItem('token');
+        if (!token) {
+            throw new Error('Authentication token not found');
+        }
+
+        // Create a new axios instance with longer timeout for file uploads
+        const uploadApi = axios.create({
+            baseURL: apiBaseUrl,
+            headers: {
+                'Content-Type': 'multipart/form-data',
+                'Authorization': `Bearer ${token}`,
+                'Accept': 'application/json',
+            },
+            withCredentials: true,
+            timeout: 120000, // 2 minutes timeout for file uploads
+            onUploadProgress: (progressEvent) => {
+                const percentCompleted = Math.round((progressEvent.loaded * 100) / progressEvent.total);
+                console.log(`Upload Progress: ${percentCompleted}%`);
+            }
+        });
+
+        const response = await uploadApi.post('/createCourse', courseData);
+        return response.data;
+    } catch (error) {
+        console.error('Error creating course:', error);
+        
+        // Log the full error response for debugging
+        if (error.response) {
+            console.error('Error response data:', error.response.data);
+            console.error('Error response status:', error.response.status);
+            console.error('Error response headers:', error.response.headers);
+        }
+        
+        // Handle specific error cases
+        if (error.code === 'ECONNABORTED') {
+            throw new Error('The request took too long to complete. Please try again with smaller files or check your internet connection.');
+        }
+        
+        if (error.response?.status === 413) {
+            throw new Error('The files you are trying to upload are too large. Please reduce the file sizes and try again.');
+        }
+        
+        if (error.response?.status === 403) {
+            throw new Error('You are not authorized to create courses. Please check your instructor status.');
+        }
+
+        if (error.response?.status === 422) {
+            // Handle validation errors
+            const validationErrors = error.response.data.errors;
+            if (validationErrors) {
+                const errorMessages = Object.entries(validationErrors)
+                    .map(([field, messages]) => `${field}: ${messages.join(', ')}`)
+                    .join('\n');
+                throw new Error(`Validation failed:\n${errorMessages}`);
+            }
+        }
+        
+        throw error;
+    }
+};
 
