@@ -2,6 +2,7 @@
 
 namespace App\Models;
 
+use App\Http\Resources\CourseIndex;
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\Eloquent\Relations\BelongsTo;
 use Illuminate\Database\Eloquent\Relations\HasMany;
@@ -34,7 +35,7 @@ class Module extends Model
 
     public function resources(): HasMany
     {
-        return $this->hasMany(CourseResource::class);
+        return $this->hasMany(CourseIndex::class); // that relation was made to return course dashboard elements and it doesnt have a relation with the course Recourses
     }
 
     /**

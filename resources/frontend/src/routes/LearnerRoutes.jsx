@@ -9,6 +9,7 @@ import SuggestedCourses from '../components/Learner/SuggestedCourses.jsx';
 import LearnerCourse from '../pages/LearnerCourse.jsx';
 import ErrorBoundary from '../components/ErrorBoundary.jsx';
 import EnrollementPage from "@/pages/EnrollementPage.jsx";
+import FinalQuiz from "@/pages/FinalQuiz.jsx";
 
 const LearnerRoutes = {
     element: <CourseLayout />,
@@ -21,8 +22,7 @@ const LearnerRoutes = {
         {
             path: 'all-enrolled-courses',
             element: <MyCourses />,
-        }
-       ,
+        },
         {
             path: 'settings',
             element: <LearnerSettingsPage />,
@@ -36,17 +36,19 @@ const LearnerRoutes = {
             element: <Contact />,
         },
         {
-            path: 'courses/:id/:module',
+            path: 'courses/:courseId',
+            element: <EnrollementPage />,
+        },
+        {
+            path: 'courses/:courseId/:moduleId?',
             element: <LearnerCourse />,
         },
         {
-            path: 'courses/:id',
-            element: <EnrollementPage />,
+            path: 'courses/:courseId/finalQuiz',
+            element: <FinalQuiz/>,
         },
-       /* {
-            path: 'courses/:courseId/quiz', //useless i guess
-            element: <QuizPage />,
-        },*/
+
+
         {
             path: '*',
             element: <NotFoundPage />,

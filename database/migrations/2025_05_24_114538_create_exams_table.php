@@ -13,7 +13,7 @@ return new class extends Migration
     {
         Schema::create('exams', function (Blueprint $table) {
             $table->id();
-            $table->foreignId('course_id')->constrained()->onDelete('cascade');
+            $table->foreignId('course_id')->constrained('courses')->onDelete('cascade');
             $table->string('title', 200);
             $table->text('instructions')->nullable();
             $table->integer('duration_min')->default(60);
@@ -23,7 +23,7 @@ return new class extends Migration
 
         Schema::create('exam_questions', function (Blueprint $table) {
             $table->id();
-            $table->foreignId('exam_id')->constrained()->onDelete('cascade');
+            $table->foreignId('exam_id')->constrained('exams')->onDelete('cascade');
             $table->text('question_text');
             $table->json('options');
             $table->tinyInteger('correct_index')->unsigned();
@@ -39,4 +39,4 @@ return new class extends Migration
         Schema::dropIfExists('exam_questions');
         Schema::dropIfExists('exams');
     }
-}; 
+};

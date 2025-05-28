@@ -24,6 +24,11 @@ class Exam extends Model
         'passing_score',
     ];
 
+ protected $casts = [
+    'duration_min' => 'integer',
+    'passing_score' => 'integer',
+];
+
     /**
      * Get the course that owns the exam.
      */
@@ -39,4 +44,4 @@ class Exam extends Model
     {
         return $this->hasMany(ExamQuestion::class);
     }
-} 
+}

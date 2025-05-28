@@ -3,98 +3,179 @@ import { useParams, useNavigate } from 'react-router-dom';
 import CourseHeader from '../components/LearnerCourse/CourseHeader';
 import CourseSidebar from '../components/LearnerCourse/CourseSidebar';
 import CourseContent from '../components/LearnerCourse/CourseContent';
-import { isAuthenticated, courseDetails, moduleDetails } from '../services/api.js';
+import { isAuthenticated, moduleDetails } from '../services/api.js';
 
+/**
+ * Course Player Component
+ * Displays a specific enrolled course for the learner
+ */
 const LearnerCourse = () => {
-    const { id, moduleId } = useParams();
+    const { courseId, moduleId } = useParams();
     const navigate = useNavigate();
     const [courseData, setCourseData] = useState(null);
-    const [currentModuleData, setCurrentModuleData] = useState(null);
+    const [modules, setModules] = useState([]);
+    const [currentModule, setCurrentModule] = useState(null);
     const [currentModuleIndex, setCurrentModuleIndex] = useState(0);
     const [isSidebarOpen, setIsSidebarOpen] = useState(false);
     const [loading, setLoading] = useState(true);
     const [error, setError] = useState(null);
+    const [quizProgress, setQuizProgress] = useState({});
+    const [notes, setNotes] = useState(''); // Added notes state
+    const [notesHistory, setNotesHistory] = useState([]); // Store notes and ratings
 
     useEffect(() => {
         if (!isAuthenticated()) {
             console.log('User not authenticated, redirecting to login');
-            navigate('/login', { state: { from: `/learner/courses/${id}/${moduleId}` } });
+            navigate('/login', { state: { from: `/learner/courses/${courseId}${moduleId ? `/${moduleId}` : ''}` } });
             return;
         }
 
-        const fetchCourse = async () => {
+        const fetchModule = async () => {
             setLoading(true);
+            setError(null);
+
+            const parsedCourseId = parseInt(courseId, 10);
+            if (isNaN(parsedCourseId) || parsedCourseId <= 0) {
+                console.error('Invalid course ID:', courseId);
+                setError('Invalid course ID provided.');
+                setLoading(false);
+                return;
+            }
+
+            const parsedModuleId = moduleId ? parseInt(moduleId, 10) : null;
+            if (moduleId && (isNaN(parsedModuleId) || parsedModuleId <= 0)) {
+                console.error('Invalid module ID:', moduleId);
+                setError('Invalid module ID provided.');
+                setLoading(false);
+                return;
+            }
+
             try {
-                const response = await courseDetails(id);
-                if (!response.course || !response.is_enrolled) {
-                    throw new Error('You are not enrolled in this course');
+                console.log('Fetching module details:', { courseId: parsedCourseId, moduleId: parsedModuleId });
+                const response = await moduleDetails(parsedCourseId, parsedModuleId);
+                console.log('🚀 Module Details:', response);
+                if (!response.course || !response.modules.length) {
+                    throw new Error('No modules available for this course');
                 }
                 setCourseData(response.course);
-                // Set initial module index based on moduleId
-                if (moduleId && response.course.modules) {
-                    const index = response.course.modules.findIndex(
-                        (module) => module.id === parseInt(moduleId)
-                    );
-                    setCurrentModuleIndex(index >= 0 ? index : 0);
-                }
+                setModules(response.modules);
+                setCurrentModule(response.module || response.modules[0]);
+                const index = response.module
+                    ? response.modules.findIndex(m => m.id === response.module.id)
+                    : 0;
+                setCurrentModuleIndex(index >= 0 ? index : 0);
             } catch (err) {
-                console.error('Failed to fetch course:', err);
-                setError(err.message || 'Failed to load course. Please check your enrollment or try again.');
+                console.error('❌ Fetch Module Error:', err);
+                let errorMessage = 'Failed to load course. Please check your enrollment or try again.';
+                if (err.status === 404) {
+                    errorMessage = err.message.includes('module') ? 'Module not found.' : 'Course not found.';
+                } else if (err.status === 400) {
+                    errorMessage = 'Invalid course or module ID.';
+                } else if (err.status === 403) {
+                    errorMessage = 'You are not enrolled in this course.';
+                } else if (err.status === 401) {
+                    errorMessage = 'Authentication required.';
+                } else if (err.status === 500) {
+                    errorMessage = 'Server error occurred. Please try again later.';
+                }
+                setError(err.message || errorMessage);
             } finally {
                 setLoading(false);
             }
         };
 
-        fetchCourse();
-    }, [id, moduleId, navigate]);
-
-    useEffect(() => {
-        if (courseData && moduleId) {
-            const fetchModule = async () => {
-                try {
-                    const response = await moduleDetails(id, moduleId);
-                    setCurrentModuleData(response.module);
-                } catch (err) {
-                    console.error('Failed to fetch module:', err);
-                    setError(err.message || 'Failed to load module details.');
-                }
-            };
-            fetchModule();
-        }
-    }, [id, moduleId, courseData]);
+        fetchModule();
+    }, [courseId, moduleId, navigate]);
 
     const toggleSidebar = () => {
         setIsSidebarOpen(!isSidebarOpen);
     };
 
-    const goToPreviousModule = () => {
+    const goToPreviousModule = async () => {
         if (currentModuleIndex > 0) {
             const newIndex = currentModuleIndex - 1;
-            setCurrentModuleIndex(newIndex);
-            navigate(`/learner/courses/${id}/${courseData.modules[newIndex].id}`);
+            try {
+                const response = await moduleDetails(parseInt(courseId, 10), modules[newIndex].id);
+                setCurrentModule(response.module);
+                setCurrentModuleIndex(newIndex);
+                navigate(`/learner/courses/${courseId}/${modules[newIndex].id}`);
+            } catch (err) {
+                setError('Failed to load previous module.');
+            }
         }
     };
 
-    const goToNextModule = () => {
-        if (courseData && currentModuleIndex < courseData.modules.length - 1) {
+    const goToNextModule = async () => {
+        if (currentModuleIndex < modules.length - 1) {
             const newIndex = currentModuleIndex + 1;
-            setCurrentModuleIndex(newIndex);
-            navigate(`/learner/courses/${id}/${courseData.modules[newIndex].id}`);
+            try {
+                const response = await moduleDetails(parseInt(courseId, 10), modules[newIndex].id);
+                setCurrentModule(response.module);
+                setCurrentModuleIndex(newIndex);
+                navigate(`/learner/courses/${courseId}/${modules[newIndex].id}`);
+            } catch (err) {
+                setError('Failed to load next module.');
+            }
         }
     };
 
-    const selectModule = (index) => {
-        setCurrentModuleIndex(index);
-        navigate(`/learner/courses/${id}/${courseData.modules[index].id}`);
-        if (window.innerWidth < 1024) {
-            setIsSidebarOpen(false);
+    const selectModule = async (index) => {
+        try {
+            const response = await moduleDetails(parseInt(courseId, 10), modules[index].id);
+            setCurrentModule(response.module);
+            setCurrentModuleIndex(index);
+            navigate(`/learner/courses/${courseId}/${modules[index].id}`);
+            if (window.innerWidth < 1024) {
+                setIsSidebarOpen(false);
+            }
+        } catch (err) {
+            console.error('❌ Select Module Error:', err);
+            setError(err.message || 'Failed to load selected module. Please try again.');
         }
     };
 
-    const retryFetch = () => {
+    const handleQuizComplete = (moduleId, score) => {
+        setQuizProgress((prev) => ({
+            ...prev,
+            [moduleId]: { score, completed: true },
+        }));
+        console.log(`Quiz ${moduleId} completed with score: ${score * 100}%`);
+    };
+
+    const handleSaveNotes = (noteText, rating) => {
+        setNotes(noteText);
+        setNotesHistory((prev) => [
+            ...prev,
+            { text: noteText, rating, timestamp: new Date().toISOString() },
+        ]);
+        console.log('Notes saved:', { noteText, rating });
+    };
+
+    const retryFetch = async () => {
         setError(null);
         setLoading(true);
-        fetchCourse();
+        try {
+            const parsedCourseId = parseInt(courseId, 10);
+            const parsedModuleId = moduleId ? parseInt(moduleId, 10) : null;
+            if (isNaN(parsedCourseId) || parsedCourseId <= 0) {
+                throw new Error('Invalid course ID');
+            }
+            const response = await moduleDetails(parsedCourseId, parsedModuleId);
+            if (!response.course || !response.modules.length) {
+                throw new Error('No modules available for this course');
+            }
+            setCourseData(response.course);
+            setModules(response.modules);
+            setCurrentModule(response.module || response.modules[0]);
+            const index = response.module
+                ? response.modules.findIndex(m => m.id === response.module.id)
+                : 0;
+            setCurrentModuleIndex(index >= 0 ? index : 0);
+        } catch (err) {
+            setError(err.message || 'Failed to load course.');
+        } finally {
+            setLoading(false);
+        }
     };
 
     if (loading) {
@@ -108,11 +189,11 @@ const LearnerCourse = () => {
         );
     }
 
-    if (error || !courseData) {
+    if (error || !courseData || !currentModule) {
         return (
             <div className="min-h-screen flex items-center justify-center bg-gray-50">
                 <div className="text-center max-w-md p-6 bg-white rounded-lg shadow-lg">
-                    <p className="text-red-500 mb-4">{error || 'Course not found.'}</p>
+                    <p className="text-red-500 mb-4">{error || 'Course or module not found.'}</p>
                     <div className="space-y-3">
                         <button
                             onClick={retryFetch}
@@ -121,10 +202,10 @@ const LearnerCourse = () => {
                             Try Again
                         </button>
                         <button
-                            onClick={() => navigate(`/learner/courses/${id}`)}
+                            onClick={() => navigate('/learner/courses')}
                             className="w-full px-4 py-2 bg-gray-100 text-gray-700 rounded hover:bg-gray-200 transition-colors"
                         >
-                            Back to Course Details
+                            Back to Courses
                         </button>
                     </div>
                 </div>
@@ -134,25 +215,26 @@ const LearnerCourse = () => {
 
     return (
         <div className="min-h-screen bg-gray-50 flex flex-col">
-            <CourseHeader
-                courseTitle={courseData.title}
-                toggleSidebar={toggleSidebar}
-            />
+            <CourseHeader courseTitle={courseData.title} toggleSidebar={toggleSidebar} />
             <div className="flex flex-1 relative">
                 <CourseSidebar
-                    modules={courseData.modules}
+                    modules={modules}
                     currentModuleIndex={currentModuleIndex}
-                    progress={courseData.progress}
+                    progress={courseData.progress || 0}
                     isOpen={isSidebarOpen}
                     onModuleSelect={selectModule}
+                    quizProgress={quizProgress}
                 />
                 <CourseContent
-                    currentModule={currentModuleData || courseData.modules[currentModuleIndex]}
-                    courseResources={currentModuleData?.resources || []}
+                    currentModule={currentModule}
                     hasPrevious={currentModuleIndex > 0}
-                    hasNext={currentModuleIndex < courseData.modules.length - 1}
+                    hasNext={currentModuleIndex < modules.length - 1}
                     onPreviousClick={goToPreviousModule}
                     onNextClick={goToNextModule}
+                    onQuizComplete={(score) => handleQuizComplete(currentModule.id, score)}
+                    courseId={courseData.id} // Pass courseId
+                    onSaveNotes={handleSaveNotes} // Pass handler
+                    notes={notes} // Pass notes
                 />
             </div>
         </div>

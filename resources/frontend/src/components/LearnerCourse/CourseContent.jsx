@@ -1,122 +1,277 @@
-
 import React, { useState } from 'react';
+import PropTypes from 'prop-types';
+import { Button, Alert } from '@mui/material';
+import { ChevronLeft, ChevronRight } from '@mui/icons-material';
+import NotesPanel from './NotesPanel'; // Import NotesPanel
 
-import { useParams } from 'react-router-dom';
-import ContentRenderer from './ContentRenderer';
-import ExercisesPanel from './ExercisesPanel';
-import ResourcesPanel from './ResourcesPanel';
-import NotesPanel from './NotesPanel';
-import ProgressBar from './ProgressBar';
-import { toast } from 'sonner';
+const QuizModule = ({ questions, onComplete }) => {
+    const [selectedAnswers, setSelectedAnswers] = useState({});
+    const [submitted, setSubmitted] = useState(false);
+    const [results, setResults] = useState({});
 
-/**
- * CourseContent Component
- * Main content area showing the current module's content
- *
- * @param {Object} props
- * @param {Object} props.currentModule - Current module data with resources
- * @param {boolean} props.hasPrevious - Whether there's a previous module
- * @param {boolean} props.hasNext - Whether there's a next module
- * @param {Function} props.onPreviousClick - Handler for previous module button
- * @param {Function} props.onNextClick - Handler for next module button
- */
-const CourseContent = ({
-                           currentModule,
-                           hasPrevious,
-                           hasNext,
-                           onPreviousClick,
-                           onNextClick
-                       }) => {
-    const { id: courseId } = useParams();
-    const [notes, setNotes] = useState('');
-
-    const handleSaveNotes = async (newNotes) => {
-        try {
-            setNotes(newNotes);
-            // Notes saving handled in NotesPanel
-        } catch (error) {
-            console.error('Failed to save notes:', error);
-            toast.error('Failed to save notes');
+    const handleSelectAnswer = (questionId, optionId) => {
+        if (!submitted) {
+            setSelectedAnswers({ ...selectedAnswers, [questionId]: optionId });
         }
     };
 
-    // Ensure currentModule exists
+    const handleSubmit = () => {
+        const newResults = {};
+        let correctCount = 0;
+        questions.forEach((question) => {
+            const isCorrect = selectedAnswers[question.id] === question.correct_option;
+            newResults[question.id] = isCorrect;
+            if (isCorrect) correctCount++;
+        });
+        setResults(newResults);
+        setSubmitted(true);
+        if (onComplete) {
+            onComplete(correctCount / questions.length);
+        }
+    };
+
+    return (
+        <div className="space-y-6">
+            {questions.map((question) => {
+                // Validate options
+                const validOptions = Array.isArray(question.options) && question.options.every(
+                    (opt) => opt && typeof opt === 'object' && 'id' in opt && 'text' in opt
+                );
+
+                if (!validOptions) {
+                    console.warn('Invalid options format for question:', {
+                        questionId: question.id,
+                        options: question.options,
+                    });
+                }
+
+                return (
+                    <div key={question.id} className="p-4 bg-white rounded-lg shadow">
+                        <p className="text-lg font-semibold mb-4">{question.question}</p>
+                        <div className="space-y-2">
+                            {validOptions && question.options.length ? (
+                                question.options.map((option) => (
+                                    <button
+                                        key={option.id}
+                                        onClick={() => handleSelectAnswer(question.id, option.id)}
+                                        disabled={submitted}
+                                        className={`w-full text-left p-3 rounded-lg border ${
+                                            selectedAnswers[question.id] === option.id
+                                                ? 'bg-indigo-100 border-indigo-500'
+                                                : 'bg-gray-50 border-gray-200'
+                                        } ${
+                                            submitted
+                                                ? option.id === question.correct_option
+                                                    ? 'border-green-500'
+                                                    : results[question.id] === false && selectedAnswers[question.id] === option.id
+                                                        ? 'border-red-500'
+                                                        : ''
+                                                : 'hover:bg-gray-100'
+                                        }`}
+                                    >
+                                        {option.text}
+                                    </button>
+                                ))
+                            ) : (
+                                <p className="text-red-500">No valid options available for this question.</p>
+                            )}
+                        </div>
+                        {submitted && (
+                            <p className={`mt-2 text-sm ${results[question.id] ? 'text-green-600' : 'text-red-600'}`}>
+                                {results[question.id] ? 'Correct!' : 'Incorrect. Try again next time!'}
+                            </p>
+                        )}
+                    </div>
+                );
+            })}
+            {!submitted && (
+                <Button
+                    variant="contained"
+                    color="primary"
+                    onClick={handleSubmit}
+                    disabled={Object.keys(selectedAnswers).length < questions.length}
+                    className="mt-4"
+                >
+                    Submit Quiz
+                </Button>
+            )}
+            {submitted && (
+                <Button
+                    variant="outlined"
+                    onClick={() => {
+                        setSelectedAnswers({});
+                        setSubmitted(false);
+                        setResults({});
+                    }}
+                    className="mt-4"
+                >
+                    Retake Quiz
+                </Button>
+            )}
+        </div>
+    );
+};
+
+const CourseContent = ({ currentModule, hasPrevious, hasNext, onPreviousClick, onNextClick, onQuizComplete, courseId, onSaveNotes, notes }) => {
     if (!currentModule) {
         return (
-            <div className="flex-1 p-6">
-                <div className="text-red-500">Module not found</div>
+            <div className="flex-1 p-6 bg-white">
+                <Alert severity="error">No module selected.</Alert>
             </div>
         );
     }
 
+    const renderContent = () => {
+        switch (currentModule.type) {
+            case 'text':
+                return currentModule.text_content ? (
+                    <div
+                        className="prose max-w-none"
+                        dangerouslySetInnerHTML={{ __html: currentModule.text_content }}
+                    />
+                ) : (
+                    <Alert severity="warning">No text content available.</Alert>
+                );
+            case 'pdf':
+                return currentModule.file_path ? (
+                    <iframe
+                        src={currentModule.file_path}
+                        title={currentModule.title}
+                        className="w-full h-[600px] border rounded-lg"
+                    />
+                ) : (
+                    <Alert severity="warning">No PDF file available.</Alert>
+                );
+            case 'image':
+                return currentModule.file_path ? (
+                    <img
+                        src={currentModule.file_path}
+                        alt={currentModule.title}
+                        className="max-w-full h-auto rounded-lg shadow"
+                    />
+                ) : (
+                    <Alert severity="warning">No image available.</Alert>
+                );
+            case 'video':
+                return currentModule.file_path ? (
+                    <video
+                        controls
+                        src={currentModule.file_path}
+                        className="w-full max-w-4xl mx-auto rounded-lg shadow"
+                    >
+                        Your browser does not support video playback.
+                    </video>
+                ) : (
+                    <Alert severity="warning">No video available.</Alert>
+                );
+            case 'quiz':
+                return currentModule.quiz_questions?.length ? (
+                    <QuizModule
+                        questions={currentModule.quiz_questions.map((q) => ({
+                            ...q,
+                            correct_option: q.correct_option,
+                        }))}
+                        onComplete={onQuizComplete}
+                    />
+                ) : (
+                    <Alert severity="warning">No quiz questions available.</Alert>
+                );
+            default:
+                return <Alert severity="warning">Unsupported module type: {currentModule.type}</Alert>;
+        }
+    };
+
     return (
-        <main className="flex-1 p-4 md:p-6 lg:p-8 overflow-y-auto">
-            <div className="max-w-4xl mx-auto">
-                {/* Progress Bar */}
-                <ProgressBar
-                    currentModule={currentModule.order}
-                    totalModules={currentModule.total_modules}
-                />
-
-                {/* Main Content */}
-                <div className="bg-white rounded-lg shadow-md p-4 mb-4">
-                    <h2 className="text-2xl font-bold mb-2">{currentModule.title}</h2>
-
-                    {/* Content Renderer - handles different content types */}
-                    <ContentRenderer
-                        type={currentModule.type}
-                        textContent={currentModule.text_content}
-                        filePath={currentModule.file_path}
-                        quizQuestions={currentModule.quizQuestions}
-                        resources={currentModule.resources} // Pass resources for video rendering
-                    />
-
-                    {/* Navigation Buttons */}
-                    <div className="flex flex-col sm:flex-row sm:justify-between mt-4 gap-2">
-                        <button
-                            onClick={onPreviousClick}
-                            disabled={!hasPrevious}
-                            className={`px-4 py-2 border rounded-md flex items-center justify-center ${
-                                hasPrevious
-                                    ? 'hover:bg-gray-50 text-gray-800'
-                                    : 'opacity-50 cursor-not-allowed text-gray-400'
-                            }`}
-                        >
-                            ← Module précédent
-                        </button>
-
-                        <button
-                            onClick={onNextClick}
-                            disabled={!hasNext}
-                            className={`px-4 py-2 rounded-md flex items-center justify-center ${
-                                hasNext
-                                    ? 'bg-blue-600 text-white hover:bg-blue-700'
-                                    : 'bg-gray-300 text-gray-500 cursor-not-allowed'
-                            }`}
-                        >
-                            Module suivant →
-                        </button>
+        <div className="flex-1 p-6 bg-white overflow-auto">
+            <h2 className="text-2xl font-bold text-gray-800 mb-6">{currentModule.title}</h2>
+            {renderContent()}
+            <div className="mt-6 space-y-6">
+                {currentModule.resources?.length > 0 && (
+                    <div>
+                        <h3 className="text-lg font-semibold text-gray-800 mb-4">Resources</h3>
+                        <ul className="space-y-2">
+                            {currentModule.resources.map((resource) => (
+                                <li key={resource.id}>
+                                    <a
+                                        href={resource.url}
+                                        target="_blank"
+                                        rel="noopener noreferrer"
+                                        className="text-indigo-600 hover:underline"
+                                    >
+                                        {resource.name} ({resource.type})
+                                    </a>
+                                </li>
+                            ))}
+                        </ul>
                     </div>
-                </div>
-
-                {/* Exercises Panel */}
-                <ExercisesPanel />
-
-                {/* Resources and Notes - Side by side on desktop, stacked on mobile */}
-                <div className="grid grid-cols-1 lg:grid-cols-2 gap-4 mt-4">
-                    <NotesPanel
-                        notes={notes}
-                        onSaveNotes={handleSaveNotes}
-                        courseId={courseId}
-                    />
-
-                    <ResourcesPanel
-                        resources={currentModule.resources || []} // Use module-specific resources
-                    />
-                </div>
+                )}
+                <NotesPanel
+                    courseId={courseId}
+                    notes={notes}
+                    onSaveNotes={onSaveNotes}
+                />
             </div>
-        </main>
+            <div className="flex justify-between mt-8">
+                <Button
+                    variant="outlined"
+                    startIcon={<ChevronLeft />}
+                    onClick={onPreviousClick}
+                    disabled={!hasPrevious}
+                    className="normal-case"
+                >
+                    Previous
+                </Button>
+                <Button
+                    variant="contained"
+                    endIcon={<ChevronRight />}
+                    onClick={onNextClick}
+                    disabled={!hasNext}
+                    className="normal-case"
+                >
+                    Next
+                </Button>
+            </div>
+        </div>
     );
+};
+
+CourseContent.propTypes = {
+    currentModule: PropTypes.shape({
+        id: PropTypes.number,
+        title: PropTypes.string,
+        type: PropTypes.oneOf(['text', 'pdf', 'image', 'video', 'quiz']),
+        text_content: PropTypes.string,
+        file_path: PropTypes.string,
+        quiz_questions: PropTypes.arrayOf(
+            PropTypes.shape({
+                id: PropTypes.number,
+                question: PropTypes.string,
+                options: PropTypes.arrayOf(
+                    PropTypes.shape({
+                        id: PropTypes.number,
+                        text: PropTypes.string,
+                    })
+                ),
+                correct_option: PropTypes.number,
+            })
+        ),
+        resources: PropTypes.arrayOf(
+            PropTypes.shape({
+                id: PropTypes.number,
+                name: PropTypes.string,
+                type: PropTypes.string,
+                url: PropTypes.string,
+            })
+        ),
+    }),
+    hasPrevious: PropTypes.bool.isRequired,
+    hasNext: PropTypes.bool.isRequired,
+    onPreviousClick: PropTypes.func.isRequired,
+    onNextClick: PropTypes.func.isRequired,
+    onQuizComplete: PropTypes.func,
+    courseId: PropTypes.number.isRequired, // Added courseId
+    onSaveNotes: PropTypes.func.isRequired, // Added onSaveNotes
+    notes: PropTypes.string, // Added notes
 };
 
 export default CourseContent;

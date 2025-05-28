@@ -102,6 +102,8 @@ class CourseController extends Controller
                 'description' => $course->description,
                 'course_thumbnail' => $course->course_thumbnail,
                 'duration_hours' => $course->duration_hours,
+
+
                 'level' => $course->level,
                 'rating' => $course->rating,
                 'students_count' => $course->students_count,
@@ -119,7 +121,8 @@ class CourseController extends Controller
                         'id' => $module->id,
                         'title' => $module->title,
                         'duration' => $module->duration,
-                        'order' => $module->order
+                        'order' => $module->order,
+                        'type' => $module->type // Add this line
                     ];
                 })
             ];

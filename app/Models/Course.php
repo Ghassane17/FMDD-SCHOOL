@@ -10,13 +10,13 @@ use Reliese\Coders\Model\Relations\HasMany;
 class Course extends Model
 {
     protected $fillable = [
-        'title', 
-        'description', 
-        'instructor_id', 
-        'course_thumbnail', 
-        'level', 
-        'rating', 
-        'duration_hours', 
+        'title',
+        'description',
+        'instructor_id',
+        'course_thumbnail',
+        'level',
+        'rating',
+        'duration_hours',
         'category',
         'is_published'
     ];
@@ -79,5 +79,10 @@ class Course extends Model
     public function resources(): \Illuminate\Database\Eloquent\Relations\HasMany|Course
     {
         return $this->hasMany(CourseResource::class);
+    }
+
+    public function exam(): Course|\Illuminate\Database\Eloquent\Relations\HasOne
+    {
+        return $this->hasOne(Exam::class);
     }
 }

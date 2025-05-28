@@ -29,6 +29,7 @@ class ExamQuestion extends Model
      */
     protected $casts = [
         'options' => 'array',
+        'correct_index' => 'integer',
     ];
 
     /**
@@ -38,4 +39,4 @@ class ExamQuestion extends Model
     {
         return $this->belongsTo(Exam::class);
     }
-} 
+}

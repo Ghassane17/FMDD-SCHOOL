@@ -1,12 +1,12 @@
 import React, { useState } from 'react';
 import { Rating } from '@mui/material';
 import { toast } from 'sonner';
-import { submitComment } from '../../services/api';
+import { submitComment } from '@/services/api.js';
 
 /**
  * NotesPanel Component
  * Panel for taking and saving notes with rating
- * 
+ *
  * @param {Object} props
  * @param {string} props.notes - Current notes content
  * @param {Function} props.onSaveNotes - Handler for saving notes
@@ -17,19 +17,19 @@ const NotesPanel = ({ notes = '', onSaveNotes, courseId }) => {
   const [noteText, setNoteText] = useState(notes);
   const [rating, setRating] = useState(0);
   const [isSubmitting, setIsSubmitting] = useState(false);
-  
+
   /**
    * Handle form submission to save notes and rating
    */
   const handleSubmit = async (e) => {
     e.preventDefault();
-    
+
     // Validate input before submission
     if (!noteText.trim()) {
       toast.error('Veuillez écrire un commentaire');
       return;
     }
-    
+
     if (rating === 0) {
       toast.error('Veuillez attribuer une note');
       return;
@@ -58,7 +58,7 @@ const NotesPanel = ({ notes = '', onSaveNotes, courseId }) => {
   return (
     <div className="bg-white rounded-lg shadow-md p-6">
       <h3 className="text-xl font-bold mb-3">Mes notes et évaluation</h3>
-      
+
       <form onSubmit={handleSubmit}>
         <div className="mb-4">
           <label className="block text-sm font-medium text-gray-700 mb-2">
@@ -78,7 +78,7 @@ const NotesPanel = ({ notes = '', onSaveNotes, courseId }) => {
           onChange={(e) => setNoteText(e.target.value)}
           disabled={isSubmitting}
         />
-        
+
         <div className="mt-3 flex justify-end">
           <button
             type="submit"

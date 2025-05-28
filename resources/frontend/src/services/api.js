@@ -359,35 +359,34 @@ export const updateLearnerSettings = async (data) => {
             new_password_confirmation: '********'
         });
 
-        // Use FormData for file upload
         const formattedData = new FormData();
+        const jsonFields = ['notifications', 'languages', 'certifications', 'fields_of_interest', 'bank_info'];
+        const passwordFields = ['current_password', 'new_password', 'new_password_confirmation'];
+
         Object.keys(data).forEach(key => {
-            if (key === 'avatar' && data[key] instanceof File) {
-                formattedData.append('avatar', data[key]);
-            } else if (key === 'notifications') {
-                formattedData.append(key, JSON.stringify(data[key]));
-            } else if (key === 'languages' || key === 'certifications' || key === 'fields_of_interest' || key === 'bank_info') {
-                if (data[key] !== null && data[key] !== undefined) {
-                    formattedData.append(key, JSON.stringify(data[key]));
-                }
-            } else if (key === 'current_password' || key === 'new_password' || key === 'new_password_confirmation') {
-                if (data[key]) {
-                    formattedData.append(key, data[key]);
-                }
+            const value = data[key];
+
+            if (key === 'avatar' && value instanceof File) {
+                formattedData.append('avatar', value);
+            } else if (jsonFields.includes(key)) {
+                if (value != null) formattedData.append(key, JSON.stringify(value));
+            } else if (passwordFields.includes(key)) {
+                if (value) formattedData.append(key, value);
             } else {
-                formattedData.append(key, data[key] !== undefined ? data[key] : '');
+                formattedData.append(key, value !== undefined ? value : '');
             }
         });
 
         const response = await api.patch('/learner/settings', formattedData, {
             headers: {
-                'Accept': 'application/json',
-                'Content-Type': 'multipart/form-data'
+                'Accept': 'application/json'
+                // Don't manually set 'Content-Type' for FormData
             }
         });
+
         console.log('Updated learner settings:', response.data);
-        settingsCache = null; // Clear cache
-        return response;
+        settingsCache = null;
+        return response.data;
     } catch (error) {
         console.error('Failed to update learner settings:', error.response?.data || error.message);
         throw error;
@@ -409,24 +408,39 @@ export const courseDetails = async (courseId) => {
         throw error; // Let the caller (EnrollmentPage) handle errors
     }
 };
-export const moduleDetails = async (courseId, moduleId) => {
-    try {
-        const response = await axios.get(`/api/courses/${courseId}/${moduleId}`);
-        return response.data;
-    } catch (error) {
-        throw error;
-    }} ;
 
-// Enroll in a course
-export const enrollNow = async (courseId) => {
+export const moduleDetails = async (courseId, moduleId = null) => {
     try {
-        const response = await api.post(`/courses/${courseId}/enroll`);
-        return response.data;
+        const token = localStorage.getItem('token');
+        if (!token) {
+            throw new Error('No authentication token found');
+        }
+        const url = moduleId ? `/courses/${courseId}/${moduleId}` : `/courses/${courseId}`;
+        console.log('🌐 Fetching module details:', url);
+        const response = await api.get(url, {
+            headers: { Authorization: `Bearer ${token}` },
+        });
+        console.log('🌐 Module Details Response:', response.data);
+        if (!response.data.success) {
+            const error = new Error(response.data.message || 'Failed to fetch module details');
+            error.status = response.data.status || 400;
+            throw error;
+        }
+        return response.data.data;
     } catch (error) {
-        throw error; // Let the caller handle errors
+        console.error('❌ Module Details Error:', error.response || error);
+        const status = error.response?.status || error.status || 500;
+        let message = 'Failed to fetch module details';
+        if (status === 400) message = 'Invalid course or module ID';
+        if (status === 404) message = error.message?.includes('module') ? 'Module not found' : 'Course not found';
+        if (status === 401) message = 'Authentication required';
+        if (status === 403) message = 'You are not enrolled in this course';
+        if (status === 500) message = 'Server error occurred while loading the module. Please try again later.';
+        const err = new Error(message);
+        err.status = status;
+        throw err;
     }
-};
-export const getAllCourses = async () => {
+};export const getAllCourses = async () => {
     try {
         const response = await api.get('/learner/all-courses');
         return response;
@@ -465,11 +479,30 @@ export const markNotificationAsRead = async (notificationId) => {
     }
 };
 
+export const enrollNow = async (courseId) => {
+    try {
+        const response = await api.post(`/courses/${courseId}/enroll`);
+        console.log('🌐 Enroll API Response:', response); // Debug
+        if (!response.data || !response.data.message) {
+            throw new Error('Invalid enrollment response');
+        }
+        return response.data;
+    } catch (error) {
+        console.error('❌ Enroll API Error:', error.response || error);
+        throw error;
+    }
+};
+
 export const leaveCourse = async (courseId) => {
     try {
         const response = await api.delete(`/courses/${courseId}/leave`);
+        console.log('🌐 Leave API Response:', response); // Debug
+        if (!response.data || !response.data.message) {
+            throw new Error('Invalid leave response');
+        }
         return response.data;
     } catch (error) {
+        console.error('❌ Leave API Error:', error.response || error);
         throw error;
     }
 };

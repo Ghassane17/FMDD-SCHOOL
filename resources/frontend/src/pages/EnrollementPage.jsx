@@ -39,7 +39,7 @@ import {
 } from '@mui/icons-material';
 
 const EnrollmentPage = () => {
-    const { id } = useParams();
+    const { courseId } = useParams();
     const navigate = useNavigate();
     const [course, setCourse] = useState(null);
     const [loading, setLoading] = useState(true);
@@ -49,14 +49,17 @@ const EnrollmentPage = () => {
 
     useEffect(() => {
         const fetchData = async () => {
+            setError(''); // Clear previous errors
             try {
-                const data = await courseDetails(id);
+                const data = await courseDetails(courseId);
+                console.log('🚀 Course Details Response:', data); // Debug
                 if (!data.course || typeof data.is_enrolled === 'undefined') {
                     throw new Error('Invalid response format');
                 }
                 setCourse(data.course);
                 setIsEnrolled(data.is_enrolled);
             } catch (err) {
+                console.error('❌ Course Details Error:', err);
                 if (err.response?.status === 404) {
                     setError('Course not found.');
                 } else if (err.response?.status === 400) {
@@ -69,20 +72,27 @@ const EnrollmentPage = () => {
             }
         };
         fetchData();
-    }, [id]);
+    }, [courseId]);
 
     const handleEnroll = async () => {
         setIsEnrolling(true);
+        setError(''); // Clear previous errors
         try {
-            await enrollNow(id);
+            const response = await enrollNow(courseId);
+            console.log('🚀 Enroll Response:', response); // Debug
+            if (!response.message || response.message !== 'Enrolled successfully') {
+                throw new Error('Unexpected enrollment response');
+            }
             setIsEnrolled(true);
-            // Navigate to the course learning page after successful enrollment
-            navigate(`/learner/courses/${id}/learn`);
+            // Navigate to the course learning page
+            navigate(`/learner/courses/${courseId}/1`);
         } catch (err) {
+            console.error('❌ Enroll Error:', err);
             if (err.response?.status === 401) {
-                navigate('/login', { state: { from: `/courses/${id}` } });
+                navigate('/login', { state: { from: `/courses/${courseId}` } });
             } else {
                 setError(err.response?.data?.message || 'Failed to enroll in the course.');
+                setTimeout(() => setError(''), 5000); // Clear error after 5s
             }
         } finally {
             setIsEnrolling(false);
@@ -90,25 +100,35 @@ const EnrollmentPage = () => {
     };
 
     const handleLeaveCourse = async () => {
+        setError(''); // Clear previous errors
         try {
-            await leaveCourse(id);
+            const response = await leaveCourse(courseId);
+            console.log('🚀 Leave Response:', response); // Debug
+            if (!response.message || response.message !== 'Successfully left the course') {
+                throw new Error('Unexpected leave response');
+            }
             setIsEnrolled(false);
-            // Optionally re-fetch course details to update students count
-            const data = await courseDetails(id);
+            // Refetch course details to update students_count
+            const data = await courseDetails(courseId);
+            if (!data.course) {
+                throw new Error('Failed to refresh course details');
+            }
             setCourse(data.course);
         } catch (err) {
+            console.error('❌ Leave Error:', err);
             setError(err.response?.data?.message || 'Failed to leave the course.');
+            setTimeout(() => setError(''), 5000); // Clear error after 5s
         }
     };
 
     if (loading) {
         return (
-            <Box sx={{ 
-                minHeight: '100vh', 
-                display: 'flex', 
-                alignItems: 'center', 
+            <Box sx={{
+                minHeight: '100vh',
+                display: 'flex',
+                alignItems: 'center',
                 justifyContent: 'center',
-                bgcolor: '#f8fafc' 
+                bgcolor: '#f8fafc'
             }}>
                 <CircularProgress size={60} thickness={4} />
             </Box>
@@ -122,12 +142,12 @@ const EnrollmentPage = () => {
                     <Alert severity="error" sx={{ mb: 3, maxWidth: 600, mx: 'auto' }}>
                         {error || 'No course data available.'}
                     </Alert>
-                    <Button 
-                        variant="contained" 
-                        onClick={() => navigate(-1)}
+                    <Button
+                        variant="contained"
+                        onClick={() => navigate('/learner/courses')}
                         size="large"
                     >
-                        Go Back
+                        View Courses
                     </Button>
                 </Box>
             </Container>
@@ -136,8 +156,8 @@ const EnrollmentPage = () => {
 
     return (
         <Box sx={{ minHeight: '100vh', bgcolor: '#f8fafc' }}>
-            {/* Hero Section - Enhanced */}
-            <Box sx={{ 
+            {/* Hero Section */}
+            <Box sx={{
                 bgcolor: 'linear-gradient(135deg, #1e3a8a 0%, #3b82f6 100%)',
                 background: 'linear-gradient(135deg, #1e3a8a 0%, #3b82f6 100%)',
                 color: 'white',
@@ -162,8 +182,8 @@ const EnrollmentPage = () => {
                             <Box sx={{ mb: 3 }}>
                                 <Chip
                                     label={course.level}
-                                    sx={{ 
-                                        bgcolor: 'rgba(255,255,255,0.15)', 
+                                    sx={{
+                                        bgcolor: 'rgba(255,255,255,0.15)',
                                         color: 'white',
                                         fontWeight: 600,
                                         fontSize: '0.875rem',
@@ -176,11 +196,11 @@ const EnrollmentPage = () => {
                             </Box>
 
                             {/* Course Title */}
-                            <Typography 
-                                variant="h2" 
-                                fontWeight="800" 
+                            <Typography
+                                variant="h2"
+                                fontWeight="800"
                                 gutterBottom
-                                sx={{ 
+                                sx={{
                                     fontSize: { xs: '2rem', sm: '2.5rem', md: '3rem' },
                                     lineHeight: 1.1,
                                     mb: 3
@@ -190,11 +210,11 @@ const EnrollmentPage = () => {
                             </Typography>
 
                             {/* Course Description */}
-                            <Typography 
-                                variant="h6" 
-                                sx={{ 
-                                    opacity: 0.9, 
-                                    mb: 4, 
+                            <Typography
+                                variant="h6"
+                                sx={{
+                                    opacity: 0.9,
+                                    mb: 4,
                                     lineHeight: 1.6,
                                     fontSize: { xs: '1.1rem', md: '1.25rem' },
                                     maxWidth: '90%'
@@ -202,9 +222,9 @@ const EnrollmentPage = () => {
                             >
                                 {course.description}
                             </Typography>
-                            
-                            {/* Course Stats - Enhanced */}
-                            <Box sx={{ 
+
+                            {/* Course Stats */}
+                            <Box sx={{
                                 mb: 4,
                                 p: 3,
                                 bgcolor: 'rgba(255,255,255,0.1)',
@@ -222,7 +242,7 @@ const EnrollmentPage = () => {
                                                 </Typography>
                                             </Stack>
                                             <Typography variant="body2" sx={{ opacity: 0.8, textAlign: 'center' }}>
-                                                ({course.students_count?.toLocaleString() || 0} reviews)
+                                                rating
                                             </Typography>
                                         </Stack>
                                     </Grid>
@@ -255,9 +275,9 @@ const EnrollmentPage = () => {
                                 </Grid>
                             </Box>
 
-                            {/* Instructor Info - Enhanced */}
-                            <Paper sx={{ 
-                                p: 3, 
+                            {/* Instructor Info */}
+                            <Paper sx={{
+                                p: 3,
                                 bgcolor: 'rgba(255,255,255,0.1)',
                                 backdropFilter: 'blur(10px)',
                                 border: '1px solid rgba(255,255,255,0.1)',
@@ -265,8 +285,8 @@ const EnrollmentPage = () => {
                                 color: 'white'
                             }}>
                                 <Stack direction="row" alignItems="center" spacing={3}>
-                                    <Avatar 
-                                        src={course.instructor.avatar} 
+                                    <Avatar
+                                        src={course.instructor.avatar}
                                         sx={{ width: 56, height: 56, bgcolor: 'rgba(255,255,255,0.2)' }}
                                     >
                                         <Person />
@@ -284,15 +304,20 @@ const EnrollmentPage = () => {
                         </Grid>
 
                         <Grid item xs={12} lg={5}>
-                            {/* Enrollment Card - Enhanced */}
-                            <Box sx={{ 
+                            {/* Enrollment Card */}
+                            <Box sx={{
                                 position: 'sticky',
                                 top: 20,
                                 maxWidth: 450,
                                 mx: 'auto'
                             }}>
-                                <Card sx={{ 
-                                    borderRadius: 4, 
+                                {error && ( // Display error if present
+                                    <Alert severity="error" sx={{ mb: 2 }}>
+                                        {error}
+                                    </Alert>
+                                )}
+                                <Card sx={{
+                                    borderRadius: 4,
                                     overflow: 'hidden',
                                     boxShadow: '0 25px 50px -12px rgba(0, 0, 0, 0.25)',
                                     border: '1px solid rgba(255,255,255,0.1)'
@@ -320,9 +345,9 @@ const EnrollmentPage = () => {
                                                         fullWidth
                                                         size="large"
                                                         startIcon={<PlayArrow />}
-                                                        onClick={() => navigate(`/learner/courses/${id}/learn`)}
-                                                        sx={{ 
-                                                            py: 2, 
+                                                        onClick={() => navigate(`/learner/courses/${courseId}/1`)} // Fixed id to courseId
+                                                        sx={{
+                                                            py: 2,
                                                             fontWeight: 600,
                                                             textTransform: 'none',
                                                             fontSize: '1.1rem',
@@ -337,8 +362,8 @@ const EnrollmentPage = () => {
                                                         size="large"
                                                         color="error"
                                                         onClick={handleLeaveCourse}
-                                                        sx={{ 
-                                                            py: 2, 
+                                                        sx={{
+                                                            py: 2,
                                                             fontWeight: 600,
                                                             textTransform: 'none',
                                                             fontSize: '1.1rem',
@@ -357,8 +382,8 @@ const EnrollmentPage = () => {
                                                     size="large"
                                                     onClick={handleEnroll}
                                                     disabled={isEnrolling}
-                                                    sx={{ 
-                                                        py: 2, 
+                                                    sx={{
+                                                        py: 2,
                                                         fontWeight: 600,
                                                         textTransform: 'none',
                                                         fontSize: '1.1rem',
@@ -383,17 +408,16 @@ const EnrollmentPage = () => {
                 </Container>
             </Box>
 
-            {/* Main Content - Enhanced Layout */}
-            <Container maxWidth="xl" sx={{ 
+            {/* Main Content */}
+            <Container maxWidth="xl" sx={{
                 py: { xs: 3, md: 4 },
                 px: { xs: 2, md: 3 }
             }}>
                 <Grid container spacing={3}>
-                    {/* Main Content */}
                     <Grid item xs={12} lg={6}>
                         <Stack spacing={3}>
-                            {/* What You'll Learn - Enhanced */}
-                            <Paper sx={{ 
+                            {/* What You'll Learn */}
+                            <Paper sx={{
                                 p: { xs: 2, md: 3 },
                                 borderRadius: 2,
                                 boxShadow: '0 4px 20px rgba(0, 0, 0, 0.08)',
@@ -415,8 +439,8 @@ const EnrollmentPage = () => {
                                         "Learn industry best practices and standards"
                                     ].map((outcome, index) => (
                                         <Stack key={index} direction="row" spacing={2} alignItems="center">
-                                            <CheckCircle sx={{ 
-                                                color: 'success.main', 
+                                            <CheckCircle sx={{
+                                                color: 'success.main',
                                                 fontSize: 24,
                                                 flexShrink: 0
                                             }} />
@@ -428,8 +452,8 @@ const EnrollmentPage = () => {
                                 </Stack>
                             </Paper>
 
-                            {/* Course Content Overview - Enhanced */}
-                            <Paper sx={{ 
+                            {/* Course Content Overview */}
+                            <Paper sx={{
                                 p: { xs: 2, md: 3 },
                                 borderRadius: 2,
                                 boxShadow: '0 4px 20px rgba(0, 0, 0, 0.08)',
@@ -448,20 +472,19 @@ const EnrollmentPage = () => {
                                             •
                                         </Typography>
                                         <Typography color="text.secondary" fontSize="1.1rem">
-                                           About {Math.floor((course.modules?.reduce((acc, module) => acc + module.duration, 0) || 0) / 60)} hours in total
+                                            About {Math.floor((course.modules?.reduce((acc, module) => acc + module.duration, 0) || 0) / 60)} hours in total
                                         </Typography>
                                     </Stack>
                                 </Box>
-                                
-                                {/* Course Modules - Enhanced */}
+
                                 <Stack spacing={2}>
                                     {course.modules?.map((module, index) => (
-                                        <Box key={module.id} sx={{ 
+                                        <Box key={module.id} sx={{
                                             p: 2,
-                                            border: '1px solid #e2e8f0', 
+                                            border: '1px solid #e2e8f0',
                                             borderRadius: 2,
                                             transition: 'all 0.2s ease-in-out',
-                                            '&:hover': { 
+                                            '&:hover': {
                                                 bgcolor: '#f8fafc',
                                                 transform: 'translateY(-1px)',
                                                 boxShadow: '0 4px 12px rgba(0, 0, 0, 0.1)'
@@ -470,11 +493,11 @@ const EnrollmentPage = () => {
                                             <Stack direction="row" justifyContent="space-between" alignItems="center">
                                                 <Box sx={{ flex: 1 }}>
                                                     <Stack direction="row" alignItems="center" spacing={2} sx={{ mb: 1 }}>
-                                                        <Typography 
-                                                            variant="body2" 
-                                                            color="primary" 
+                                                        <Typography
+                                                            variant="body2"
+                                                            color="primary"
                                                             fontWeight="600"
-                                                            sx={{ 
+                                                            sx={{
                                                                 bgcolor: 'primary.main',
                                                                 color: 'white',
                                                                 px: 1.5,
@@ -500,8 +523,8 @@ const EnrollmentPage = () => {
                                 </Stack>
                             </Paper>
 
-                            {/* Instructor - Enhanced */}
-                            <Paper sx={{ 
+                            {/* Instructor */}
+                            <Paper sx={{
                                 p: { xs: 2, md: 3 },
                                 borderRadius: 2,
                                 boxShadow: '0 4px 20px rgba(0, 0, 0, 0.08)',
@@ -518,9 +541,9 @@ const EnrollmentPage = () => {
                                 </Box>
 
                                 <Stack direction={{ xs: 'column', sm: 'row' }} spacing={3} alignItems="flex-start">
-                                    <Avatar 
-                                        src={course.instructor.avatar} 
-                                        sx={{ 
+                                    <Avatar
+                                        src={course.instructor.avatar}
+                                        sx={{
                                             width: 96,
                                             height: 96,
                                             bgcolor: 'primary.main',
@@ -536,16 +559,15 @@ const EnrollmentPage = () => {
                                         <Typography color="text.secondary" sx={{ mb: 3, fontSize: '1.1rem', lineHeight: 1.6 }}>
                                             {course.instructor.bio}
                                         </Typography>
-                                        
+
                                         <Stack spacing={3}>
-                                            {/* Skills */}
                                             <Box>
                                                 <Typography variant="h6" fontWeight="600" gutterBottom>
                                                     Skills & Expertise
                                                 </Typography>
                                                 <Stack direction="row" spacing={1} flexWrap="wrap" useFlexGap>
                                                     {course.instructor.skills?.[0]?.map((skill, index) => (
-                                                        <Chip 
+                                                        <Chip
                                                             key={index}
                                                             label={skill}
                                                             variant="outlined"
@@ -555,7 +577,6 @@ const EnrollmentPage = () => {
                                                 </Stack>
                                             </Box>
 
-                                            {/* Certifications */}
                                             {course.instructor.certifications?.length > 0 && (
                                                 <Box>
                                                     <Typography variant="h6" fontWeight="600" gutterBottom>
@@ -563,7 +584,7 @@ const EnrollmentPage = () => {
                                                     </Typography>
                                                     <Stack spacing={2}>
                                                         {course.instructor.certifications?.map((cert, index) => (
-                                                            <Box key={index} sx={{ 
+                                                            <Box key={index} sx={{
                                                                 p: 2,
                                                                 bgcolor: '#f8fafc',
                                                                 borderRadius: 2,
@@ -581,7 +602,6 @@ const EnrollmentPage = () => {
                                                 </Box>
                                             )}
 
-                                            {/* Languages */}
                                             {course.instructor.languages?.length > 0 && (
                                                 <Box>
                                                     <Typography variant="h6" fontWeight="600" gutterBottom>
@@ -589,7 +609,7 @@ const EnrollmentPage = () => {
                                                     </Typography>
                                                     <Stack direction="row" spacing={1} flexWrap="wrap" useFlexGap>
                                                         {course.instructor.languages?.map((lang, index) => (
-                                                            <Chip 
+                                                            <Chip
                                                                 key={index}
                                                                 label={lang.name}
                                                                 variant="outlined"
@@ -606,12 +626,11 @@ const EnrollmentPage = () => {
                         </Stack>
                     </Grid>
 
-                    {/* Sidebar - Enhanced */}
+                    {/* Sidebar */}
                     <Grid item xs={12} lg={6}>
                         <Box sx={{ position: 'sticky', top: 20 }}>
                             <Stack spacing={3}>
-                                {/* Course Features - Enhanced */}
-                                <Paper sx={{ 
+                                <Paper sx={{
                                     p: { xs: 2, md: 3 },
                                     borderRadius: 2,
                                     boxShadow: '0 4px 20px rgba(0, 0, 0, 0.08)',
@@ -629,7 +648,7 @@ const EnrollmentPage = () => {
                                             { icon: <AccessTime />, text: "Full access" }
                                         ].map((feature, index) => (
                                             <Stack key={index} direction="row" spacing={2} alignItems="center">
-                                                <Box sx={{ 
+                                                <Box sx={{
                                                     color: 'primary.main',
                                                     bgcolor: 'primary.50',
                                                     p: 1,
@@ -648,8 +667,7 @@ const EnrollmentPage = () => {
                                     </Stack>
                                 </Paper>
 
-                                {/* Requirements - Enhanced */}
-                                <Paper sx={{ 
+                                <Paper sx={{
                                     p: { xs: 2, md: 3 },
                                     borderRadius: 2,
                                     boxShadow: '0 4px 20px rgba(0, 0, 0, 0.08)',
@@ -666,10 +684,10 @@ const EnrollmentPage = () => {
                                             'Willingness to learn'
                                         ].map((requirement, index) => (
                                             <Stack key={index} direction="row" spacing={2} alignItems="flex-start">
-                                                <Box sx={{ 
+                                                <Box sx={{
                                                     width: 8,
                                                     height: 8,
-                                                    bgcolor: 'primary.main', 
+                                                    bgcolor: 'primary.main',
                                                     borderRadius: '50%',
                                                     mt: 1,
                                                     flexShrink: 0

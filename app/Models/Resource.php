@@ -33,8 +33,8 @@ class Resource extends Model
     /**
      * Get the course that owns the resource.
      */
-    public function module(): \Illuminate\Database\Eloquent\Relations\BelongsTo
+    public function course(): \Illuminate\Database\Eloquent\Relations\BelongsTo
     {
-        return $this->belongsTo(Module::class);
+        return $this->belongsTo(Course::class);
     }
 }

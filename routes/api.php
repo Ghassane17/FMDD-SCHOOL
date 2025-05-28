@@ -1,5 +1,8 @@
 <?php
 
+use App\Http\Controllers\CommentController;
+use App\Http\Controllers\CourseInstructorController;
+use App\Http\Controllers\CourseResourceController;
 use App\Http\Controllers\PublicController;
 use Illuminate\Support\Facades\Route;
 use App\Http\Controllers\Auth\RegisterController;
@@ -32,16 +35,19 @@ Route::middleware('auth:sanctum')->group(function () {
     Route::get('/learner/all-courses', [CourseController::class, 'getAllCourses'])->name('learner.enrolled-courses');
     Route::get('/learner/all-enrolled-courses', [CourseController::class, 'getEnrolledCourses'])->name('learner.enrolled-courses');
     Route::get('/courses/{id}', [CourseController::class, 'getCourseDetails']);
-    Route::get('/courses/{id}/{module}', [CourseResourceController::class, 'getModule'])->name('course.resources.index');
+    Route::get('/courses/{id}/{module}', [CourseResourceController::class, 'getModule'])
+        ->where('id', '[0-9]+'); // Ensure {id} is numeric
+    Route::post('/courses/{course}/comments', [CommentController::class, 'store']);
+    Route::put('/courses/{course}', [CourseResourceController::class, 'updateCourseRating']);
 
     Route::post('/courses/{id}/enroll', [CourseController::class, 'enrollNow']);
     Route::delete('/courses/{course}/leave', [CourseController::class, 'leave']);
+
 
     // course creation
     Route::post('/createCourse', [CourseInstructorController::class, 'createCourse'])->name('instructor.createCourse');
     //settings
     Route::get('/learner/settings', [LearnerController::class, 'settings'])->name('learner.settings');
-    Route::patch('/learner/settings', [LearnerController::class, 'updateSettings'])->name('learner.settings.update');
 
 
 
