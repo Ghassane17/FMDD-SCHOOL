@@ -1,4 +1,3 @@
-
 import React from 'react';
 import { BookOpen, Calendar, CreditCard, Inbox, Settings, Users } from 'lucide-react';
 
@@ -13,24 +12,22 @@ const Navigation = ({ activeTab, setActiveTab }) => {
   ];
   
   return (
-    <div className="bg-white shadow-sm rounded-lg">
-      <div className="container mx-auto">
-        <div className="flex items-center space-x-1 md:space-x-4 overflow-x-auto">
-          {menuItems.map(item => (
-            <button
-              key={item.id}
-              className={`flex items-center py-4 px-2 md:px-4 border-b-2 font-medium text-sm ${
-                activeTab === item.id
-                  ? 'border-blue-600 text-blue-600'
-                  : 'border-transparent text-gray-500 hover:text-gray-700 hover:border-gray-300'
-              }`}
-              onClick={() => setActiveTab(item.id)}
-            >
-              {item.icon}
-              <span className="ml-2 whitespace-nowrap">{item.label}</span>
-            </button>
-          ))}
-        </div>
+    <div className="bg-white shadow rounded-2xl mb-6 px-2 py-3">
+      <div className="flex items-center justify-center space-x-2 md:space-x-4 overflow-x-auto">
+        {menuItems.map(item => (
+          <button
+            key={item.id}
+            className={`flex items-center px-4 py-2 rounded-full font-medium text-sm transition-all duration-150
+              ${activeTab === item.id
+                ? 'bg-gradient-to-r from-indigo-600 to-blue-500 text-white shadow'
+                : 'bg-gray-100 text-gray-600 hover:bg-indigo-50 hover:text-indigo-700'}
+            `}
+            onClick={() => setActiveTab(item.id)}
+          >
+            {item.icon}
+            <span className="ml-2 whitespace-nowrap">{item.label}</span>
+          </button>
+        ))}
       </div>
     </div>
   );

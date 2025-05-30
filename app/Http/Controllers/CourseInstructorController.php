@@ -5,7 +5,7 @@ namespace App\Http\Controllers;
 use App\Models\Course;
 use App\Models\Instructor;
 use App\Models\Module;
-use App\Models\CourseResource;
+use App\Models\Resource;
 use App\Models\QuizQuestion;
 use App\Models\Exam;
 use App\Models\ExamQuestion;
@@ -97,14 +97,14 @@ class CourseInstructorController extends Controller
             'modules.*.title'           => 'required|string|max:255',
             'modules.*.type'            => 'required|in:text,pdf,image,video,quiz',
             'modules.*.content'         => 'required_if:modules.*.type,text|nullable|string',
-            'modules.*.file'            => 'required_if:modules.*.type,pdf,image,video|nullable|string',  // Changed to string
+            'modules.*.file'            => 'required_if:modules.*.type,pdf,image,video|nullable|file',
             'modules.*.duration'        => 'nullable|integer|min:0',
 
             // Module quiz questions
             'modules.*.questions'                      => 'required_if:modules.*.type,quiz|nullable|array|min:1',
-            'modules.*.questions.*.question'           => 'required|string',
-            'modules.*.questions.*.options'            => 'required|array|min:2',
-            'modules.*.questions.*.correctAnswer'      => 'required|integer|min:0',
+            'modules.*.questions.*.question'           => 'required_if:modules.*.type,quiz|string',
+            'modules.*.questions.*.options'            => 'required_if:modules.*.type,quiz|array|min:2',
+            'modules.*.questions.*.correctAnswer'      => 'required_if:modules.*.type,quiz|integer|min:0',
 
             // Final Exam
             'exams'                             => 'required|array',
@@ -115,9 +115,10 @@ class CourseInstructorController extends Controller
 
             // General Course Resources
             'course_resources'                   => 'nullable|array',
-            'course_resources.*.name'            => 'required|string|max:255',
+            'course_resources.*.name'            => 'required_if:course_resources.*.type,other|string|max:255',
             'course_resources.*.type'            => 'required|in:pdf,video,image,link,other',
             'course_resources.*.url'             => 'nullable|string|max:500',
+            'course_resources.*.file'            => 'required_if:course_resources.*.type,pdf,image,video|nullable|file',
         ],);
 
         if ($validator->fails()) {
@@ -147,8 +148,8 @@ class CourseInstructorController extends Controller
             // ─── Thumbnail upload ────────────────────────────────────────
             if ($request->hasFile('course_thumbnail')) {
                 $path = $request->file('course_thumbnail')
-                            ->store("public/courses/{$course->id}/thumbnail");
-                $course->course_thumbnail = Storage::url($path);
+                            ->store("courses/{$course->id}/thumbnail", 'public');
+                $course->course_thumbnail = '/storage/' . $path;
                 $course->save();
             }
 
@@ -166,8 +167,8 @@ class CourseInstructorController extends Controller
                 // file‑based content
                 if (in_array($m['type'], ['pdf','image','video']) && $request->hasFile("modules.{$i}.file")) {
                     $fp = $request->file("modules.{$i}.file")
-                                 ->store("public/courses/{$course->id}/modules/{$module->id}");
-                    $module->file_path = Storage::url($fp);
+                                ->store("courses/{$course->id}/modules/{$module->id}", 'public');
+                    $module->file_path = '/storage/' . $fp;
                     $module->save();
                 }
 
@@ -206,14 +207,14 @@ class CourseInstructorController extends Controller
             if ($request->has('resources')) {
                 foreach ($request->resources as $r) {
                     $url = $r['type']==='link'
-                         ? $r['url']
-                         : $r['file']->store("public/courses/{$course->id}/resources");
+                        ? $r['url']
+                        : $r['file']->store("courses/{$course->id}/resources", 'public');
 
-                    CourseResource::create([
+                        Resource::create([
                         'course_id' => $course->id,
                         'name'      => $r['name'],
                         'type'      => $r['type'],
-                        'url'       => $r['type']==='link' ? $url : Storage::url($url),
+                        'url'       => $r['type']==='link' ? $url : '/storage/' . $url,
                     ]);
                 }
             }

@@ -199,7 +199,7 @@ class InstructorController extends Controller
         }
     }
 
-    public function availability(Request $request)
+    public function updateAvailability(Request $request)
     {
         try {
             $user = Auth::user();
@@ -235,7 +235,7 @@ class InstructorController extends Controller
         }
     }
 
-    public function bankInfo(Request $request)
+    public function updateBankInfo(Request $request)
     {
         try {
             $user = Auth::user();
@@ -270,6 +270,8 @@ class InstructorController extends Controller
             ], 500);
         }
     }
+
+    
 }
 
         

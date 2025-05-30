@@ -31,6 +31,7 @@ Route::middleware('auth:sanctum')->group(function () {
     //Dashboard get
     Route::get('/learner', [LearnerController::class, 'dashboard'])->name('learner.dashboard');
 
+
     //courses routes
     Route::get('/learner/all-courses', [CourseController::class, 'getAllCourses'])->name('learner.enrolled-courses');
     Route::get('/learner/all-enrolled-courses', [CourseController::class, 'getEnrolledCourses'])->name('learner.enrolled-courses');
@@ -53,4 +54,7 @@ Route::middleware('auth:sanctum')->group(function () {
 
     // Instructor Routes
     Route::get('/instructor/dashboard', [InstructorController::class, 'dashboard'])->name('instructor.dashboard');
+    Route::patch('/instructor/availability', [InstructorController::class, 'updateAvailability'])->name('instructor.updateAvailability');
+    Route::patch('/instructor/bankInfo', [InstructorController::class, 'updateBankInfo'])->name('instructor.updateBankInfo');
+    
 });

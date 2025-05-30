@@ -32,9 +32,9 @@ export const trainerData = {
     averageRating: 4.8
   },
   comments: [
-    { id: 1, user: "Thomas D.", course: "React pour débutants", text: "Excellente formatrice, explications claires et exercices pratiques très utiles.", date: "15/04/2025", rating: 5 },
-    { id: 2, user: "Marie L.", course: "Data Science avec Python", text: "Cours complet et bien structuré. Sophie est toujours disponible pour répondre aux questions.", date: "03/04/2025", rating: 5 },
-    { id: 3, user: "Julien M.", course: "JavaScript Avancé", text: "J'ai beaucoup appris grâce à ce cours et aux conseils personnalisés de Sophie.", date: "28/03/2025", rating: 4 }
+    { id: 1, user: "Amine Bazza", course: "React pour débutants", text: "Excellente formatrice, explications claires et exercices pratiques très utiles.", date: "15/04/2025", rating: 5 },
+    { id: 2, user: "Ghassane Hmimou", course: "Data Science avec Python", text: "Cours complet et bien structuré. Sophie est toujours disponible pour répondre aux questions.", date: "03/04/2025", rating: 5 },
+    { id: 3, user: "Yahya El Haddad", course: "JavaScript Avancé", text: "J'ai beaucoup appris grâce à ce cours et aux conseils personnalisés de Sophie.", date: "28/03/2025", rating: 4 }
   ],
   bankInfo: {
     iban: "FR76 **** **** **** **** 1234",
