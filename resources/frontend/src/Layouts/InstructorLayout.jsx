@@ -15,14 +15,18 @@ const InstructorLayout = () => {
         const fetchInstructorData = async () => {
             try {
                 const response = await getInstructorDashboard();
-                setCurrentInstructor(response.instructor);
+                console.log('Instructor dashboard response:', response);
+                console.log('Instructor data:', response.instructor);
+                setCurrentInstructor(response.user);
                 setLoading(false);
             } catch (err) {
+                console.error('Error fetching instructor data:', err);
                 setError('Please log in as an instructor.');
                 setLoading(false);
                 setTimeout(() => navigate('/login'), 2000);
             }
         };
+    
 
         fetchInstructorData();
     }, [navigate]);
@@ -75,21 +79,10 @@ const InstructorLayout = () => {
                             </button>
                             {/* Profile Dropdown */}
                             <div className="flex items-center space-x-3">
-                                <div className="h-10 w-10 rounded-full bg-white overflow-hidden border-2 border-indigo-200 shadow">
-                                    {currentInstructor?.user?.avatar ? (
-                                        <img
-                                            src={currentInstructor.user.avatar}
-                                            alt="Profile"
-                                            className="h-full w-full object-cover"
-                                        />
-                                    ) : (
-                                        <User className="h-full w-full p-1 text-indigo-400" />
-                                    )}
-                                </div>
+                                <DropDownInstructor currentInstructor={currentInstructor} />
                                 <span className="hidden md:block text-base font-medium text-white drop-shadow">
-                                    {currentInstructor?.user?.name || 'Instructor'}
+                                    {currentInstructor?.name || 'Instructor'}
                                 </span>
-                                <DropDownInstructor />
                             </div>
                         </div>
                     </div>

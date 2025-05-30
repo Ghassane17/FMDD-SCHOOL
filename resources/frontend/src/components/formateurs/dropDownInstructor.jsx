@@ -10,14 +10,24 @@ import {
 } from "@/components/ui/dropdown-menu"
 import { Users, BookOpen, Calendar, Inbox, CreditCard, Settings, LogOut, User, Mail } from "lucide-react"
 
-export function DropDownInstructor() {
+export function DropDownInstructor({ currentInstructor }) {
   const navigate = useNavigate();
 
   return (
     <DropdownMenu>
       <DropdownMenuTrigger asChild>
         <button className="focus:outline-none">
-          <User className="w-6 h-6" />
+        <div className="h-10 w-10 rounded-full bg-white overflow-hidden border-2 border-indigo-200 shadow">
+                                    {currentInstructor?.user?.avatar ? (
+                                        <img
+                                            src={currentInstructor.user.avatar}
+                                            alt="Profile"
+                                            className="h-full w-full object-cover"
+                                        />
+                                    ) : (
+                                        <User className="h-full w-full p-1 text-indigo-400" />
+                                    )}
+                                </div>
         </button>
       </DropdownMenuTrigger>
       <DropdownMenuContent className="w-56">
