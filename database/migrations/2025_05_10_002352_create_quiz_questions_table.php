@@ -28,4 +28,4 @@ return new class extends Migration
     {
         Schema::dropIfExists('quiz_questions');
     }
-}; 
+};

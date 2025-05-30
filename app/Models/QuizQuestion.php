@@ -26,4 +26,4 @@ class QuizQuestion extends Model
     {
         return $this->belongsTo(Module::class);
     }
-} 
+}

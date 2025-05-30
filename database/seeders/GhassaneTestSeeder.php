@@ -24,7 +24,7 @@ class GhassaneTestSeeder extends Seeder
             'email' => 'ghassanehmimou2003@gmail.com',
             'password' => Hash::make('123456789'),
             'role' => 'learner',
-            'avatar' => 'storage/avatars/WsuhBYEJy9VT5lSb3yV2IlyugJvzt7OEEtmsFeXH.jpg',
+            'avatar' => storage_path('app/public/avatars/WsuhBYEJy9VT5lSb3yV2IlyugJvzt7OEEtmsFeXH.jpg'),
         ]);
         Learner::create(['user_id' => $learnerUser->id]);
 
