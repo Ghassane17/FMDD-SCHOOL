@@ -18,7 +18,7 @@ return new class extends Migration
             $table->string('category')->nullable(); //that one should be an enum with the categories of the courses
             $table->float('rating')->nullable(); // Statique
             $table->boolean('is_published')->default(true); //Going to be used for the admin panel
-            $table->integer('duration_hours')->nullable();
+            $table->integer('duration_min')->nullable();
             //$table->string('language')->default('fr');
             $table->timestamps();
 

@@ -16,7 +16,7 @@ class Course extends Model
         'course_thumbnail',
         'level',
         'rating',
-        'duration_hours',
+        'duration_min',
         'category',
         'is_published'
     ];

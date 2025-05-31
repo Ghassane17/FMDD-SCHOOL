@@ -34,8 +34,8 @@ const CreateCourse = () => {
       title: '',
       instructions: '',
       questions: [],
-      duration: 60,
-      passingScore: 70
+      duration_min: 60,
+      passing_score: 70
     }
   });
   
@@ -182,10 +182,10 @@ const CreateCourse = () => {
       const questionErrors = validateExamQuestions(courseData.exam.questions);
       Object.assign(errors, questionErrors);
     }
-    if (courseData.exam.duration < 5) {
+    if (courseData.exam.duration_min < 5) {
       errors.examDuration = 'La durée minimale est de 5 minutes';
     }
-    if (courseData.exam.passingScore < 1 || courseData.exam.passingScore > 100) {
+    if (courseData.exam.passing_score < 1 || courseData.exam.passing_score > 100) {
       errors.examPassingScore = 'Le score de passage doit être entre 1 et 100';
     }
     
@@ -387,7 +387,7 @@ const CreateCourse = () => {
     if (e.target.files[0]) {
       setNewModule(prev => ({
         ...prev,
-        content: URL.createObjectURL(e.target.files[0])
+        content: e.target.files[0]  // Store the actual File object
       }));
     }
   };
@@ -403,7 +403,7 @@ const CreateCourse = () => {
       formData.append('description', courseData.description);
       formData.append('category', courseData.category);
       formData.append('level', courseData.level);
-      formData.append('duration_hours', courseData.duration_hours || 0);
+      formData.append('duration_min', courseData.duration_min || 0);
 
       // Log the data being sent
       console.log('Course Data:', {
@@ -411,7 +411,7 @@ const CreateCourse = () => {
         description: courseData.description,
         category: courseData.category,
         level: courseData.level,
-        duration_hours: courseData.duration_hours,
+        duration_min: courseData.duration_min,
         modulesCount: courseData.modules.length,
         examQuestionsCount: courseData.exam.questions.length,
         resourcesCount: courseData.resources.length
@@ -419,14 +419,25 @@ const CreateCourse = () => {
 
       // Add course thumbnail
       if (courseData.image) {
-        // Convert data URL to File object if needed
-        if (courseData.image.startsWith('data:')) {
-          const response = await fetch(courseData.image);
-          const blob = await response.blob();
-          formData.append('course_thumbnail', blob, 'course_thumbnail.jpg');
-        } else {
+        if (courseData.image instanceof File) {
           formData.append('course_thumbnail', courseData.image);
+        } else if (typeof courseData.image === 'string' && courseData.image.startsWith('data:')) {
+          try {
+            const response = await fetch(courseData.image);
+            const blob = await response.blob();
+            const file = new File([blob], 'course_thumbnail.jpg', { 
+              type: 'image/jpeg'
+            });
+            formData.append('course_thumbnail', file);
+          } catch (error) {
+            console.error('Error processing thumbnail:', error);
+            throw new Error('Failed to process course thumbnail');
+          }
+        } else {
+          throw new Error('Invalid course thumbnail format');
         }
+      } else {
+        throw new Error('Course thumbnail is required');
       }
 
       // Add modules
@@ -437,16 +448,17 @@ const CreateCourse = () => {
         
         if (module.type === 'text') {
           formData.append(`modules[${index}][content]`, module.content);
-        } else if (['pdf', 'image', 'video'].includes(module.type) && module.content) {
-          // Convert data URL to File object if needed
-          if (module.content.startsWith('data:')) {
+        } else if (['pdf', 'image', 'video'].includes(module.type)) {
+          if (module.content instanceof File) {
+            formData.append(`modules[${index}][file]`, module.content);
+          } else if (module.content && module.content.startsWith('data:')) {
+            // Convert data URL to File
             fetch(module.content)
               .then(response => response.blob())
               .then(blob => {
-                formData.append(`modules[${index}][file]`, blob, `module_${index}_file`);
+                const file = new File([blob], `module_${index}_file`, { type: blob.type });
+                formData.append(`modules[${index}][file]`, file);
               });
-          } else {
-            formData.append(`modules[${index}][file]`, module.content);
           }
         } else if (module.type === 'quiz' && module.content?.questions) {
           module.content.questions.forEach((question, qIndex) => {
@@ -459,39 +471,34 @@ const CreateCourse = () => {
         }
       });
 
-      // Add exam data - Fixed structure to match backend expectations
-      formData.append('exams[title]', courseData.exam.title);
-      formData.append('exams[instructions]', courseData.exam.instructions || '');
-      formData.append('exams[duration_min]', courseData.exam.duration);
-      formData.append('exams[passing_score]', courseData.exam.passingScore);
+      // Add resources
+      if (courseData.resources && courseData.resources.length > 0) {
+        courseData.resources.forEach((resource, index) => {
+          formData.append(`resources[${index}][name]`, resource.name);
+          formData.append(`resources[${index}][type]`, resource.type);
+          
+          if (['pdf', 'video', 'image'].includes(resource.type) && resource.file) {
+            formData.append(`resources[${index}][file]`, resource.file);
+          } else if (['link', 'other'].includes(resource.type) && resource.url) {
+            formData.append(`resources[${index}][url]`, resource.url);
+          }
+        });
+      }
+
+      // Add exam data
+      formData.append('exam[title]', courseData.exam.title);
+      formData.append('exam[instructions]', courseData.exam.instructions || '');
+      formData.append('exam[duration_min]', courseData.exam.duration_min);
+      formData.append('exam[passing_score]', courseData.exam.passing_score);
 
       // Add exam questions
       courseData.exam.questions.forEach((question, index) => {
-        formData.append(`exams[questions][${index}][question]`, question.question);
+        formData.append(`exam[questions][${index}][question]`, question.question);
         question.options.forEach((option, oIndex) => {
-          formData.append(`exams[questions][${index}][options][${oIndex}]`, option);
+          formData.append(`exam[questions][${index}][options][${oIndex}]`, option);
         });
-        formData.append(`exams[questions][${index}][correctAnswer]`, question.correctAnswer);
+        formData.append(`exam[questions][${index}][correctAnswer]`, question.correctAnswer);
       });
-
-      // Add course resources - Handle empty case properly
-      if (courseData.resources && courseData.resources.length > 0) {
-        courseData.resources.forEach((resource, index) => {
-          formData.append(`course_resources[${index}][name]`, resource.name);
-          formData.append(`course_resources[${index}][type]`, resource.type);
-          
-          if (['pdf', 'video', 'image'].includes(resource.type) && resource.file) {
-            formData.append(`course_resources[${index}][file]`, resource.file);
-          } else if (['link', 'other'].includes(resource.type) && resource.url) {
-            formData.append(`course_resources[${index}][url]`, resource.url);
-          }
-        });
-      } else {
-        // Add a single empty resource to satisfy validation
-        formData.append('course_resources[0][name]', '');
-        formData.append('course_resources[0][type]', 'other');
-        formData.append('course_resources[0][url]', '');
-      }
 
       // Show loading state with progress
       const loadingToast = toast.loading('Création du cours en cours... (0%)');
@@ -503,13 +510,14 @@ const CreateCourse = () => {
 
       // Send request to create course with progress tracking
       const response = await createCourse(formData, updateProgress);
+      console.log("all formData", response);
 
       // Update loading toast to success
       toast.dismiss(loadingToast);
       toast.success('Cours créé avec succès!');
 
       // Navigate to instructor dashboard or course page
-      navigate('/instructor/courses');
+      //navigate('/instructor/courses');
 
     } catch (error) {
       console.error('Error creating course:', error);
@@ -755,7 +763,7 @@ const CreateCourse = () => {
                 {courseData.image ? (
                   <div className="relative mb-4 group">
                     <img 
-                      src={courseData.image} 
+                      src={courseData.image instanceof File ? URL.createObjectURL(courseData.image) : courseData.image} 
                       alt="Course cover" 
                       className="w-full h-48 object-cover rounded-lg shadow-md transition-all duration-300 group-hover:shadow-xl" 
                     />
@@ -773,12 +781,19 @@ const CreateCourse = () => {
                       type="file"
                       id="courseImage"
                       className="hidden"
-                      accept="image/*"
+                      accept="image/jpeg,image/png,image/jpg,image/gif,image/svg+xml"
                       onChange={(e) => {
                         if (e.target.files[0]) {
+                          const file = e.target.files[0];
+                          // Validate file type
+                          const allowedTypes = ['image/jpeg', 'image/png', 'image/jpg', 'image/gif', 'image/svg+xml'];
+                          if (!allowedTypes.includes(file.type)) {
+                            toast.error('Le fichier doit être une image (jpeg, png, jpg, gif, svg)');
+                            return;
+                          }
                           setCourseData(prev => ({
                             ...prev,
-                            image: URL.createObjectURL(e.target.files[0])
+                            image: file
                           }));
                         }
                       }}
@@ -789,7 +804,7 @@ const CreateCourse = () => {
                           <ImageIcon className="h-8 w-8 text-blue-500" />
                         </div>
                         <span className="text-gray-600 font-medium">Cliquez pour ajouter une image</span>
-                        <span className="text-sm text-gray-500 mt-1">PNG, JPG jusqu'à 5MB</span>
+                        <span className="text-sm text-gray-500 mt-1">PNG, JPG, GIF, SVG jusqu'à 5MB</span>
                       </div>
                     </label>
                   </div>
@@ -1229,9 +1244,9 @@ const CreateCourse = () => {
                   <label className="block text-gray-700 mb-2">Durée (minutes)</label>
                   <input
                     type="number"
-                    name="duration"
+                    name="duration_min"
                     min="5"
-                    value={courseData.exam.duration}
+                    value={courseData.exam.duration_min}
                     onChange={handleExamChange}
                     className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500"
                   />
@@ -1240,10 +1255,10 @@ const CreateCourse = () => {
                   <label className="block text-gray-700 mb-2">Score de passage (%)</label>
                   <input
                     type="number"
-                    name="passingScore"
+                    name="passing_score"
                     min="1"
                     max="100"
-                    value={courseData.exam.passingScore}
+                    value={courseData.exam.passing_score}
                     onChange={handleExamChange}
                     className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500"
                   />
@@ -1638,8 +1653,8 @@ const CreateCourse = () => {
               {courseData.exam.title ? (
                 <div>
                   <p><span className="font-medium">Titre:</span> {courseData.exam.title}</p>
-                  <p><span className="font-medium">Durée:</span> {courseData.exam.duration} minutes</p>
-                  <p><span className="font-medium">Score de passage:</span> {courseData.exam.passingScore}%</p>
+                  <p><span className="font-medium">Durée:</span> {courseData.exam.duration_min} minutes</p>
+                  <p><span className="font-medium">Score de passage:</span> {courseData.exam.passing_score}%</p>
                   <p className="mt-2"><span className="font-medium">Nombre de questions:</span> {courseData.exam.questions.length}</p>
                 </div>
               ) : (

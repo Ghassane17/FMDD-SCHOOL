@@ -47,6 +47,7 @@ class GhassaneTestSeeder extends Seeder
             'category' => 'Web Development',
             'is_published' => true,
             'rating' => 0.00,
+            'duration_min' => 120,
         ]);
 
         // Create modules
