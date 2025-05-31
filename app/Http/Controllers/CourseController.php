@@ -181,6 +181,7 @@ class CourseController extends Controller
 
 
 
+
     /**
      * Get all available courses for the authenticated learner.
      * Excludes courses that the learner is already enrolled in.

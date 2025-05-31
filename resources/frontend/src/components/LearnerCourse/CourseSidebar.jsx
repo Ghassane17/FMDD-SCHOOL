@@ -1,8 +1,19 @@
 import React from 'react';
 import PropTypes from 'prop-types';
-import { CheckCircle } from '@mui/icons-material';
+import { useNavigate } from 'react-router-dom';
+import { CheckCircle, School } from '@mui/icons-material';
 
-const CourseSidebar = ({ modules, currentModuleIndex, progress, isOpen, onModuleSelect, quizProgress }) => {
+const CourseSidebar = ({ modules, currentModuleIndex, progress, isOpen, onModuleSelect, quizProgress, courseId, hasExam }) => {
+    const navigate = useNavigate();
+
+    const handleFinalExamClick = () => {
+        console.log('Navigating to Final Exam:', `/learner/courses/${courseId}/finalQuiz`);
+        navigate(`/learner/courses/${courseId}/finalQuiz`);
+        if (window.innerWidth < 1024) {
+            // Sidebar closes on mobile (controlled by parent via isOpen)
+        }
+    };
+
     return (
         <div
             className={`fixed inset-y-0 left-0 w-64 bg-white shadow-lg transform ${
@@ -30,6 +41,17 @@ const CourseSidebar = ({ modules, currentModuleIndex, progress, isOpen, onModule
                         </li>
                     ))}
                 </ul>
+                {hasExam && (
+                    <div className="mt-4">
+                        <button
+                            onClick={handleFinalExamClick}
+                            className="w-full text-left p-3 rounded-lg bg-gray-50 text-gray-700 hover:bg-indigo-100 flex items-center"
+                        >
+                            <School className="mr-2 text-indigo-600" fontSize="small" />
+                            <span className="text-sm font-medium">Final Exam</span>
+                        </button>
+                    </div>
+                )}
             </div>
         </div>
     );
@@ -50,6 +72,8 @@ CourseSidebar.propTypes = {
     isOpen: PropTypes.bool.isRequired,
     onModuleSelect: PropTypes.func.isRequired,
     quizProgress: PropTypes.object,
+    courseId: PropTypes.number.isRequired, // Added
+    hasExam: PropTypes.bool.isRequired, // Added
 };
 
 export default CourseSidebar;

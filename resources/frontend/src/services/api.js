@@ -409,13 +409,87 @@ export const courseDetails = async (courseId) => {
     }
 };
 
+export const getExam = async (courseId) => {
+    try {
+        const token = localStorage.getItem('token');
+        if (!token) {
+            const error = new Error('Vous devez être connecté.');
+            error.status = 401;
+            throw error;
+        }
+
+        const url = `/courses/${courseId}/exam`;
+        console.log('Calling getExam API:', url);
+
+        const response = await api.get(url, {
+            headers: { Authorization: `Bearer ${token}` },
+        });
+
+        console.log('🚀 getExam Response:', JSON.stringify(response.data, null, 2));
+        if (!response.data?.success) {
+            const error = new Error(response.data?.message || "Erreur lors de la récupération de l'examen.");
+            error.status = response.status;
+            throw error;
+        }
+
+        return response.data;
+    } catch (error) {
+        console.error('❌ getExam Error:', {
+            message: error.message,
+            status: error.status,
+            response: error.response?.data,
+        });
+        const err = new Error(error.response?.data?.message || error.message || 'Erreur serveur.');
+        err.status = error.response?.status || error.status || 500;
+        throw err;
+    }
+};
+
+// Submit exam answers for a course
+export const submitExam = async (courseId, answers) => {
+    try {
+        const token = localStorage.getItem('token');
+        if (!token) {
+            const error = new Error('Vous devez être connecté.');
+            error.status = 401;
+            throw error;
+        }
+
+        const url = `/courses/${courseId}/exam`;
+        console.log('Calling submitExam API:', url, { answers });
+
+        const response = await api.post(url, { answers }, {
+            headers: { Authorization: `Bearer ${token}` },
+        });
+
+        console.log('🚀 submitExam Response:', JSON.stringify(response.data, null, 2));
+        if (!response.data?.success) {
+            const error = new Error(response.data?.message || 'Erreur lors de la soumission.');
+            error.status = response.status;
+            throw error;
+        }
+
+        return response.data;
+    } catch (error) {
+        console.error('❌ submitExam Error:', {
+            message: error.message,
+            status: error.status,
+            response: error.response?.data,
+        });
+        const err = new Error(error.response?.data?.message || error.message || 'Erreur serveur.');
+        err.status = error.response?.status || error.status || 500;
+        throw err;
+    }
+};
+
+// Optional: Check if user is authenticated
 export const moduleDetails = async (courseId, moduleId = null) => {
     try {
         const token = localStorage.getItem('token');
         if (!token) {
             throw new Error('No authentication token found');
         }
-        const url = moduleId ? `/courses/${courseId}/${moduleId}` : `/courses/${courseId}`;
+        const url = moduleId ? `/learner/courses/${courseId}/${moduleId}` : `/learner/courses/${courseId}`;
         console.log('🌐 Fetching module details:', url);
         const response = await api.get(url, {
             headers: { Authorization: `Bearer ${token}` },
@@ -440,7 +514,9 @@ export const moduleDetails = async (courseId, moduleId = null) => {
         err.status = status;
         throw err;
     }
-};export const getAllCourses = async () => {
+};
+
+export const getAllCourses = async () => {
     try {
         const response = await api.get('/learner/all-courses');
         return response;

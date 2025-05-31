@@ -4,6 +4,8 @@ import { Bell, LogOut, Menu, Search, User, Settings } from 'lucide-react';
 import { toast } from 'sonner';
 import { getLearnerNotifications, markNotificationAsRead, updateLearnerSettings } from '../../services/api.js';
 
+const API_URL = import.meta.env.VITE_API_URL;
+
 const Header = ({ school, avatar, notifications: initialNotifications = [] }) => {
   const [open, setOpen] = useState({
     menu: false,
@@ -17,7 +19,8 @@ const Header = ({ school, avatar, notifications: initialNotifications = [] }) =>
     app: true
   });
 
-  useEffect(() => {
+
+    useEffect(() => {
     // Load notification preferences from user settings
     const user = JSON.parse(localStorage.getItem('user'));
     if (user?.notifications) {
@@ -38,7 +41,7 @@ const Header = ({ school, avatar, notifications: initialNotifications = [] }) =>
         setLoading(false);
       }
     }
-    
+
     setOpen({
       menu: key === 'menu' ? !open.menu : false,
       notifications: key === 'notifications' ? !open.notifications : false,
@@ -49,7 +52,7 @@ const Header = ({ school, avatar, notifications: initialNotifications = [] }) =>
   const handleNotificationClick = async (notificationId) => {
     try {
       await markNotificationAsRead(notificationId);
-      setNotifications(prev => 
+      setNotifications(prev =>
         prev.map(n => n.id === notificationId ? { ...n, read: true } : n)
       );
     } catch (error) {
@@ -64,18 +67,18 @@ const Header = ({ school, avatar, notifications: initialNotifications = [] }) =>
         ...notificationPreferences,
         [type]: !notificationPreferences[type]
       };
-      
+
       await updateLearnerSettings({
         notifications: newPreferences
       });
-      
+
       setNotificationPreferences(newPreferences);
-      
+
       // Update user in localStorage
       const user = JSON.parse(localStorage.getItem('user'));
       user.notifications = newPreferences;
       localStorage.setItem('user', JSON.stringify(user));
-      
+
       toast.success('Notification preferences updated');
     } catch (error) {
       toast.error('Failed to update notification preferences');
@@ -138,8 +141,8 @@ const Header = ({ school, avatar, notifications: initialNotifications = [] }) =>
                     </div>
                   ) : (
                     notifications.map((n) => (
-                      <div 
-                        key={n.id} 
+                      <div
+                        key={n.id}
                         className={`p-3 mb-2 rounded-md cursor-pointer transition-colors ${n.read ? 'bg-gray-50 hover:bg-gray-100' : 'bg-indigo-100 hover:bg-indigo-200'}`}
                         onClick={() => handleNotificationClick(n.id)}
                       >
@@ -156,7 +159,7 @@ const Header = ({ school, avatar, notifications: initialNotifications = [] }) =>
                       <h4 className="text-sm font-medium text-gray-800">Notification Preferences</h4>
                       <Settings className="w-4 h-4 text-gray-500" />
                     </div>
-                    
+
                     <div className="space-y-3">
                       <div className="flex items-center justify-between">
                         <div>
@@ -209,8 +212,8 @@ const Header = ({ school, avatar, notifications: initialNotifications = [] }) =>
               className="focus:outline-none rounded-full border-2 border-white"
             >
               <img
-                src={avatar || "https://via.placeholder.com/50"}
-                alt="User avatar"
+                  src={`${API_URL}${avatar}`}
+                alt=" avatar"
                 className="w-10 h-10 rounded-full object-cover"
               />
             </button>

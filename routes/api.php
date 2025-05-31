@@ -3,6 +3,7 @@
 use App\Http\Controllers\CommentController;
 use App\Http\Controllers\CourseInstructorController;
 use App\Http\Controllers\CourseResourceController;
+use App\Http\Controllers\ExamController;
 use App\Http\Controllers\PublicController;
 use Illuminate\Support\Facades\Route;
 use App\Http\Controllers\Auth\RegisterController;
@@ -28,21 +29,28 @@ Route::middleware('auth:sanctum')->group(function () {
     Route::patch('/learner/profile', [LearnerController::class, 'profile'])->name('learner.profile');
     Route::patch('/instructor/profile', [InstructorController::class, 'profile'])->name('instructor.profile');
     Route::patch('/instructor/completeRegister', [InstructorController::class, 'completeRegister'])->name('instructor.completeRegister');
-    //Dashboard get
+    //Dashboard learner
     Route::get('/learner', [LearnerController::class, 'dashboard'])->name('learner.dashboard');
 
 
     //courses routes
-    Route::get('/learner/all-courses', [CourseController::class, 'getAllCourses'])->name('learner.enrolled-courses');
+    Route::get('/learner/all-courses', [CourseController::class, 'getAllCourses'])->name('learner.all-courses');
     Route::get('/learner/all-enrolled-courses', [CourseController::class, 'getEnrolledCourses'])->name('learner.enrolled-courses');
     Route::get('/courses/{id}', [CourseController::class, 'getCourseDetails']);
-    Route::get('/courses/{id}/{module}', [CourseResourceController::class, 'getModule'])
-        ->where('id', '[0-9]+'); // Ensure {id} is numeric
+
+    // Course module routes - single endpoint for all course/module data
+    Route::get('/learner/courses/{course}/{module?}', [CourseResourceController::class, 'getModule'])
+        ->where('course', '[0-9]+');
+
     Route::post('/courses/{course}/comments', [CommentController::class, 'store']);
     Route::put('/courses/{course}', [CourseResourceController::class, 'updateCourseRating']);
-
     Route::post('/courses/{id}/enroll', [CourseController::class, 'enrollNow']);
     Route::delete('/courses/{course}/leave', [CourseController::class, 'leave']);
+
+
+    // Exam routes (specific)
+    Route::get('/courses/{course}/exam', [ExamController::class, 'getExam']);
+    Route::post('/courses/{course}/exam', [ExamController::class, 'submitExam']);
 
 
     // course creation
@@ -56,5 +64,4 @@ Route::middleware('auth:sanctum')->group(function () {
     Route::get('/instructor/dashboard', [InstructorController::class, 'dashboard'])->name('instructor.dashboard');
     Route::patch('/instructor/availability', [InstructorController::class, 'updateAvailability'])->name('instructor.updateAvailability');
     Route::patch('/instructor/bankInfo', [InstructorController::class, 'updateBankInfo'])->name('instructor.updateBankInfo');
-    
 });

@@ -3,7 +3,7 @@ import { useParams, useNavigate } from 'react-router-dom';
 import CourseHeader from '../components/LearnerCourse/CourseHeader';
 import CourseSidebar from '../components/LearnerCourse/CourseSidebar';
 import CourseContent from '../components/LearnerCourse/CourseContent';
-import { isAuthenticated, moduleDetails } from '../services/api.js';
+import { isAuthenticated, moduleDetails, getExam } from '../services/api.js';
 
 /**
  * Course Player Component
@@ -20,8 +20,9 @@ const LearnerCourse = () => {
     const [loading, setLoading] = useState(true);
     const [error, setError] = useState(null);
     const [quizProgress, setQuizProgress] = useState({});
-    const [notes, setNotes] = useState(''); // Added notes state
-    const [notesHistory, setNotesHistory] = useState([]); // Store notes and ratings
+    const [notes, setNotes] = useState('');
+    const [notesHistory, setNotesHistory] = useState([]);
+    const [hasExam, setHasExam] = useState(false); // New state for exam availability
 
     useEffect(() => {
         if (!isAuthenticated()) {
@@ -30,7 +31,7 @@ const LearnerCourse = () => {
             return;
         }
 
-        const fetchModule = async () => {
+        const fetchData = async () => {
             setLoading(true);
             setError(null);
 
@@ -51,21 +52,32 @@ const LearnerCourse = () => {
             }
 
             try {
+                // Fetch module details
                 console.log('Fetching module details:', { courseId: parsedCourseId, moduleId: parsedModuleId });
-                const response = await moduleDetails(parsedCourseId, parsedModuleId);
-                console.log('🚀 Module Details:', response);
-                if (!response.course || !response.modules.length) {
+                const moduleResponse = await moduleDetails(parsedCourseId, parsedModuleId);
+                console.log('🚀 Module Details:', moduleResponse);
+                if (!moduleResponse.course || !moduleResponse.modules.length) {
                     throw new Error('No modules available for this course');
                 }
-                setCourseData(response.course);
-                setModules(response.modules);
-                setCurrentModule(response.module || response.modules[0]);
-                const index = response.module
-                    ? response.modules.findIndex(m => m.id === response.module.id)
+                setCourseData(moduleResponse.course);
+                setModules(moduleResponse.modules);
+                setCurrentModule(moduleResponse.module || moduleResponse.modules[0]);
+                const index = moduleResponse.module
+                    ? moduleResponse.modules.findIndex(m => m.id === moduleResponse.module.id)
                     : 0;
                 setCurrentModuleIndex(index >= 0 ? index : 0);
+
+                // Fetch exam availability
+                try {
+                    const examResponse = await getExam(parsedCourseId);
+                    console.log('🚀 Exam Availability:', examResponse);
+                    setHasExam(!!examResponse.data?.exam);
+                } catch (examErr) {
+                    console.warn('No exam found for course:', examErr.message);
+                    setHasExam(false);
+                }
             } catch (err) {
-                console.error('❌ Fetch Module Error:', err);
+                console.error('❌ Fetch Error:', err);
                 let errorMessage = 'Failed to load course. Please check your enrollment or try again.';
                 if (err.status === 404) {
                     errorMessage = err.message.includes('module') ? 'Module not found.' : 'Course not found.';
@@ -84,7 +96,7 @@ const LearnerCourse = () => {
             }
         };
 
-        fetchModule();
+        fetchData();
     }, [courseId, moduleId, navigate]);
 
     const toggleSidebar = () => {
@@ -160,17 +172,25 @@ const LearnerCourse = () => {
             if (isNaN(parsedCourseId) || parsedCourseId <= 0) {
                 throw new Error('Invalid course ID');
             }
-            const response = await moduleDetails(parsedCourseId, parsedModuleId);
-            if (!response.course || !response.modules.length) {
+            const moduleResponse = await moduleDetails(parsedCourseId, parsedModuleId);
+            if (!moduleResponse.course || !moduleResponse.modules.length) {
                 throw new Error('No modules available for this course');
             }
-            setCourseData(response.course);
-            setModules(response.modules);
-            setCurrentModule(response.module || response.modules[0]);
-            const index = response.module
-                ? response.modules.findIndex(m => m.id === response.module.id)
+            setCourseData(moduleResponse.course);
+            setModules(moduleResponse.modules);
+            setCurrentModule(moduleResponse.module || moduleResponse.modules[0]);
+            const index = moduleResponse.module
+                ? moduleResponse.modules.findIndex(m => m.id === moduleResponse.module.id)
                 : 0;
             setCurrentModuleIndex(index >= 0 ? index : 0);
+
+            try {
+                const examResponse = await getExam(parsedCourseId);
+                setHasExam(!!examResponse.data?.exam);
+            } catch (examErr) {
+                console.warn('No exam found:', examErr.message);
+                setHasExam(false);
+            }
         } catch (err) {
             setError(err.message || 'Failed to load course.');
         } finally {
@@ -224,6 +244,8 @@ const LearnerCourse = () => {
                     isOpen={isSidebarOpen}
                     onModuleSelect={selectModule}
                     quizProgress={quizProgress}
+                    courseId={courseData.id} // Pass courseId
+                    hasExam={hasExam} // Pass exam availability
                 />
                 <CourseContent
                     currentModule={currentModule}
@@ -232,9 +254,9 @@ const LearnerCourse = () => {
                     onPreviousClick={goToPreviousModule}
                     onNextClick={goToNextModule}
                     onQuizComplete={(score) => handleQuizComplete(currentModule.id, score)}
-                    courseId={courseData.id} // Pass courseId
-                    onSaveNotes={handleSaveNotes} // Pass handler
-                    notes={notes} // Pass notes
+                    courseId={courseData.id}
+                    onSaveNotes={handleSaveNotes}
+                    notes={notes}
                 />
             </div>
         </div>
