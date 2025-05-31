@@ -517,7 +517,7 @@ const CreateCourse = () => {
       toast.success('Cours créé avec succès!');
 
       // Navigate to instructor dashboard or course page
-      //navigate('/instructor/courses');
+      navigate('/instructor/dashboard');
 
     } catch (error) {
       console.error('Error creating course:', error);
