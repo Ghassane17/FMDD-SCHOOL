@@ -15,6 +15,7 @@ use Illuminate\Support\Facades\Log;
 use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Facades\Storage;
 use Illuminate\Support\Facades\Validator;
+use App\Http\Resources\CourseResource;
 
 class CourseInstructorController extends Controller
 {
@@ -82,161 +83,177 @@ class CourseInstructorController extends Controller
             return response()->json(['message' => 'Instructor profile not found'], 404);
         }
 
-        // 2️⃣ Validation (using front‑end keys)
-        $validator = Validator::make($request->all(), [
-            // Course
-            'title'            => 'required|string|max:255',
-            'description'      => 'required|string',
-            'course_thumbnail' => 'required|string',  // Changed from file to string
-            'level'            => 'required|in:beginner,intermediate,advanced',  // Changed to match frontend values
-            'category'         => 'required|string|max:255',
-            'duration_hours'   => 'nullable|integer|min:0',
-
-            // Modules
-            'modules'                   => 'required|array|min:1',
-            'modules.*.title'           => 'required|string|max:255',
-            'modules.*.type'            => 'required|in:text,pdf,image,video,quiz',
-            'modules.*.content'         => 'required_if:modules.*.type,text|nullable|string',
-            'modules.*.file'            => 'required_if:modules.*.type,pdf,image,video|nullable|file',
-            'modules.*.duration'        => 'nullable|integer|min:0',
-
-            // Module quiz questions
-            'modules.*.questions'                      => 'required_if:modules.*.type,quiz|nullable|array|min:1',
-            'modules.*.questions.*.question'           => 'required_if:modules.*.type,quiz|string',
-            'modules.*.questions.*.options'            => 'required_if:modules.*.type,quiz|array|min:2',
-            'modules.*.questions.*.correctAnswer'      => 'required_if:modules.*.type,quiz|integer|min:0',
-
-            // Final Exam
-            'exams'                             => 'required|array',
-            'exams.title'                       => 'required|string|max:255',
-            'exams.instructions'                => 'nullable|string',
-            'exams.duration_min'                => 'required|integer|min:1',  // Changed to match frontend
-            'exams.passing_score'               => 'required|integer|min:0|max:100',  // Changed to match frontend
-
-            // General Course Resources
-            'course_resources'                   => 'nullable|array',
-            'course_resources.*.name'            => 'required_if:course_resources.*.type,other|string|max:255',
-            'course_resources.*.type'            => 'required|in:pdf,video,image,link,other',
-            'course_resources.*.url'             => 'nullable|string|max:500',
-            'course_resources.*.file'            => 'required_if:course_resources.*.type,pdf,image,video|nullable|file',
-        ],);
-
-        if ($validator->fails()) {
-            Log::error('Validation failed in createCourse', [
-                'errors' => $validator->errors()->toArray(),
-            ]);
-            return response()->json([
-                'message' => 'Validation failed',
-                'errors'  => $validator->errors(),
-            ], 422);
-        }
-
-        // 3️⃣ Persist everything in a transaction
-        DB::beginTransaction();
         try {
-            // ─── Create course ──────────────────────────────────────────
-            $course = Course::create([
-                'instructor_id'   => $instructor->id,
-                'title'           => $request->title,
-                'description'     => $request->description,
-                'level'           => $request->level,
-                'category'        => $request->category,
-                'duration_hours'  => 0,
-                'is_published'    => false,  // default
+            // Validate the request data
+            $validated = $request->validate([
+                'title' => 'required|string|max:255',
+                'description' => 'required|string',
+                'level' => 'required|string|in:beginner,intermediate,advanced',
+                'course_thumbnail' => 'required|image|mimes:jpeg,png,jpg,gif,svg|max:5120',
+                'category' => 'required|string|max:255',
+                'duration_min' => 'nullable|integer|min:0',
+
+                // Modules validation
+                'modules' => 'nullable|array',
+                'modules.*.title' => 'required|string|max:255',
+                'modules.*.type' => 'required|in:text,pdf,image,video,quiz',
+                'modules.*.content' => 'required_if:modules.*.type,text|string',
+                'modules.*.file' => 'required_if:modules.*.type,pdf,image,video|nullable|file',
+                'modules.*.order' => 'required|integer|min:0',
+
+                // Module quiz validation
+                'modules.*.questions' => 'required_if:modules.*.type,quiz|array',
+                'modules.*.questions.*.question' => 'required_if:modules.*.type,quiz|string',
+                'modules.*.questions.*.options' => 'required_if:modules.*.type,quiz|array',
+                'modules.*.questions.*.correctAnswer' => 'required_if:modules.*.type,quiz|integer|min:0',
+
+                // Exam validation
+                'exam' => 'nullable|array',
+                'exam.title' => 'required|string|max:255',
+                'exam.instructions' => 'required|string',
+                'exam.duration_min' => 'required|integer|min:0',
+                'exam.passing_score' => 'required|integer|min:0|max:100',
+
+                // Exam questions validation
+                'exam.questions' => 'required_if:exam.type,quiz|array',
+                'exam.questions.*.question' => 'required_if:exam.type,quiz|string',
+                'exam.questions.*.options' => 'required_if:exam.type,quiz|array',
+                'exam.questions.*.correctAnswer' => 'required_if:exam.type,quiz|integer|min:0',
+
+                // Resources validation
+                'resources' => 'nullable|array',
+                'resources.*.name' => 'required|string|max:255',
+                'resources.*.type' => 'required|in:pdf,video,image,link,other',
+                'resources.*.file' => 'required_if:resources.*.type,pdf,image,video|nullable|file',
+                'resources.*.url' => 'required_if:resources.*.type,link,other|nullable|string|max:500',
             ]);
 
-            // ─── Thumbnail upload ────────────────────────────────────────
-            if ($request->hasFile('course_thumbnail')) {
-                $path = $request->file('course_thumbnail')
-                            ->store("courses/{$course->id}/thumbnail", 'public');
-                $course->course_thumbnail = '/storage/' . $path;
-                $course->save();
-            }
-
-            // ─── Modules & Module Quiz Questions ────────────────────────
-            foreach ($request->modules as $i => $m) {
-                $module = Module::create([
-                    'course_id'    => $course->id,
-                    'title'        => $m['title'],
-                    'type'         => $m['type'],
-                    'text_content' => $m['type']==='text' ? $m['content'] : null,
-                    'order'        => $i,
-                    'duration'     => $m['duration'] ?? null,
+            DB::beginTransaction();
+            try {
+                // ─── Create course ──────────────────────────────────────────
+                $course = Course::create([
+                    'instructor_id'   => $instructor->id,
+                    'title'           => $validated['title'],
+                    'description'     => $validated['description'],
+                    'level'           => $validated['level'],
+                    'category'        => $validated['category'],
+                    'duration_min'    => $validated['duration_min'] ?? 0,
+                    'is_published'    => false,
                 ]);
 
-                // file‑based content
-                if (in_array($m['type'], ['pdf','image','video']) && $request->hasFile("modules.{$i}.file")) {
-                    $fp = $request->file("modules.{$i}.file")
-                                ->store("courses/{$course->id}/modules/{$module->id}", 'public');
-                    $module->file_path = '/storage/' . $fp;
-                    $module->save();
+                // Handle thumbnail upload
+                if ($request->hasFile('course_thumbnail')) {
+                    $path = $request->file('course_thumbnail')
+                                ->store("courses/{$course->id}/thumbnail", 'public');
+                    $course->course_thumbnail = '/storage/' . $path;
+                    $course->save();
                 }
 
-                // quiz questions
-                if ($m['type'] === 'quiz') {
-                    foreach ($m['questions'] as $q) {
-                        QuizQuestion::create([
-                            'module_id'     => $module->id,
-                            'question'      => $q['question'],
-                            'options'       => json_encode($q['options']),
-                            'correct_option'=> $q['correctAnswer'],
+                // ─── Handle modules ──────────────────────────────────────────
+                if ($request->has('modules')) {
+                    foreach ($request->modules as $index => $module) {
+                        $moduleData = [
+                            'course_id' => $course->id,
+                            'title'     => $module['title'],
+                            'type'      => $module['type'],
+                            'text_content' => $module['type'] === 'text' ? $module['content'] : null,
+                            'order'     => $module['order'],
+                            'duration'  => $module['duration'] ?? null,
+                        ];
+
+                        // Create the module first
+                        $newModule = Module::create($moduleData);
+
+                        // Handle file upload if present
+                        if (in_array($module['type'], ['pdf', 'image', 'video']) && 
+                            $request->hasFile("modules.{$index}.file")) {
+                            $path = $request->file("modules.{$index}.file")
+                                        ->store("courses/{$course->id}/modules/{$newModule->id}", 'public');
+                            $newModule->file_path = '/storage/' . $path;
+                            $newModule->save();
+                        }
+
+                        // Handle quiz questions if present
+                        if ($module['type'] === 'quiz' && isset($module['questions'])) {
+                            foreach ($module['questions'] as $qIndex => $quiz) {
+                                QuizQuestion::create([
+                                    'module_id' => $newModule->id,
+                                    'question' => $quiz['question'],
+                                    'options' => json_encode($quiz['options']),
+                                    'correct_option' => $quiz['correctAnswer'],
+                                ]);
+                            }
+                        }
+                    }
+                }
+
+                // ─── Handle exams ──────────────────────────────────────────
+                $exam = Exam::create([
+                    'course_id'     => $course->id,
+                    'title'         => $request->exam['title'],
+                    'instructions'  => $request->exam['instructions'] ?? null,
+                    'duration_min'  => $request->exam['duration_min'],
+                    'passing_score' => $request->exam['passing_score'],
+                ]);
+    
+                foreach ($request->exam['questions'] as $q) {
+                    ExamQuestion::create([
+                        'exam_id'      => $exam->id,
+                        'question_text'=> $q['question'],
+                        'options'      => json_encode($q['options']),
+                        'correct_index'=> $q['correctAnswer'],
+                    ]);
+                }
+
+                
+                // ─── Handle resources ──────────────────────────────────────────
+                if ($request->has('resources')) {
+                    foreach ($request->resources as $index => $resource) {
+                        $url = null;
+                        
+                        if (in_array($resource['type'], ['pdf', 'image', 'video']) && isset($resource['file'])) {
+                            $url = $request->file("resources.{$index}.file")
+                                        ->store("courses/{$course->id}/resources", 'public');
+                            $url = '/storage/' . $url;
+                        } elseif (in_array($resource['type'], ['link', 'other'])) {
+                            $url = $resource['url'];
+                        }
+
+                        Resource::create([
+                            'course_id' => $course->id,
+                            'name'      => $resource['name'],
+                            'type'      => $resource['type'],
+                            'url'       => $url,
                         ]);
                     }
                 }
-            }
 
-            // ─── Final Exam & Questions ─────────────────────────────────
-            $exam = Exam::create([
-                'course_id'     => $course->id,
-                'title'         => $request->exam['title'],
-                'instructions'  => $request->exam['instructions'] ?? null,
-                'duration_min'  => $request->exam['duration_min'],
-                'passing_score' => $request->exam['passing_score'],
-            ]);
+                DB::commit();
+                
+                return response()->json([
+                    'message' => 'Course created successfully'
+                ], 201);
 
-            foreach ($request->exam['questions'] as $q) {
-                ExamQuestion::create([
-                    'exam_id'      => $exam->id,
-                    'question_text'=> $q['question'],
-                    'options'      => json_encode($q['options']),
-                    'correct_index'=> $q['correctAnswer'],
+            } catch (\Exception $e) {
+                DB::rollBack();
+                Log::error('Error in createCourse transaction', [
+                    'error' => $e->getMessage(),
+                    'trace' => $e->getTraceAsString()
                 ]);
+                return response()->json(['message' => 'Internal server error'], 500);
             }
-
-            // ─── General Course Resources ───────────────────────────────
-            if ($request->has('resources')) {
-                foreach ($request->resources as $r) {
-                    $url = $r['type']==='link'
-                        ? $r['url']
-                        : $r['file']->store("courses/{$course->id}/resources", 'public');
-
-                        Resource::create([
-                        'course_id' => $course->id,
-                        'name'      => $r['name'],
-                        'type'      => $r['type'],
-                        'url'       => $r['type']==='link' ? $url : '/storage/' . $url,
-                    ]);
-                }
-            }
-
-            DB::commit();
-
+        } catch (\Illuminate\Validation\ValidationException $e) {
             return response()->json([
-                'message' => 'Course created successfully',
-                'course'  => $course->load([
-                    'modules.quizQuestions',
-                    'exam.examQuestions',
-                    'resources'
-                ])
-            ], 201);
-
-        } catch (\Throwable $e) {
-            DB::rollBack();
-            Log::error('Error in createCourse transaction', [
+                'message' => 'Validation failed',
+                'errors' => $e->errors()
+            ], 422);
+        } catch (\Exception $e) {
+            Log::error('Error in createCourse', [
                 'error' => $e->getMessage(),
-                'trace' => $e->getTraceAsString(),
+                'trace' => $e->getTraceAsString()
             ]);
             return response()->json(['message' => 'Internal server error'], 500);
         }
     }
+
 }
