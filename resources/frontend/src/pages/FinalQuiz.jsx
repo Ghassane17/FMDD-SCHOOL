@@ -47,9 +47,37 @@ const FinalQuiz = () => {
                 if (!response?.success || !response?.data?.exam) {
                     throw new Error(response?.message || "Failed to load exam.")
                 }
-                setExam(response.data.exam)
+                
+                // Ensure exam data is properly structured
+                const examData = response.data.exam;
+                if (!examData.questions || !Array.isArray(examData.questions)) {
+                    throw new Error("Invalid exam data structure: questions array is missing or invalid");
+                }
+
+                // Validate each question has the required fields
+                examData.questions = examData.questions.map(question => {
+                    // Check for required fields
+                    if (!question.question && !question.question_text) {
+                        console.error("Invalid question structure:", question);
+                        throw new Error("Question is missing text content");
+                    }
+                    if (!Array.isArray(question.options)) {
+                        console.error("Invalid question structure:", question);
+                        throw new Error("Question is missing options array");
+                    }
+
+                    // Normalize the question structure
+                    return {
+                        ...question,
+                        question_text: question.question_text || question.question, // Use either field
+                        // Don't set a default for correct_index during the exam
+                        // It will be provided in the results after submission
+                    };
+                });
+
+                setExam(examData);
                 // Set initial time in seconds
-                setTimeRemaining(response.data.exam.duration_min * 60)
+                setTimeRemaining(examData.duration_min * 60)
             } catch (err) {
                 console.error("❌ Fetch Exam Error:", {
                     message: err.message,
@@ -99,10 +127,10 @@ const FinalQuiz = () => {
         setExamStatus("in-progress")
     }
 
-    const handleSelectAnswer = (questionId, optionIndex) => {
+    const handleSelectAnswer = (questionId, optionId) => {
         if (examStatus === "in-progress") {
-            console.log("Selected answer:", { questionId, optionIndex })
-            setSelectedAnswers({ ...selectedAnswers, [questionId]: optionIndex })
+            console.log("Selected answer:", { questionId, optionId })
+            setSelectedAnswers({ ...selectedAnswers, [questionId]: optionId })
         }
     }
 
@@ -129,6 +157,22 @@ const FinalQuiz = () => {
         try {
             const response = await submitExam(Number.parseInt(courseId, 10), selectedAnswers)
             console.log("🚀 Submit Exam Response:", JSON.stringify(response, null, 2))
+            
+            // Update exam questions with correct answers from the response
+            if (response.data?.questions) {
+                const updatedExam = {
+                    ...exam,
+                    questions: exam.questions.map(q => {
+                        const responseQuestion = response.data.questions[q.id];
+                        return {
+                            ...q,
+                            correct_index: responseQuestion?.correct_index
+                        };
+                    })
+                };
+                setExam(updatedExam);
+            }
+            
             setResults(response.data)
             setSubmitted(true)
             setExamStatus("completed")
@@ -249,47 +293,89 @@ const FinalQuiz = () => {
                                 ? "You have successfully completed this certification exam."
                                 : "You did not meet the minimum passing score for this exam."}
                         </p>
+                        <p className="text-xl font-semibold mt-4">
+                            Your Score: {percentageScore}%
+                        </p>
                     </div>
 
-                    <div className="mb-8">
-                        <h3 className="text-lg font-semibold mb-4">Score Summary</h3>
-                        <div className="grid grid-cols-2 gap-4">
-                            <div className="p-4 bg-gray-50 rounded-lg text-center">
-                                <p className="text-sm text-gray-500">Your Score</p>
-                                <p className="text-3xl font-bold">{percentageScore}%</p>
-                                <p className="text-sm mt-1">
-                                    ({results.score}/{results.total} points)
-                                </p>
-                            </div>
-                            <div className="p-4 bg-gray-50 rounded-lg text-center">
-                                <p className="text-sm text-gray-500">Passing Score</p>
-                                <p className="text-3xl font-bold">{exam.passing_score}%</p>
-                                <p className="text-sm mt-1">Minimum Required</p>
-                            </div>
-                        </div>
-                    </div>
+                    {/* Questions Review Section */}
+                    <div className="mt-8">
+                        <h3 className="text-xl font-semibold mb-4">Question Review</h3>
+                        {exam.questions.map((question, index) => {
+                            const userAnswer = selectedAnswers[question.id];
+                            const correctAnswer = question.correct_index;
+                            const isCorrect = userAnswer === correctAnswer;
+                            
+                            console.log(`Question ${index + 1}:`, {
+                                userAnswer,
+                                correctAnswer,
+                                isCorrect,
+                                questionId: question.id
+                            });
+                            
+                            return (
+                                <div key={question.id} className="mb-6 p-4 border rounded-lg relative">
+                                    {/* Question Status Badge */}
+                                    <div className={`absolute -top-3 right-4 px-4 py-1 rounded-full flex items-center gap-2 ${
+                                        isCorrect ? 'bg-green-100 text-green-700' : 'bg-red-100 text-red-700'
+                                    }`}>
+                                        {isCorrect ? (
+                                            <>
+                                                <CheckCircle size={18} />
+                                                <span className="font-medium">Correct</span>
+                                            </>
+                                        ) : (
+                                            <>
+                                                <XCircle size={18} />
+                                                <span className="font-medium">Incorrect</span>
+                                            </>
+                                        )}
+                                    </div>
 
-                    <div className="flex flex-col sm:flex-row gap-4 justify-center">
-                        <Button variant="outlined" color="primary" onClick={() => navigate(`/learner/courses/${courseId}`)}>
-                            Return to Course
-                        </Button>
-
-                        {!passedExam && (
-                            <Button
-                                variant="contained"
-                                color="primary"
-                                onClick={() => {
-                                    // Reset the exam state
-                                    setExamStatus("not-started")
-                                    setSelectedAnswers({})
-                                    setSubmitted(false)
-                                    setResults(null)
-                                    setTimeRemaining(exam.duration_min * 60)
-                                }}
-                            >
-                                Retry Exam
-                            </Button>
-                        )}
+                                    <div className="flex items-start mb-2">
+                                        <span className="font-semibold mr-2">{index + 1}.</span>
+                                        <p className="flex-1">{question.question_text}</p>
+                                    </div>
+                                    
+                                    <div className="ml-6 space-y-2">
+                                        {question.options.map((option) => {
+                                            const isSelected = userAnswer === option.id;
+                                            const isCorrectAnswer = option.id === correctAnswer;
+                                            
+                                            return (
+                                                <div 
+                                                    key={option.id}
+                                                    className={`p-3 rounded-lg border ${
+                                                        isSelected && isCorrectAnswer ? 'bg-green-50 border-green-200' :
+                                                        isSelected ? 'bg-red-50 border-red-200' :
+                                                        isCorrectAnswer ? 'bg-green-50 border-green-200' : 'bg-gray-50 border-gray-200'
+                                                    }`}
+                                                >
+                                                    <div className="flex items-center">
+                                                        <span className="mr-2">
+                                                            {isSelected && isCorrectAnswer ? (
+                                                                <CheckCircle className="text-green-500" size={20} />
+                                                            ) : isSelected ? (
+                                                                <XCircle className="text-red-500" size={20} />
+                                                            ) : isCorrectAnswer ? (
+                                                                <CheckCircle className="text-green-500" size={20} />
+                                                            ) : null}
+                                                        </span>
+                                                        <span className={`${
+                                                            isSelected && isCorrectAnswer ? 'text-green-700' :
+                                                            isSelected ? 'text-red-700' :
+                                                            isCorrectAnswer ? 'text-green-700' : 'text-gray-700'
+                                                        }`}>
+                                                            {option.text}
+                                                        </span>
+                                                    </div>
+                                                </div>
+                                            );
+                                        })}
+                                    </div>
+                                </div>
+                            );
+                        })}
                     </div>
                 </div>
             </div>
@@ -363,22 +449,22 @@ const FinalQuiz = () => {
                 {exam.questions.map((question, index) => (
                     <div key={question.id} className="p-4 bg-white rounded-lg shadow">
                         <p className="text-lg font-semibold mb-4">
-                            Question {index + 1}: {question.question}
+                            Question {index + 1}: {question.question_text}
                         </p>
                         <div className="space-y-2">
                             {Array.isArray(question.options) && question.options.length > 0 ? (
-                                question.options.map((option, optIndex) => (
+                                question.options.map((option) => (
                                     <button
-                                        key={optIndex}
-                                        onClick={() => handleSelectAnswer(question.id, optIndex)}
+                                        key={option.id}
+                                        onClick={() => handleSelectAnswer(question.id, option.id)}
                                         disabled={submitted}
                                         className={`w-full text-left p-3 rounded-lg border ${
-                                            selectedAnswers[question.id] === optIndex
+                                            selectedAnswers[question.id] === option.id
                                                 ? "bg-blue-100 border-blue-500"
                                                 : "bg-gray-50 border-gray-200"
                                         } ${submitted ? "cursor-not-allowed" : "hover:bg-gray-100"}`}
                                     >
-                                        {typeof option === 'object' ? option.text : option}
+                                        {option.text}
                                     </button>
                                 ))
                             ) : (

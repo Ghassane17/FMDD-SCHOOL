@@ -173,15 +173,16 @@ class ExamController extends Controller
 
             // Calculate score
             $score = 0;
+            $questionsWithAnswers = [];
             foreach ($questions as $question) {
                 $selectedOption = $validated['answers'][$question->id] ?? null;
                 if ($selectedOption === $question->correct_index) {
                     $score++;
                 }
+                $questionsWithAnswers[$question->id] = [
+                    'correct_index' => $question->correct_index
+                ];
             }
-
-
-
 
             Log::info('Exam processed successfully', [
                 'exam_id' => $exam->id,
@@ -197,6 +198,7 @@ class ExamController extends Controller
                     'total' => $questions->count(),
                     'percentage' => ($score / $questions->count()) * 100,
                     'passed' => ($score / $questions->count() * 100) >= $exam->passing_score,
+                    'questions' => $questionsWithAnswers
                 ],
             ]);
         } catch (ValidationException $e) {
