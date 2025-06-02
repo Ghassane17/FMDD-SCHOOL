@@ -13,7 +13,7 @@ class Course extends Model
         'title',
         'description',
         'instructor_id',
-        'course_thumbnail',
+        '',
         'level',
         'rating',
         'duration_min',

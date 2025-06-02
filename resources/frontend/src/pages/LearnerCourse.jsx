@@ -56,12 +56,24 @@ const LearnerCourse = () => {
                 console.log('Fetching module details:', { courseId: parsedCourseId, moduleId: parsedModuleId });
                 const moduleResponse = await moduleDetails(parsedCourseId, parsedModuleId);
                 console.log('🚀 Module Details:', moduleResponse);
+                
                 if (!moduleResponse.course || !moduleResponse.modules.length) {
                     throw new Error('No modules available for this course');
                 }
+
+                // Log the current module data
+                const currentModuleData = moduleResponse.module || moduleResponse.modules[0];
+                console.log('Current Module Data:', {
+                    id: currentModuleData.id,
+                    title: currentModuleData.title,
+                    type: currentModuleData.type,
+                    file_path: currentModuleData.file_path,
+                    resources: currentModuleData.resources
+                });
+
                 setCourseData(moduleResponse.course);
                 setModules(moduleResponse.modules);
-                setCurrentModule(moduleResponse.module || moduleResponse.modules[0]);
+                setCurrentModule(currentModuleData);
                 const index = moduleResponse.module
                     ? moduleResponse.modules.findIndex(m => m.id === moduleResponse.module.id)
                     : 0;

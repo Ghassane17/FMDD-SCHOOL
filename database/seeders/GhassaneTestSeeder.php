@@ -24,7 +24,7 @@ class GhassaneTestSeeder extends Seeder
             'email' => 'ghassanehmimou2003@gmail.com',
             'password' => Hash::make('123456789'),
             'role' => 'learner',
-            'avatar' => storage_path('app/public/avatars/WsuhBYEJy9VT5lSb3yV2IlyugJvzt7OEEtmsFeXH.jpg'),
+            'avatar' => '/storage/Test.png',
         ]);
         Learner::create(['user_id' => $learnerUser->id]);
 
@@ -34,7 +34,7 @@ class GhassaneTestSeeder extends Seeder
             'email' => 'instructor1@example.com',
             'password' => Hash::make('password'),
             'role' => 'instructor',
-            'avatar' => 'storage/avatars/WsuhBYEJy9VT5lSb3yV2IlyugJvzt7OEEtmsFeXH.jpg',
+            'avatar' => '/storage/Test.png',
         ]);
         $instructor = Instructor::create(['user_id' => $instructorUser->id]);
 
@@ -44,6 +44,7 @@ class GhassaneTestSeeder extends Seeder
             'title' => 'Introduction to Laravel',
             'description' => 'Learn the basics of Laravel framework.',
             'level' => 'beginner',
+            'course_thumbnail' => '/storage/Test.png',
             'category' => 'Web Development',
             'is_published' => true,
             'rating' => 0.00,
@@ -64,7 +65,7 @@ class GhassaneTestSeeder extends Seeder
                 'course_id' => $course->id,
                 'title' => 'Getting Started with Laravel',
                 'type' => 'video',
-                'file_path' => 'http://localhost/storage/videos/Enregistrement_2025-05-15_002632.mp4',
+                'file_path' => '/storage/Test.mp4',
                 'order' => 2,
             ],
             [
@@ -72,7 +73,7 @@ class GhassaneTestSeeder extends Seeder
                 'title' => 'Course PDF',
                 'type' => 'pdf',
                 'text_content' => null,
-                'file_path' => 'http://localhost/storage/pdfs/course.pdf',
+                'file_path' => '/storage/Test.pdf',
                 'order' => 3,
             ],
             [
@@ -80,7 +81,7 @@ class GhassaneTestSeeder extends Seeder
                 'title' => 'Diagram',
                 'type' => 'image',
                 'text_content' => null,
-                'file_path' => 'http://localhost/storage/images/diagram.jpg',
+                'file_path' => '/storage/Test.png',
                 'order' => 4,
             ],
             [
@@ -107,7 +108,7 @@ class GhassaneTestSeeder extends Seeder
                         ['id' => 2, 'text' => 'A CSS library'],
                         ['id' => 3, 'text' => 'A database'],
                     ],
-                    'correct_option' => 1,
+                    'correct_option' => 0,
                 ],
                 [
                     'question' => 'What command creates a new controller?',
@@ -116,7 +117,7 @@ class GhassaneTestSeeder extends Seeder
                         ['id' => 2, 'text' => 'php artisan make:controller'],
                         ['id' => 3, 'text' => 'php artisan new controller'],
                     ],
-                    'correct_option' => 2,
+                    'correct_option' => 1,
                 ],
             ];
 
@@ -178,13 +179,13 @@ class GhassaneTestSeeder extends Seeder
                 'course_id' => $course->id,
                 'name' => 'Laravel Docs PDF',
                 'type' => 'pdf',
-                'url' => 'https://example.com/docs/laravel.pdf',
+                'url' => '/storage/Test.pdf',
             ],
             [
                 'course_id' => $course->id,
                 'name' => 'Cheat Sheet',
                 'type' => 'image',
-                'url' => 'http://localhost/storage/images/cheat_sheet.jpg',
+                'url' => '/storage/Test.png',
             ],
         ];
 

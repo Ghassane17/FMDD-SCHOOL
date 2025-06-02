@@ -1,4 +1,4 @@
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useCallback, useRef } from 'react';
 import { useParams, useNavigate } from 'react-router-dom';
 import { courseDetails, enrollNow, leaveCourse } from '@/services/api';
 import {
@@ -38,6 +38,9 @@ import {
     Person
 } from '@mui/icons-material';
 
+const API_URL = import.meta.env.VITE_API_BASE_URL || 'http://localhost:8000';
+const FALLBACK_IMAGE = '/storage/Test.png';
+
 const EnrollmentPage = () => {
     const { courseId } = useParams();
     const navigate = useNavigate();
@@ -46,6 +49,12 @@ const EnrollmentPage = () => {
     const [error, setError] = useState('');
     const [isEnrolling, setIsEnrolling] = useState(false);
     const [isEnrolled, setIsEnrolled] = useState(false);
+    const [isThumbnailLoading, setIsThumbnailLoading] = useState(true);
+    const [thumbnailSrc, setThumbnailSrc] = useState(null);
+    const [isInstructorAvatarLoading, setIsInstructorAvatarLoading] = useState(true);
+    const [instructorAvatarSrc, setInstructorAvatarSrc] = useState(null);
+    const thumbnailRef = useRef(null);
+    const instructorAvatarRef = useRef(null);
 
     useEffect(() => {
         const fetchData = async () => {
@@ -73,6 +82,59 @@ const EnrollmentPage = () => {
         };
         fetchData();
     }, [courseId]);
+
+    // Initialize image sources
+    useEffect(() => {
+        if (course) {
+            // Handle course thumbnail
+            if (!course.course_thumbnail) {
+                setThumbnailSrc(`${API_URL}${FALLBACK_IMAGE}`);
+                setIsThumbnailLoading(false);
+                return;
+            }
+
+            if (course.course_thumbnail.startsWith('http')) {
+                setThumbnailSrc(course.course_thumbnail);
+            } else {
+                setThumbnailSrc(`${API_URL}${course.course_thumbnail}`);
+            }
+
+            // Handle instructor avatar
+            if (!course.instructor?.avatar) {
+                setInstructorAvatarSrc(`${API_URL}${FALLBACK_IMAGE}`);
+                setIsInstructorAvatarLoading(false);
+                return;
+            }
+
+            if (course.instructor.avatar.startsWith('http')) {
+                setInstructorAvatarSrc(course.instructor.avatar);
+            } else {
+                setInstructorAvatarSrc(`${API_URL}${course.instructor.avatar}`);
+            }
+        }
+    }, [course]);
+
+    // Handle course thumbnail loading
+    const handleThumbnailLoad = useCallback(() => {
+        setIsThumbnailLoading(false);
+    }, []);
+
+    const handleThumbnailError = useCallback(() => {
+        console.log('Course thumbnail load error, using fallback');
+        setThumbnailSrc(`${API_URL}${FALLBACK_IMAGE}`);
+        setIsThumbnailLoading(false);
+    }, []);
+
+    // Handle instructor avatar loading
+    const handleInstructorAvatarLoad = useCallback(() => {
+        setIsInstructorAvatarLoading(false);
+    }, []);
+
+    const handleInstructorAvatarError = useCallback(() => {
+        console.log('Instructor avatar load error, using fallback');
+        setInstructorAvatarSrc(`${API_URL}${FALLBACK_IMAGE}`);
+        setIsInstructorAvatarLoading(false);
+    }, []);
 
     const handleEnroll = async () => {
         setIsEnrolling(true);
@@ -286,8 +348,26 @@ const EnrollmentPage = () => {
                             }}>
                                 <Stack direction="row" alignItems="center" spacing={3}>
                                     <Avatar
-                                        src={course.instructor.avatar}
-                                        sx={{ width: 56, height: 56, bgcolor: 'rgba(255,255,255,0.2)' }}
+                                        src={instructorAvatarSrc}
+                                        sx={{ 
+                                            width: 56, 
+                                            height: 56, 
+                                            bgcolor: 'rgba(255,255,255,0.2)',
+                                            position: 'relative',
+                                            '&::before': {
+                                                content: '""',
+                                                position: 'absolute',
+                                                top: 0,
+                                                left: 0,
+                                                right: 0,
+                                                bottom: 0,
+                                                bgcolor: 'grey.200',
+                                                display: isInstructorAvatarLoading ? 'block' : 'none'
+                                            }
+                                        }}
+                                        ref={instructorAvatarRef}
+                                        onLoad={handleInstructorAvatarLoad}
+                                        onError={handleInstructorAvatarError}
                                     >
                                         <Person />
                                     </Avatar>
@@ -322,13 +402,40 @@ const EnrollmentPage = () => {
                                     boxShadow: '0 25px 50px -12px rgba(0, 0, 0, 0.25)',
                                     border: '1px solid rgba(255,255,255,0.1)'
                                 }}>
-                                    <CardMedia
-                                        component="img"
-                                        height="240"
-                                        image={course.course_thumbnail}
-                                        alt={course.title}
-                                        sx={{ objectFit: 'cover' }}
-                                    />
+                                    <Box sx={{ 
+                                        position: 'relative',
+                                        width: '100%',
+                                        height: '140px',
+                                        overflow: 'hidden',
+                                        bgcolor: 'grey.200'
+                                    }}>
+                                        <CardMedia
+                                            component="img"
+                                            ref={thumbnailRef}
+                                            image={thumbnailSrc}
+                                            alt={course.title}
+                                            sx={{ 
+                                                position: 'absolute',
+                                                top: 0,
+                                                left: 0,
+                                                width: '100%',
+                                                height: '100%',
+                                                objectFit: 'cover',
+                                                '&::before': {
+                                                    content: '""',
+                                                    position: 'absolute',
+                                                    top: 0,
+                                                    left: 0,
+                                                    right: 0,
+                                                    bottom: 0,
+                                                    bgcolor: 'grey.200',
+                                                    display: isThumbnailLoading ? 'block' : 'none'
+                                                }
+                                            }}
+                                            onLoad={handleThumbnailLoad}
+                                            onError={handleThumbnailError}
+                                        />
+                                    </Box>
                                     <CardContent sx={{ p: 4 }}>
                                         {isEnrolled ? (
                                             <Box sx={{ textAlign: 'center' }}>
@@ -542,15 +649,29 @@ const EnrollmentPage = () => {
 
                                 <Stack direction={{ xs: 'column', sm: 'row' }} spacing={3} alignItems="flex-start">
                                     <Avatar
-                                        src={course.instructor.avatar}
+                                        src={instructorAvatarSrc}
                                         sx={{
-                                            width: 96,
-                                            height: 96,
+                                            width: 80,
+                                            height: 80,
                                             bgcolor: 'primary.main',
-                                            alignSelf: { xs: 'center', sm: 'flex-start' }
+                                            alignSelf: { xs: 'center', sm: 'flex-start' },
+                                            position: 'relative',
+                                            '&::before': {
+                                                content: '""',
+                                                position: 'absolute',
+                                                top: 0,
+                                                left: 0,
+                                                right: 0,
+                                                bottom: 0,
+                                                bgcolor: 'grey.200',
+                                                display: isInstructorAvatarLoading ? 'block' : 'none'
+                                            }
                                         }}
+                                        ref={instructorAvatarRef}
+                                        onLoad={handleInstructorAvatarLoad}
+                                        onError={handleInstructorAvatarError}
                                     >
-                                        <Person sx={{ fontSize: 48 }} />
+                                        <Person sx={{ fontSize: 40 }} />
                                     </Avatar>
                                     <Box sx={{ flex: 1, width: '100%' }}>
                                         <Typography variant="h5" fontWeight="700" gutterBottom>

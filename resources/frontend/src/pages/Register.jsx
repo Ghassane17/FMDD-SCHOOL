@@ -9,13 +9,14 @@ const Register = () => {
         password: '',
         password_confirmation: '',
         role: 'learner',
-        avatar: '',
+        avatar: null,
         bio: '',
         phone:''
     });
     const [errors, setErrors] = useState({});
     const [message, setMessage] = useState('');
     const [loading, setLoading] = useState(false);
+    const [avatarPreview, setAvatarPreview] = useState(null);
     const navigate = useNavigate();
 
     const handleChange = (e) => {
@@ -26,6 +27,47 @@ const Register = () => {
             console.log('New formData:', newData);
             return newData;
         });
+    };
+
+    const handleFileChange = (e) => {
+        const file = e.target.files[0];
+        if (file) {
+            // Validate file type
+            if (!file.type.startsWith('image/')) {
+                setErrors(prev => ({
+                    ...prev,
+                    avatar: ['Please select a valid image file']
+                }));
+                return;
+            }
+
+            // Validate file size (5MB max)
+            if (file.size > 5 * 1024 * 1024) {
+                setErrors(prev => ({
+                    ...prev,
+                    avatar: ['Image size should not exceed 5MB']
+                }));
+                return;
+            }
+
+            setFormData(prev => ({
+                ...prev,
+                avatar: file
+            }));
+
+            // Create preview
+            const reader = new FileReader();
+            reader.onloadend = () => {
+                setAvatarPreview(reader.result);
+            };
+            reader.readAsDataURL(file);
+
+            // Clear any previous errors
+            setErrors(prev => ({
+                ...prev,
+                avatar: undefined
+            }));
+        }
     };
 
     const handleSubmit = async (e) => {
@@ -72,12 +114,6 @@ const Register = () => {
         } finally {
             setLoading(false);
         }
-    };
-    const handleFileChange = (e) => {
-        setFormData((prev) => ({
-            ...prev,
-            avatar: e.target.files[0], // store the File object
-        }));
     };
 
     return (
@@ -158,15 +194,23 @@ const Register = () => {
                     </div>
 
                     <div className="mb-4">
-                        <label className="block text-gray-700 mb-2" htmlFor="avatar">URL de l'avatar</label>
-                        <input
-                            type="file"
-                            name="avatar"
-                            accept="image/*"
-                            onChange={handleFileChange}
-                            className="w-full p-2 border rounded focus:outline-none focus:ring-2 focus:ring-indigo-500"
-
-                        />
+                        <label className="block text-gray-700 mb-2" htmlFor="avatar">Photo de profil</label>
+                        <div className="flex items-center space-x-4">
+                            {avatarPreview && (
+                                <img
+                                    src={avatarPreview}
+                                    alt="Avatar preview"
+                                    className="w-16 h-16 rounded-full object-cover"
+                                />
+                            )}
+                            <input
+                                type="file"
+                                name="avatar"
+                                accept="image/*"
+                                onChange={handleFileChange}
+                                className="w-full p-2 border rounded focus:outline-none focus:ring-2 focus:ring-indigo-500"
+                            />
+                        </div>
                         {errors.avatar && <p className="text-red-500 text-sm">{errors.avatar.join(', ')}</p>}
                     </div>
 

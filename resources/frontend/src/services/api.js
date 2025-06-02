@@ -258,22 +258,12 @@ export const completeProfile = async (role, data) => {
     }
 };
 
-export const logout = async () => {
-    console.log('Logging out user');
-
-    try {
-        if (isAuthenticated()) {
-            await api.post('/logout');
-            console.log('Server-side logout successful');
-        }
-    } catch (error) {
-        console.error('Server-side logout failed:', error);
-    }
-
-    clearAllCaches();
-    removeToken();
-    removeUser();
-    console.log('Client-side logout complete');
+export const logout = () => {
+    // Remove token from localStorage
+    localStorage.removeItem('token');
+    localStorage.removeItem('user');
+    // Remove token from axios defaults
+    delete axios.defaults.headers.common['Authorization'];
 };
 
 export const getLearnerDashboard = async (forceRefresh = false) => {
@@ -529,12 +519,11 @@ export const getAllCourses = async () => {
 // Notification functions
 export const getLearnerNotifications = async () => {
     try {
-        const response = await axios.get('/api/learner/notifications', {
+        return await axios.get('/api/learner/notifications', {
             headers: {
                 'Authorization': `Bearer ${localStorage.getItem('token')}`
             }
         });
-        return response;
     } catch (error) {
         console.error('Error fetching notifications:', error);
         throw error;

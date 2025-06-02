@@ -2,7 +2,8 @@ import React, { useState } from 'react';
 import PropTypes from 'prop-types';
 import { Button, Alert } from '@mui/material';
 import { ChevronLeft, ChevronRight } from '@mui/icons-material';
-import NotesPanel from './NotesPanel'; // Import NotesPanel
+import NotesPanel from './NotesPanel';
+import ContentRenderer from './ContentRenderer';
 
 const QuizModule = ({ questions, onComplete }) => {
     const [selectedAnswers, setSelectedAnswers] = useState({});
@@ -121,70 +122,24 @@ const CourseContent = ({ currentModule, hasPrevious, hasNext, onPreviousClick, o
         );
     }
 
-    const renderContent = () => {
-        switch (currentModule.type) {
-            case 'text':
-                return currentModule.text_content ? (
-                    <div
-                        className="prose max-w-none"
-                        dangerouslySetInnerHTML={{ __html: currentModule.text_content }}
-                    />
-                ) : (
-                    <Alert severity="warning">No text content available.</Alert>
-                );
-            case 'pdf':
-                return currentModule.file_path ? (
-                    <iframe
-                        src={currentModule.file_path}
-                        title={currentModule.title}
-                        className="w-full h-[600px] border rounded-lg"
-                    />
-                ) : (
-                    <Alert severity="warning">No PDF file available.</Alert>
-                );
-            case 'image':
-                return currentModule.file_path ? (
-                    <img
-                        src={currentModule.file_path}
-                        alt={currentModule.title}
-                        className="max-w-full h-auto rounded-lg shadow"
-                    />
-                ) : (
-                    <Alert severity="warning">No image available.</Alert>
-                );
-            case 'video':
-                return currentModule.file_path ? (
-                    <video
-                        controls
-                        src={currentModule.file_path}
-                        className="w-full max-w-4xl mx-auto rounded-lg shadow"
-                    >
-                        Your browser does not support video playback.
-                    </video>
-                ) : (
-                    <Alert severity="warning">No video available.</Alert>
-                );
-            case 'quiz':
-                return currentModule.quiz_questions?.length ? (
-                    <QuizModule
-                        questions={currentModule.quiz_questions.map((q) => ({
-                            ...q,
-                            correct_option: q.correct_option,
-                        }))}
-                        onComplete={onQuizComplete}
-                    />
-                ) : (
-                    <Alert severity="warning">No quiz questions available.</Alert>
-                );
-            default:
-                return <Alert severity="warning">Unsupported module type: {currentModule.type}</Alert>;
-        }
-    };
+    console.log('Module Data:', {
+        file_path: currentModule.file_path,
+        resources: currentModule.resources
+    });
 
     return (
         <div className="flex-1 p-6 bg-white overflow-auto">
             <h2 className="text-2xl font-bold text-gray-800 mb-6">{currentModule.title}</h2>
-            {renderContent()}
+            
+            <ContentRenderer
+                type={currentModule.type}
+                textContent={currentModule.text_content}
+                filePath={currentModule.file_path}
+                quizQuestions={currentModule.quiz_questions}
+                resources={currentModule.resources}
+                onQuizComplete={onQuizComplete}
+            />
+
             <div className="mt-6 space-y-6">
                 {currentModule.resources?.length > 0 && (
                     <div>
@@ -269,9 +224,9 @@ CourseContent.propTypes = {
     onPreviousClick: PropTypes.func.isRequired,
     onNextClick: PropTypes.func.isRequired,
     onQuizComplete: PropTypes.func,
-    courseId: PropTypes.number.isRequired, // Added courseId
-    onSaveNotes: PropTypes.func.isRequired, // Added onSaveNotes
-    notes: PropTypes.string, // Added notes
+    courseId: PropTypes.number.isRequired,
+    onSaveNotes: PropTypes.func.isRequired,
+    notes: PropTypes.string,
 };
 
 export default CourseContent;

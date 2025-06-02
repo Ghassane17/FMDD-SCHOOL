@@ -35,7 +35,7 @@ const CourseCard = ({ course }) => {
                 <CardMedia
                     component="img"
                     height="160"
-                    image={course.image || course.course_thumbnail}
+                    image={course.image || course.course_thumbnail || '/storage/Test.png'}
                     alt={course.title}
                     loading="lazy"
                     sx={{ objectFit: 'cover' }}
