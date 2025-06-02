@@ -67,6 +67,7 @@ class CourseResourceController extends Controller
                 ], 403);
             }
 
+            // Get the target module
             $module = $this->getTargetModule($course, $moduleParam);
             if (!$module) {
                 Log::warning('No module found for course', [
@@ -83,12 +84,27 @@ class CourseResourceController extends Controller
             $quizQuestions = $this->getQuizQuestions($module);
             $resources = $this->getCourseResources($courseId);
             $allModules = $this->getAllCourseModules($course);
+
+            // Get course progress from pivot table
             $courseProgress = $course->learners()->find($learner->id)->pivot->progress ?? 0;
+
+            // If progress is 0 (new enrollment), ensure all modules are marked as not completed
+            if ($courseProgress === 0) {
+                Log::info('New enrollment detected, resetting module completion status', [
+                    'course_id' => $courseId,
+                    'learner_id' => $learner->id
+                ]);
+                $course->modules()->update(['is_completed' => false]);
+                $allModules = collect($allModules)->map(function ($module) {
+                    return array_merge($module, ['is_completed' => false]);
+                })->toArray();
+            }
 
             Log::info('Successfully retrieved module data', [
                 'course_id' => $courseId,
                 'module_id' => $module->id,
                 'user_id' => Auth::id(),
+                'progress' => $courseProgress
             ]);
 
             return response()->json([
@@ -112,7 +128,7 @@ class CourseResourceController extends Controller
                             'languages' => $course->instructor->languages
                         ]
                     ],
-                    'module' => $this->formatModuleData($module, $quizQuestions, $resources),
+                    'currentModule' => $this->formatModuleData($module, $quizQuestions, $resources),
                     'modules' => $allModules,
                 ],
             ]);
@@ -122,6 +138,7 @@ class CourseResourceController extends Controller
                 'module_param' => $moduleParam,
                 'user_id' => Auth::id(),
                 'error_message' => $e->getMessage(),
+                'trace' => $e->getTraceAsString()
             ]);
             return response()->json([
                 'success' => false,
@@ -272,9 +289,21 @@ class CourseResourceController extends Controller
      */
     private function getAllCourseModules(Course $course): array
     {
+        $learner = Learner::where('user_id', Auth::id())->first();
+
         return $course->modules()
             ->orderBy('order')
-            ->get(['id', 'title', 'type', 'order', 'duration'])
+            ->get(['id', 'title', 'type', 'order', 'duration', 'is_completed'])
+            ->map(function ($module) use ($learner) {
+                return [
+                    'id' => $module->id,
+                    'title' => $module->title,
+                    'type' => $module->type,
+                    'order' => $module->order,
+                    'duration' => $module->duration,
+                    'is_completed' => $module->is_completed
+                ];
+            })
             ->toArray();
     }
 
@@ -291,6 +320,7 @@ class CourseResourceController extends Controller
             'file_path' => $module->file_path ? $this->getStorageUrl($module->file_path) : null,
             'order' => $module->order,
             'duration' => $module->duration,
+            'is_completed' => $module->is_completed,
             'quiz_questions' => $quizQuestions,
             'resources' => $resources
         ];
@@ -348,4 +378,151 @@ class CourseResourceController extends Controller
     }
 
     public function updateCourseRating(Course $course) {}
+
+    public function markModuleAsCompleted($courseId, $moduleId): JsonResponse
+    {
+        try {
+            Log::info('Backend: Attempting to mark module as completed', [
+                'course_id' => $courseId,
+                'module_id' => $moduleId,
+                'user_id' => Auth::id()
+            ]);
+
+            // Check authentication
+            if (!Auth::check()) {
+                Log::warning('Backend: Unauthenticated user trying to mark module as completed');
+                return response()->json([
+                    'success' => false,
+                    'message' => 'Authentication required'
+                ], 401);
+            }
+
+            // Check if user is a learner
+            $learner = Learner::where('user_id', Auth::id())->first();
+            if (!$learner) {
+                Log::warning('Backend: User is not a learner', ['user_id' => Auth::id()]);
+                return response()->json([
+                    'success' => false,
+                    'message' => 'User must be registered as a learner'
+                ], 403);
+            }
+
+            // Check if user is enrolled in the course
+            $isEnrolled = $learner->courses()->where('course_id', $courseId)->exists();
+            if (!$isEnrolled) {
+                Log::warning('Backend: User not enrolled in course', [
+                    'user_id' => Auth::id(),
+                    'course_id' => $courseId,
+                ]);
+                return response()->json([
+                    'success' => false,
+                    'message' => 'You are not enrolled in this course'
+                ], 403);
+            }
+
+            // Find the module
+            $module = Module::where('id', $moduleId)
+                ->where('course_id', $courseId)
+                ->first();
+
+            if (!$module) {
+                Log::warning('Backend: Module not found', [
+                    'course_id' => $courseId,
+                    'module_id' => $moduleId
+                ]);
+                return response()->json([
+                    'success' => false,
+                    'message' => 'Module not found'
+                ], 404);
+            }
+
+            // Check if module is already completed
+            if ($module->is_completed) {
+                Log::info('Backend: Module already completed', [
+                    'module_id' => $moduleId,
+                    'course_id' => $courseId
+                ]);
+                return response()->json([
+                    'success' => true,
+                    'message' => 'Module is already completed',
+                    'data' => [
+                        'module_id' => $moduleId,
+                        'is_completed' => true
+                    ]
+                ]);
+            }
+
+            // Mark module as completed
+            $module->is_completed = true;
+            $saved = $module->save();
+
+            if (!$saved) {
+                Log::error('Backend: Failed to save module completion status', [
+                    'module_id' => $moduleId,
+                    'course_id' => $courseId
+                ]);
+                return response()->json([
+                    'success' => false,
+                    'message' => 'Failed to update module completion status'
+                ], 500);
+            }
+
+            // Update course progress
+            $totalModules = $module->course->modules()->count();
+            $completedModules = $module->course->modules()->where('is_completed', true)->count();
+            $progress = ($completedModules / $totalModules) * 100;
+
+            Log::info('Backend: Progress calculation details', [
+                'total_modules' => $totalModules,
+                'completed_modules' => $completedModules,
+                'calculated_progress' => $progress
+            ]);
+
+            // Update course_learner pivot table
+            $pivotUpdate = $learner->courses()->updateExistingPivot($courseId, ['progress' => $progress]);
+
+            Log::info('Backend: Pivot table update result', [
+                'pivot_update_success' => $pivotUpdate,
+                'course_id' => $courseId,
+                'learner_id' => $learner->id,
+                'progress' => $progress
+            ]);
+
+            // Verify the update
+            $updatedProgress = $learner->courses()->where('course_id', $courseId)->first()->pivot->progress;
+            Log::info('Backend: Verified progress after update', [
+                'expected_progress' => $progress,
+                'actual_progress' => $updatedProgress
+            ]);
+
+            Log::info('Backend: Successfully marked module as completed', [
+                'course_id' => $courseId,
+                'module_id' => $moduleId,
+                'user_id' => Auth::id(),
+                'progress' => $progress
+            ]);
+
+            return response()->json([
+                'success' => true,
+                'data' => [
+                    'module_id' => $moduleId,
+                    'is_completed' => true,
+                    'course_progress' => $progress
+                ]
+            ]);
+        } catch (\Exception $e) {
+            Log::error('Backend: Failed to mark module as completed', [
+                'course_id' => $courseId,
+                'module_id' => $moduleId,
+                'user_id' => Auth::id(),
+                'error' => $e->getMessage(),
+                'trace' => $e->getTraceAsString()
+            ]);
+
+            return response()->json([
+                'success' => false,
+                'message' => 'Failed to mark module as completed: ' . $e->getMessage()
+            ], 500);
+        }
+    }
 }

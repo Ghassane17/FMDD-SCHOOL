@@ -42,6 +42,10 @@ Route::middleware('auth:sanctum')->group(function () {
     Route::get('/learner/courses/{course}/{module?}', [CourseResourceController::class, 'getModule'])
         ->where('course', '[0-9]+');
 
+    // Mark module as completed
+    Route::post('/learner/courses/{course}/modules/{module}/complete', [CourseResourceController::class, 'markModuleAsCompleted'])
+        ->where(['course' => '[0-9]+', 'module' => '[0-9]+']);
+
     Route::post('/courses/{course}/comments', [CommentController::class, 'store']);
     Route::put('/courses/{course}', [CourseResourceController::class, 'updateCourseRating']);
     Route::post('/courses/{id}/enroll', [CourseController::class, 'enrollNow']);

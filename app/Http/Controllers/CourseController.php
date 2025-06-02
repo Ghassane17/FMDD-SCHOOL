@@ -141,41 +141,73 @@ class CourseController extends Controller
         }
     }
 
-    public function enrollNow($id)
+    public function enrollNow($id): JsonResponse
     {
-        // Validate the ID
-        $id = filter_var($id, FILTER_VALIDATE_INT);
-        if (!$id) {
-            return response()->json(['message' => 'Invalid course ID'], 400);
+        try {
+            // Validate the ID
+            $id = filter_var($id, FILTER_VALIDATE_INT);
+            if (!$id) {
+                return response()->json(['message' => 'Invalid course ID'], 400);
+            }
+
+            // Ensure user is authenticated
+            $user = Auth::user();
+            if (!$user) {
+                return response()->json(['message' => 'Unauthorized'], 401);
+            }
+
+            Log::info('Backend: Starting course enrollment process', [
+                'course_id' => $id,
+                'user_id' => $user->id
+            ]);
+
+            // Get the learner profile
+            $learner = Learner::where('user_id', $user->id)->first();
+            if (!$learner) {
+                return response()->json(['message' => 'Learner profile not found'], 404);
+            }
+
+            // Find the course
+            $course = Course::findOrFail($id);
+
+            // Check if already enrolled
+            if ($learner->courses()->where('course_id', $id)->exists()) {
+                Log::warning('Backend: User already enrolled in course', [
+                    'course_id' => $id,
+                    'learner_id' => $learner->id
+                ]);
+                return response()->json(['message' => 'Already enrolled'], 400);
+            }
+
+            // Enroll the learner and update courses_enrolled count
+            DB::transaction(function () use ($learner, $id, $course) {
+                // Ensure all modules are marked as not completed
+                $course->modules()->update(['is_completed' => false]);
+
+                // Attach with initial progress of 0
+                $learner->courses()->attach($id, [
+                    'progress' => 0,
+                    'last_accessed' => now()
+                ]);
+
+                $learner->increment('courses_enrolled');
+            });
+
+            Log::info('Backend: Successfully enrolled in course', [
+                'course_id' => $id,
+                'learner_id' => $learner->id,
+                'courses_enrolled' => $learner->courses_enrolled
+            ]);
+
+            return response()->json(['message' => 'Enrolled successfully']);
+        } catch (\Exception $e) {
+            Log::error('Backend: Failed to enroll in course', [
+                'course_id' => $id,
+                'error' => $e->getMessage(),
+                'trace' => $e->getTraceAsString()
+            ]);
+            return response()->json(['message' => 'Failed to enroll in course'], 500);
         }
-
-        // Ensure user is authenticated
-        $user = Auth::user();
-        if (!$user) {
-            return response()->json(['message' => 'Unauthorized'], 401);
-        }
-
-        // Get the learner profile
-        $learner = Learner::where('user_id', $user->id)->first();
-        if (!$learner) {
-            return response()->json(['message' => 'Learner profile not found'], 404);
-        }
-
-        // Find the course
-        $course = Course::findOrFail($id);
-
-        // Check if already enrolled
-        if ($learner->courses()->where('course_id', $id)->exists()) {
-            return response()->json(['message' => 'Already enrolled'], 400);
-        }
-
-        // Enroll the learner and update courses_enrolled count
-        DB::transaction(function () use ($learner, $id) {
-            $learner->courses()->attach($id);
-            $learner->increment('courses_enrolled');
-        });
-
-        return response()->json(['message' => 'Enrolled successfully']);
     }
 
 
@@ -262,21 +294,43 @@ class CourseController extends Controller
     /**
      * Remove the learner from the course
      */
-    public function leave(Course $course)
+    public function leave(Course $course): JsonResponse
     {
         try {
-            $learner = auth()->user()->learner;
+            $learner = Auth::user()->learner;
 
             if (!$learner) {
                 return response()->json(['message' => 'Learner not found'], 404);
             }
 
+            Log::info('Backend: Starting course leave process', [
+                'course_id' => $course->id,
+                'learner_id' => $learner->id
+            ]);
+
+            // Reset module completion status for this course
+            $resetModules = $course->modules()->update(['is_completed' => false]);
+            Log::info('Backend: Reset module completion status', [
+                'modules_reset' => $resetModules,
+                'course_id' => $course->id
+            ]);
+
             // Remove the enrollment
             $learner->courses()->detach($course->id);
+            Log::info('Backend: Removed course enrollment', [
+                'course_id' => $course->id,
+                'learner_id' => $learner->id
+            ]);
 
             // Update learner's enrolled courses count
             $learner->update([
                 'courses_enrolled' => $learner->courses()->count()
+            ]);
+
+            Log::info('Backend: Successfully left course', [
+                'course_id' => $course->id,
+                'learner_id' => $learner->id,
+                'courses_enrolled' => $learner->courses_enrolled
             ]);
 
             return response()->json([
@@ -284,6 +338,11 @@ class CourseController extends Controller
                 'course' => $course
             ]);
         } catch (\Exception $e) {
+            Log::error('Backend: Failed to leave course', [
+                'course_id' => $course->id,
+                'error' => $e->getMessage(),
+                'trace' => $e->getTraceAsString()
+            ]);
             return response()->json(['message' => 'Failed to leave the course'], 500);
         }
     }

@@ -113,7 +113,7 @@ const QuizModule = ({ questions, onComplete }) => {
     );
 };
 
-const CourseContent = ({ currentModule, hasPrevious, hasNext, onPreviousClick, onNextClick, onQuizComplete, courseId, onSaveNotes, notes }) => {
+const CourseContent = ({ currentModule, hasPrevious, hasNext, onPreviousClick, onNextClick, onQuizComplete, courseId, onSaveNotes, notes, onModuleComplete }) => {
     if (!currentModule) {
         return (
             <div className="flex-1 p-6 bg-white">
@@ -129,7 +129,26 @@ const CourseContent = ({ currentModule, hasPrevious, hasNext, onPreviousClick, o
 
     return (
         <div className="flex-1 p-6 bg-white overflow-auto">
-            <h2 className="text-2xl font-bold text-gray-800 mb-6">{currentModule.title}</h2>
+            <div className="flex justify-between items-center mb-6">
+                <h2 className="text-2xl font-bold text-gray-800">{currentModule.title}</h2>
+                {!currentModule.is_completed && (
+                    <button
+                        onClick={() => {
+                            if (typeof onModuleComplete === 'function') {
+                                onModuleComplete(currentModule.id);
+                            } else {
+                                console.error('onModuleComplete is not a function:', onModuleComplete);
+                            }
+                        }}
+                        className="px-4 py-2 bg-green-600 text-white rounded-lg hover:bg-green-700 transition-colors flex items-center gap-2"
+                    >
+                        <svg xmlns="http://www.w3.org/2000/svg" className="h-5 w-5" viewBox="0 0 20 20" fill="currentColor">
+                            <path fillRule="evenodd" d="M16.707 5.293a1 1 0 010 1.414l-8 8a1 1 0 01-1.414 0l-4-4a1 1 0 011.414-1.414L8 12.586l7.293-7.293a1 1 0 011.414 0z" clipRule="evenodd" />
+                        </svg>
+                        Mark as Completed
+                    </button>
+                )}
+            </div>
             
             <ContentRenderer
                 type={currentModule.type}
@@ -197,6 +216,7 @@ CourseContent.propTypes = {
         type: PropTypes.oneOf(['text', 'pdf', 'image', 'video', 'quiz']),
         text_content: PropTypes.string,
         file_path: PropTypes.string,
+        is_completed: PropTypes.bool,
         quiz_questions: PropTypes.arrayOf(
             PropTypes.shape({
                 id: PropTypes.number,
@@ -227,6 +247,7 @@ CourseContent.propTypes = {
     courseId: PropTypes.number.isRequired,
     onSaveNotes: PropTypes.func.isRequired,
     notes: PropTypes.string,
+    onModuleComplete: PropTypes.func.isRequired,
 };
 
 export default CourseContent;

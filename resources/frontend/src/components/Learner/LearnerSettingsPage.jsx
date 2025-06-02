@@ -1,4 +1,4 @@
-import React, { useEffect, useState } from 'react';
+import React, { useEffect, useState, useCallback, useRef } from 'react';
 import { getLearnerSettings, updateLearnerSettings } from '@/services/api.js';
 import { toast } from 'sonner';
 import {
@@ -43,6 +43,9 @@ import {
     Save as SaveIcon
 } from '@mui/icons-material';
 
+const API_URL = import.meta.env.VITE_API_BASE_URL || 'http://localhost:8000';
+const FALLBACK_AVATAR = '/storage/WsuhBYEJy9VT5lSb3yV2IlyugJvzt7OEEtmsFeXH.jpg';
+
 const AccountSettings = () => {
     const [settings, setSettings] = useState({
         username: '',
@@ -59,12 +62,21 @@ const AccountSettings = () => {
         bank_info: null,
         currentPassword: '',
         newPassword: '',
-        confirmPassword: ''
+        confirmPassword: '',
+        avatar: null
     });
     const [loading, setLoading] = useState(true);
-    const [saving, setSaving] = useState(false);
+    const [saving, setSaving] = useState({
+        personal: false,
+        password: false,
+        additional: false,
+        notifications: false
+    });
     const [editDialog, setEditDialog] = useState({ open: false, type: '', index: -1, value: null });
     const [avatarPreview, setAvatarPreview] = useState(null);
+    const [isAvatarLoading, setIsAvatarLoading] = useState(true);
+    const [avatarSrc, setAvatarSrc] = useState(null);
+    const avatarRef = useRef(null);
 
     useEffect(() => {
         getLearnerSettings(true)
@@ -80,15 +92,42 @@ const AccountSettings = () => {
                         languages: res.data.languages || [],
                         certifications: res.data.certifications || [],
                         fields_of_interest: res.data.fields_of_interest || [],
-                        bank_info: res.data.bank_info || null
+                        bank_info: res.data.bank_info || null,
+                        avatar: res.data.avatar || null
                     }));
-                    if (res.data.avatar) {
-                        setAvatarPreview(res.data.avatar);
-                    }
                 }
             })
             .catch(() => toast.error('Erreur lors du chargement des paramètres'))
             .finally(() => setLoading(false));
+    }, []);
+
+    // Initialize avatar source
+    useEffect(() => {
+        if (!settings.avatar) {
+            setAvatarSrc(`${API_URL}${FALLBACK_AVATAR}`);
+            setIsAvatarLoading(false);
+            return;
+        }
+
+        // If avatar is a full URL, use it directly
+        if (settings.avatar.startsWith('http')) {
+            setAvatarSrc(settings.avatar);
+            return;
+        }
+
+        // If avatar is a relative path, prepend API_URL
+        setAvatarSrc(`${API_URL}${settings.avatar}`);
+    }, [settings.avatar]);
+
+    // Handle avatar loading
+    const handleAvatarLoad = useCallback(() => {
+        setIsAvatarLoading(false);
+    }, []);
+
+    const handleAvatarError = useCallback(() => {
+        console.log('Avatar load error, using fallback');
+        setAvatarSrc(`${API_URL}${FALLBACK_AVATAR}`);
+        setIsAvatarLoading(false);
     }, []);
 
     const handleChange = (e) => {
@@ -118,81 +157,79 @@ const AccountSettings = () => {
         }
     };
 
-    const handleProfileSave = async (e) => {
-        e.preventDefault();
-        setSaving(true);
+    const handleSectionSave = async (section) => {
+        setSaving(prev => ({ ...prev, [section]: true }));
         try {
-            // Prepare the data object
-            const dataToSend = {
-                username: settings.username,
-                email: settings.email,
-                bio: settings.bio,
-                phone: settings.phone,
-                notifications: settings.notifications,
-                fields_of_interest: settings.fields_of_interest,
-                languages: settings.languages,
-                certifications: settings.certifications,
-                bank_info: settings.bank_info
-            };
-
-            // Handle password changes if any password field is filled
-            if (settings.currentPassword || settings.newPassword || settings.confirmPassword) {
-                if (!settings.currentPassword) {
-                    toast.error('Veuillez entrer votre mot de passe actuel');
-                    setSaving(false);
-                    return;
-                }
-                if (!settings.newPassword) {
-                    toast.error('Veuillez entrer un nouveau mot de passe');
-                    setSaving(false);
-                    return;
-                }
-                if (settings.newPassword !== settings.confirmPassword) {
-                    toast.error('Les mots de passe ne correspondent pas');
-                    setSaving(false);
-                    return;
-                }
-                const passwordRegex = /^(?=.*[a-z])(?=.*[A-Z])(?=.*\d).{8,}$/;
-                if (!passwordRegex.test(settings.newPassword)) {
-                    toast.error('Le mot de passe doit contenir au moins 8 caractères, une majuscule, une minuscule et un chiffre');
-                    setSaving(false);
-                    return;
-                }
-                dataToSend.current_password = settings.currentPassword;
-                dataToSend.new_password = settings.newPassword;
-                dataToSend.new_password_confirmation = settings.confirmPassword;
+            let dataToSend = {};
+            const passwordRegex = /^(?=.*[a-z])(?=.*[A-Z])(?=.*\d).{8,}$/;
+            
+            switch(section) {
+                case 'personal':
+                    dataToSend = {
+                        username: settings.username,
+                        email: settings.email,
+                        bio: settings.bio,
+                        phone: settings.phone,
+                        avatar: settings.avatar instanceof File ? settings.avatar : null
+                    };
+                    break;
+                case 'password':
+                    if (!settings.currentPassword) {
+                        toast.error('Veuillez entrer votre mot de passe actuel');
+                        return;
+                    }
+                    if (!settings.newPassword) {
+                        toast.error('Veuillez entrer un nouveau mot de passe');
+                        return;
+                    }
+                    if (settings.newPassword !== settings.confirmPassword) {
+                        toast.error('Les mots de passe ne correspondent pas');
+                        return;
+                    }
+                    if (!passwordRegex.test(settings.newPassword)) {
+                        toast.error('Le mot de passe doit contenir au moins 8 caractères, une majuscule, une minuscule et un chiffre');
+                        return;
+                    }
+                    dataToSend = {
+                        current_password: settings.currentPassword,
+                        new_password: settings.newPassword,
+                        new_password_confirmation: settings.confirmPassword
+                    };
+                    break;
+                case 'additional':
+                    dataToSend = {
+                        fields_of_interest: settings.fields_of_interest,
+                        languages: settings.languages,
+                        certifications: settings.certifications,
+                        bank_info: settings.bank_info
+                    };
+                    break;
+                case 'notifications':
+                    dataToSend = {
+                        notifications: settings.notifications
+                    };
+                    break;
             }
-
-            // Handle avatar if it's a File object
-            if (settings.avatar instanceof File) {
-                dataToSend.avatar = settings.avatar;
-            } else if (settings.avatar === null) {
-                dataToSend.avatar = null;
-            }
-
-            console.log('Settings being sent:', {
-                ...dataToSend,
-                current_password: '********',
-                new_password: '********',
-                new_password_confirmation: '********'
-            });
 
             const response = await updateLearnerSettings(dataToSend);
             if (response.data.data) {
-                setSettings({
+                setSettings(prev => ({
+                    ...prev,
                     ...response.data.data,
                     currentPassword: '',
                     newPassword: '',
                     confirmPassword: ''
-                });
-                setAvatarPreview(response.data.data.avatar || null);
-                toast.success('Profil mis à jour avec succès !');
+                }));
+                if (section === 'personal' && response.data.data.avatar) {
+                    setAvatarPreview(response.data.data.avatar);
+                }
+                toast.success('Mise à jour réussie !');
             }
         } catch (error) {
             console.error('Save Error:', error.response?.data || error);
-            toast.error(error.response?.data?.message || 'Erreur lors de la mise à jour du profil');
+            toast.error(error.response?.data?.message || 'Erreur lors de la mise à jour');
         } finally {
-            setSaving(false);
+            setSaving(prev => ({ ...prev, [section]: false }));
         }
     };
 
@@ -404,24 +441,6 @@ const AccountSettings = () => {
                         Mon Profil
                     </Typography>
                 </Box>
-                <Button
-                    type="submit"
-                    variant="contained"
-                    color="primary"
-                    disabled={saving}
-                    onClick={handleProfileSave}
-                    startIcon={<SaveIcon />}
-                    sx={{
-                        minWidth: 200,
-                        py: 1.5,
-                        borderRadius: 2,
-                        textTransform: 'none',
-                        fontSize: '1.1rem',
-                        fontWeight: 600
-                    }}
-                >
-                    {saving ? <CircularProgress size={24} /> : 'Enregistrer les modifications'}
-                </Button>
             </Box>
 
             {/* Top Section - Personal Info and Password */}
@@ -465,14 +484,37 @@ const AccountSettings = () => {
                         borderRadius: 2
                     }}>
                         <Box sx={{ position: 'relative' }}>
+                            {isAvatarLoading && (
+                                <Box
+                                    sx={{
+                                        width: 120,
+                                        height: 120,
+                                        borderRadius: '50%',
+                                        bgcolor: 'grey.200',
+                                        animation: 'pulse 2s cubic-bezier(0.4, 0, 0.6, 1) infinite',
+                                        '@keyframes pulse': {
+                                            '0%, 100%': {
+                                                opacity: 1,
+                                            },
+                                            '50%': {
+                                                opacity: .5,
+                                            },
+                                        },
+                                    }}
+                                />
+                            )}
                             <Avatar
-                                src={avatarPreview || 'https://via.placeholder.com/50'}
+                                ref={avatarRef}
+                                src={avatarPreview || avatarSrc}
                                 sx={{
                                     width: 120,
                                     height: 120,
                                     border: '4px solid',
-                                    borderColor: 'primary.main'
+                                    borderColor: 'primary.main',
+                                    display: isAvatarLoading ? 'none' : 'block'
                                 }}
+                                onLoad={handleAvatarLoad}
+                                onError={handleAvatarError}
                             />
                             <input
                                 accept="image/*"
@@ -553,6 +595,25 @@ const AccountSettings = () => {
                             sx={{ '& .MuiOutlinedInput-root': { borderRadius: 2 } }}
                         />
                     </Box>
+                    <Box sx={{ mt: 3, display: 'flex', justifyContent: 'flex-end' }}>
+                        <Button
+                            variant="contained"
+                            color="primary"
+                            disabled={saving.personal}
+                            onClick={() => handleSectionSave('personal')}
+                            startIcon={saving.personal ? <CircularProgress size={20} /> : <SaveIcon />}
+                            sx={{
+                                minWidth: 200,
+                                py: 1.5,
+                                borderRadius: 2,
+                                textTransform: 'none',
+                                fontSize: '1.1rem',
+                                fontWeight: 600
+                            }}
+                        >
+                            {saving.personal ? 'Enregistrement...' : 'Enregistrer les informations'}
+                        </Button>
+                    </Box>
                 </Paper>
 
                 {/* Password Panel */}
@@ -622,6 +683,25 @@ const AccountSettings = () => {
                             helperText={settings.newPassword && settings.confirmPassword && settings.newPassword !== settings.confirmPassword ? "Les mots de passe ne correspondent pas" : ""}
                             sx={{ '& .MuiOutlinedInput-root': { borderRadius: 2 } }}
                         />
+                    </Box>
+                    <Box sx={{ mt: 3, display: 'flex', justifyContent: 'flex-end' }}>
+                        <Button
+                            variant="contained"
+                            color="primary"
+                            disabled={saving.password}
+                            onClick={() => handleSectionSave('password')}
+                            startIcon={saving.password ? <CircularProgress size={20} /> : <SaveIcon />}
+                            sx={{
+                                minWidth: 200,
+                                py: 1.5,
+                                borderRadius: 2,
+                                textTransform: 'none',
+                                fontSize: '1.1rem',
+                                fontWeight: 600
+                            }}
+                        >
+                            {saving.password ? 'Enregistrement...' : 'Changer le mot de passe'}
+                        </Button>
                     </Box>
                 </Paper>
             </Box>
@@ -932,6 +1012,25 @@ const AccountSettings = () => {
                         </Box>
                     </Box>
                 </Box>
+                <Box sx={{ mt: 3, display: 'flex', justifyContent: 'flex-end' }}>
+                    <Button
+                        variant="contained"
+                        color="primary"
+                        disabled={saving.additional}
+                        onClick={() => handleSectionSave('additional')}
+                        startIcon={saving.additional ? <CircularProgress size={20} /> : <SaveIcon />}
+                        sx={{
+                            minWidth: 200,
+                            py: 1.5,
+                            borderRadius: 2,
+                            textTransform: 'none',
+                            fontSize: '1.1rem',
+                            fontWeight: 600
+                        }}
+                    >
+                        {saving.additional ? 'Enregistrement...' : 'Enregistrer les informations'}
+                    </Button>
+                </Box>
             </Paper>
 
             {/* Bottom Section - Notifications */}
@@ -995,6 +1094,25 @@ const AccountSettings = () => {
                             </Typography>
                         }
                     />
+                </Box>
+                <Box sx={{ mt: 3, display: 'flex', justifyContent: 'flex-end' }}>
+                    <Button
+                        variant="contained"
+                        color="primary"
+                        disabled={saving.notifications}
+                        onClick={() => handleSectionSave('notifications')}
+                        startIcon={saving.notifications ? <CircularProgress size={20} /> : <SaveIcon />}
+                        sx={{
+                            minWidth: 200,
+                            py: 1.5,
+                            borderRadius: 2,
+                            textTransform: 'none',
+                            fontSize: '1.1rem',
+                            fontWeight: 600
+                        }}
+                    >
+                        {saving.notifications ? 'Enregistrement...' : 'Enregistrer les préférences'}
+                    </Button>
                 </Box>
             </Paper>
 

@@ -17,12 +17,14 @@ class Module extends Model
         'file_path',
 
         'order',
-        'duration'
+        'duration',
+        'is_completed'
     ];
 
     protected $casts = [
         'order' => 'integer',
-        'duration' => 'integer'
+        'duration' => 'integer',
+        'is_completed' => 'boolean'
     ];
 
     /**

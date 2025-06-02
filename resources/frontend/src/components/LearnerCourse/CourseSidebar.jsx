@@ -1,12 +1,18 @@
 import React from 'react';
 import PropTypes from 'prop-types';
 import { useNavigate } from 'react-router-dom';
-import { CheckCircle, School } from '@mui/icons-material';
+import { CheckCircle, School, Lock } from '@mui/icons-material';
 
-const CourseSidebar = ({ modules, currentModuleIndex, progress, isOpen, onModuleSelect, quizProgress, courseId, hasExam }) => {
+const CourseSidebar = ({ modules, currentModuleId, progress, isOpen, onModuleSelect, quizProgress, courseId, hasExam }) => {
     const navigate = useNavigate();
+    
+    // Exam is disabled when progress is less than 100%
+    const isExamDisabled = progress < 100;
 
     const handleFinalExamClick = () => {
+        if (isExamDisabled) {
+            return; // Don't navigate if exam is disabled
+        }
         console.log('Navigating to Final Exam:', `/learner/courses/${courseId}/finalQuiz`);
         navigate(`/learner/courses/${courseId}/finalQuiz`);
         if (window.innerWidth < 1024) {
@@ -23,18 +29,18 @@ const CourseSidebar = ({ modules, currentModuleIndex, progress, isOpen, onModule
             <div className="p-4 h-full overflow-y-auto">
                 <h2 className="text-lg font-semibold text-gray-800 mb-4">Course Modules</h2>
                 <ul className="space-y-2">
-                    {modules.map((module, index) => (
+                    {modules.map((module) => (
                         <li key={module.id}>
                             <button
-                                onClick={() => onModuleSelect(index)}
+                                onClick={() => onModuleSelect(modules.findIndex(m => m.id === module.id))}
                                 className={`w-full text-left p-3 rounded-lg flex justify-between items-center ${
-                                    currentModuleIndex === index
+                                    currentModuleId === module.id
                                         ? 'bg-indigo-100 text-indigo-700'
                                         : 'bg-gray-50 text-gray-700 hover:bg-gray-100'
                                 }`}
                             >
                                 <span className="text-sm font-medium">{module.title}</span>
-                                {quizProgress[module.id]?.completed && module.type === 'quiz' && (
+                                {module.is_completed && (
                                     <CheckCircle className="text-green-500" fontSize="small" />
                                 )}
                             </button>
@@ -45,11 +51,27 @@ const CourseSidebar = ({ modules, currentModuleIndex, progress, isOpen, onModule
                     <div className="mt-4">
                         <button
                             onClick={handleFinalExamClick}
-                            className="w-full text-left p-3 rounded-lg bg-gray-50 text-gray-700 hover:bg-indigo-100 flex items-center"
+                            className={`w-full text-left p-3 rounded-lg flex items-center ${
+                                isExamDisabled
+                                    ? 'bg-gray-100 text-gray-400 cursor-not-allowed'
+                                    : 'bg-gray-50 text-gray-700 hover:bg-indigo-100'
+                            }`}
+                            disabled={isExamDisabled}
                         >
-                            <School className="mr-2 text-indigo-600" fontSize="small" />
-                            <span className="text-sm font-medium">Final Exam</span>
+                            {isExamDisabled ? (
+                                <Lock className="mr-2 text-gray-400" fontSize="small" />
+                            ) : (
+                                <School className="mr-2 text-indigo-600" fontSize="small" />
+                            )}
+                            <span className="text-sm font-medium">
+                                {isExamDisabled ? 'Final Exam (Locked)' : 'Final Exam'}
+                            </span>
                         </button>
+                        {isExamDisabled && (
+                            <p className="mt-2 text-xs text-gray-500 px-3">
+                                Complete all modules ({progress}%) to unlock the final exam
+                            </p>
+                        )}
                     </div>
                 )}
             </div>
@@ -65,15 +87,16 @@ CourseSidebar.propTypes = {
             type: PropTypes.string,
             order: PropTypes.number,
             duration: PropTypes.number,
+            is_completed: PropTypes.bool,
         })
     ).isRequired,
-    currentModuleIndex: PropTypes.number.isRequired,
-    progress: PropTypes.number,
+    currentModuleId: PropTypes.number.isRequired,
+    progress: PropTypes.number.isRequired,
     isOpen: PropTypes.bool.isRequired,
     onModuleSelect: PropTypes.func.isRequired,
     quizProgress: PropTypes.object,
-    courseId: PropTypes.number.isRequired, // Added
-    hasExam: PropTypes.bool.isRequired, // Added
+    courseId: PropTypes.number.isRequired,
+    hasExam: PropTypes.bool.isRequired,
 };
 
 export default CourseSidebar;

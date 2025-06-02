@@ -1,9 +1,10 @@
 import React, { useState, useEffect } from 'react';
 import { useParams, useNavigate } from 'react-router-dom';
+import { toast } from 'react-hot-toast';
 import CourseHeader from '../components/LearnerCourse/CourseHeader';
 import CourseSidebar from '../components/LearnerCourse/CourseSidebar';
 import CourseContent from '../components/LearnerCourse/CourseContent';
-import { isAuthenticated, moduleDetails, getExam } from '../services/api.js';
+import { isAuthenticated, moduleDetails, getExam, markModuleAsCompleted } from '../services/api.js';
 
 /**
  * Course Player Component
@@ -19,96 +20,78 @@ const LearnerCourse = () => {
     const [isSidebarOpen, setIsSidebarOpen] = useState(false);
     const [loading, setLoading] = useState(true);
     const [error, setError] = useState(null);
-    const [quizProgress, setQuizProgress] = useState({});
     const [notes, setNotes] = useState('');
-    const [notesHistory, setNotesHistory] = useState([]);
-    const [hasExam, setHasExam] = useState(false); // New state for exam availability
+    const [hasExam, setHasExam] = useState(false);
+    const [progress, setProgress] = useState(0);
+
+    // Calculate course progress
+    const calculateProgress = () => {
+        if (!modules.length) return 0;
+        const completedModules = modules.filter(module => module.is_completed).length;
+        return Math.round((completedModules / modules.length) * 100);
+    };
 
     useEffect(() => {
-        if (!isAuthenticated()) {
-            console.log('User not authenticated, redirecting to login');
-            navigate('/login', { state: { from: `/learner/courses/${courseId}${moduleId ? `/${moduleId}` : ''}` } });
-            return;
-        }
-
-        const fetchData = async () => {
-            setLoading(true);
-            setError(null);
-
-            const parsedCourseId = parseInt(courseId, 10);
-            if (isNaN(parsedCourseId) || parsedCourseId <= 0) {
-                console.error('Invalid course ID:', courseId);
-                setError('Invalid course ID provided.');
-                setLoading(false);
-                return;
-            }
-
-            const parsedModuleId = moduleId ? parseInt(moduleId, 10) : null;
-            if (moduleId && (isNaN(parsedModuleId) || parsedModuleId <= 0)) {
-                console.error('Invalid module ID:', moduleId);
-                setError('Invalid module ID provided.');
-                setLoading(false);
-                return;
-            }
-
+        const fetchModuleData = async () => {
             try {
-                // Fetch module details
-                console.log('Fetching module details:', { courseId: parsedCourseId, moduleId: parsedModuleId });
-                const moduleResponse = await moduleDetails(parsedCourseId, parsedModuleId);
-                console.log('🚀 Module Details:', moduleResponse);
-                
-                if (!moduleResponse.course || !moduleResponse.modules.length) {
-                    throw new Error('No modules available for this course');
+                setLoading(true);
+                setError(null);
+
+                // Check authentication
+                if (!isAuthenticated()) {
+                    console.log('User not authenticated, redirecting to login');
+                    navigate('/login', { state: { from: `/learner/courses/${courseId}/${moduleId}` } });
+                    return;
                 }
 
-                // Log the current module data
-                const currentModuleData = moduleResponse.module || moduleResponse.modules[0];
-                console.log('Current Module Data:', {
-                    id: currentModuleData.id,
-                    title: currentModuleData.title,
-                    type: currentModuleData.type,
-                    file_path: currentModuleData.file_path,
-                    resources: currentModuleData.resources
-                });
+                console.log('Fetching module data for:', { courseId, moduleId });
+                const moduleData = await moduleDetails(courseId, moduleId);
+                console.log('Received module data:', moduleData);
 
-                setCourseData(moduleResponse.course);
-                setModules(moduleResponse.modules);
-                setCurrentModule(currentModuleData);
-                const index = moduleResponse.module
-                    ? moduleResponse.modules.findIndex(m => m.id === moduleResponse.module.id)
-                    : 0;
-                setCurrentModuleIndex(index >= 0 ? index : 0);
-
-                // Fetch exam availability
-                try {
-                    const examResponse = await getExam(parsedCourseId);
-                    console.log('🚀 Exam Availability:', examResponse);
-                    setHasExam(!!examResponse.data?.exam);
-                } catch (examErr) {
-                    console.warn('No exam found for course:', examErr.message);
-                    setHasExam(false);
+                if (!moduleData || !moduleData.course) {
+                    console.error('Invalid module data received:', moduleData);
+                    throw new Error('Invalid course data received from server');
                 }
+
+                if (!moduleData.modules || !moduleData.modules.length) {
+                    console.error('No modules found in course data:', moduleData);
+                    throw new Error('No modules found in this course');
+                }
+
+                // Set course data
+                setCourseData(moduleData.course);
+                setModules(moduleData.modules);
+                setCurrentModule(moduleData.currentModule);
+                setCurrentModuleIndex(moduleData.modules.findIndex(m => m.id === parseInt(moduleId, 10)));
+                setNotes(moduleData.notes || '');
+
+                // Check if exam is available
+                const hasExam = moduleData.course.exam !== null;
+                setHasExam(hasExam);
+
+                // Reset progress if needed
+                if (moduleData.course.progress === 0) {
+                    console.log('Resetting progress for new enrollment');
+                    setProgress(0);
+                    // Reset all module completion statuses
+                    const resetModules = moduleData.modules.map(module => ({
+                        ...module,
+                        is_completed: false
+                    }));
+                    setModules(resetModules);
+                } else {
+                    setProgress(moduleData.course.progress);
+                }
+
+                setLoading(false);
             } catch (err) {
-                console.error('❌ Fetch Error:', err);
-                let errorMessage = 'Failed to load course. Please check your enrollment or try again.';
-                if (err.status === 404) {
-                    errorMessage = err.message.includes('module') ? 'Module not found.' : 'Course not found.';
-                } else if (err.status === 400) {
-                    errorMessage = 'Invalid course or module ID.';
-                } else if (err.status === 403) {
-                    errorMessage = 'You are not enrolled in this course.';
-                } else if (err.status === 401) {
-                    errorMessage = 'Authentication required.';
-                } else if (err.status === 500) {
-                    errorMessage = 'Server error occurred. Please try again later.';
-                }
-                setError(err.message || errorMessage);
-            } finally {
+                console.error('Error fetching module data:', err);
+                setError(err.message || 'Failed to load module data');
                 setLoading(false);
             }
         };
 
-        fetchData();
+        fetchModuleData();
     }, [courseId, moduleId, navigate]);
 
     const toggleSidebar = () => {
@@ -123,7 +106,8 @@ const LearnerCourse = () => {
                 setCurrentModule(response.module);
                 setCurrentModuleIndex(newIndex);
                 navigate(`/learner/courses/${courseId}/${modules[newIndex].id}`);
-            } catch (err) {
+            } catch (error) {
+                console.error('Failed to load previous module:', error);
                 setError('Failed to load previous module.');
             }
         }
@@ -137,7 +121,8 @@ const LearnerCourse = () => {
                 setCurrentModule(response.module);
                 setCurrentModuleIndex(newIndex);
                 navigate(`/learner/courses/${courseId}/${modules[newIndex].id}`);
-            } catch (err) {
+            } catch (error) {
+                console.error('Failed to load next module:', error);
                 setError('Failed to load next module.');
             }
         }
@@ -159,19 +144,11 @@ const LearnerCourse = () => {
     };
 
     const handleQuizComplete = (moduleId, score) => {
-        setQuizProgress((prev) => ({
-            ...prev,
-            [moduleId]: { score, completed: true },
-        }));
         console.log(`Quiz ${moduleId} completed with score: ${score * 100}%`);
     };
 
     const handleSaveNotes = (noteText, rating) => {
         setNotes(noteText);
-        setNotesHistory((prev) => [
-            ...prev,
-            { text: noteText, rating, timestamp: new Date().toISOString() },
-        ]);
         console.log('Notes saved:', { noteText, rating });
     };
 
@@ -207,6 +184,40 @@ const LearnerCourse = () => {
             setError(err.message || 'Failed to load course.');
         } finally {
             setLoading(false);
+        }
+    };
+
+    const handleModuleComplete = async (moduleId) => {
+        try {
+            console.log('Frontend: Attempting to mark module as completed:', { courseId, moduleId });
+            const response = await markModuleAsCompleted(parseInt(courseId, 10), moduleId);
+            console.log('Frontend: Module completion response:', response);
+            
+            if (response.success) {
+                // Update the current module's completion status
+                setCurrentModule(prev => {
+                    if (!prev) return null;
+                    return {
+                        ...prev,
+                        is_completed: true
+                    };
+                });
+                
+                // Update the module in the modules list
+                setModules(prev => prev.map(module => 
+                    module.id === moduleId 
+                        ? { ...module, is_completed: true }
+                        : module
+                ));
+
+                // Show success message
+                toast.success('Module marked as completed!');
+            } else {
+                toast.error(response.message || 'Failed to mark module as completed');
+            }
+        } catch (error) {
+            console.error('Frontend: Failed to mark module as completed:', error.response?.data || error);
+            toast.error(error.response?.data?.message || 'Failed to mark module as completed');
         }
     };
 
@@ -246,30 +257,44 @@ const LearnerCourse = () => {
     }
 
     return (
-        <div className="min-h-screen bg-gray-50 flex flex-col">
-            <CourseHeader courseTitle={courseData.title} toggleSidebar={toggleSidebar} />
-            <div className="flex flex-1 relative">
-                <CourseSidebar
-                    modules={modules}
-                    currentModuleIndex={currentModuleIndex}
-                    progress={courseData.progress || 0}
-                    isOpen={isSidebarOpen}
-                    onModuleSelect={selectModule}
-                    quizProgress={quizProgress}
-                    courseId={courseData.id} // Pass courseId
-                    hasExam={hasExam} // Pass exam availability
-                />
-                <CourseContent
-                    currentModule={currentModule}
-                    hasPrevious={currentModuleIndex > 0}
-                    hasNext={currentModuleIndex < modules.length - 1}
-                    onPreviousClick={goToPreviousModule}
-                    onNextClick={goToNextModule}
-                    onQuizComplete={(score) => handleQuizComplete(currentModule.id, score)}
-                    courseId={courseData.id}
-                    onSaveNotes={handleSaveNotes}
-                    notes={notes}
-                />
+        <div className="min-h-screen bg-gray-50">
+            <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8">
+                <div className="bg-white rounded-lg shadow-sm p-6">
+                    <div className="flex justify-between items-center mb-6">
+                        <h1 className="text-2xl font-bold text-gray-900">{courseData.title}</h1>
+                        <div className="text-sm text-gray-600">
+                            Progress: {progress}%
+                        </div>
+                    </div>
+                    <CourseHeader 
+                        courseTitle={courseData.title} 
+                        toggleSidebar={toggleSidebar}
+                        progress={calculateProgress()}
+                    />
+                    <div className="flex flex-1 overflow-hidden">
+                        <CourseSidebar
+                            modules={modules}
+                            currentModuleId={currentModule.id}
+                            onModuleSelect={selectModule}
+                            isOpen={isSidebarOpen}
+                            courseId={parseInt(courseId, 10)}
+                            hasExam={hasExam}
+                            progress={calculateProgress()}
+                        />
+                        <CourseContent
+                            currentModule={currentModule}
+                            hasPrevious={currentModuleIndex > 0}
+                            hasNext={currentModuleIndex < modules.length - 1}
+                            onPreviousClick={goToPreviousModule}
+                            onNextClick={goToNextModule}
+                            onQuizComplete={(score) => handleQuizComplete(currentModule.id, score)}
+                            courseId={courseId}
+                            onSaveNotes={handleSaveNotes}
+                            notes={notes}
+                            onModuleComplete={handleModuleComplete}
+                        />
+                    </div>
+                </div>
             </div>
         </div>
     );
