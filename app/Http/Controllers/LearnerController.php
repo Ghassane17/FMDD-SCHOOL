@@ -374,6 +374,217 @@ class LearnerController extends Controller
 
     //--------------------------------------------------------------------------------------
 
+    /**
+     * Update personal information (avatar, username, email, bio, phone)
+     */
+    public function updatePersonalInfo(Request $request): \Illuminate\Http\JsonResponse
+    {
+        $user = Auth::user();
+        if (!$user || $user->role !== 'learner') {
+            return response()->json(['message' => 'Unauthorized'], 403);
+        }
+
+        try {
+            // Log the incoming request data
+            Log::info('Update personal info request', [
+                'user_id' => $user->id,
+                'request_data' => $request->all()
+            ]);
+
+            $validated = $request->validate([
+                'username' => 'sometimes|string|max:255|unique:users,username,' . $user->id,
+                'email' => 'sometimes|email|unique:users,email,' . $user->id,
+                'avatar' => 'sometimes|nullable|image|mimes:jpeg,png,jpg|max:5120',
+                'bio' => 'sometimes|nullable|string|max:1000',
+                'phone' => 'sometimes|nullable|string|max:20',
+            ]);
+
+            // Log validated data
+            Log::info('Validated data', ['validated' => $validated]);
+
+            // Handle avatar
+            if ($request->hasFile('avatar')) {
+                if ($user->avatar && Storage::disk('public')->exists(str_replace('/storage/', '', $user->avatar))) {
+                    Storage::disk('public')->delete(str_replace('/storage/', '', $user->avatar));
+                }
+                $path = $request->file('avatar')->store('avatars', 'public');
+                $validated['avatar'] = Storage::url($path);
+            }
+
+            // Update user data using Eloquent
+            $user->update([
+                'username' => $validated['username'],
+                'email' => $validated['email'],
+                'bio' => $validated['bio'],
+                'phone' => $validated['phone'],
+                'avatar' => $validated['avatar'] ?? $user->avatar
+            ]);
+
+            // Refresh user data
+            $user->refresh();
+
+            Log::info('Updated user data', [
+                'user_id' => $user->id,
+                'updated_data' => $user->toArray()
+            ]);
+
+            return response()->json([
+                'message' => 'Personal information updated successfully',
+                'data' => [
+                    'username' => $user->username,
+                    'email' => $user->email,
+                    'avatar' => $user->avatar,
+                    'bio' => $user->bio,
+                    'phone' => $user->phone,
+                ]
+            ]);
+        } catch (ValidationException $e) {
+            Log::error('Validation error in update personal info', [
+                'user_id' => $user->id,
+                'errors' => $e->errors()
+            ]);
+            return response()->json(['message' => 'Validation failed', 'errors' => $e->errors()], 422);
+        } catch (\Exception $e) {
+            Log::error('Error updating personal info', [
+                'user_id' => $user->id,
+                'error' => $e->getMessage(),
+                'trace' => $e->getTraceAsString()
+            ]);
+            return response()->json(['message' => 'Internal server error'], 500);
+        }
+    }
+
+    /**
+     * Update password
+     */
+    public function updatePassword(Request $request): \Illuminate\Http\JsonResponse
+    {
+        $user = Auth::user();
+        if (!$user || $user->role !== 'learner') {
+            return response()->json(['message' => 'Unauthorized'], 403);
+        }
+
+        try {
+            $validated = $request->validate([
+                'current_password' => 'required|string',
+                'new_password' => 'required|string|min:8|confirmed',
+            ]);
+
+            if (!Hash::check($validated['current_password'], $user->password)) {
+                return response()->json(['message' => 'Current password is incorrect'], 422);
+            }
+
+            $user->update([
+                'password' => Hash::make($validated['new_password'])
+            ]);
+
+            return response()->json([
+                'message' => 'Password updated successfully'
+            ]);
+        } catch (ValidationException $e) {
+            return response()->json(['message' => 'Validation failed', 'errors' => $e->errors()], 422);
+        } catch (\Exception $e) {
+            Log::error('Error updating password', [
+                'user_id' => $user->id,
+                'error' => $e->getMessage()
+            ]);
+            return response()->json(['message' => 'Internal server error'], 500);
+        }
+    }
+
+    /**
+     * Update additional information (fields of interest, languages, certifications, bank info)
+     */
+    public function updateAdditionalInfo(Request $request): \Illuminate\Http\JsonResponse
+    {
+        $user = Auth::user();
+        if (!$user || $user->role !== 'learner') {
+            return response()->json(['message' => 'Unauthorized'], 403);
+        }
+
+        try {
+            $validated = $request->validate([
+                'fields_of_interest' => 'sometimes|nullable|array',
+                'fields_of_interest.*' => 'string|max:255',
+                'languages' => 'sometimes|nullable|array',
+                'languages.*.name' => 'required|string|max:255',
+                'languages.*.code' => 'nullable|string|max:10',
+                'certifications' => 'sometimes|nullable|array',
+                'certifications.*.name' => 'required|string|max:255',
+                'certifications.*.institution' => 'nullable|string|max:255',
+                'bank_info' => 'sometimes|nullable|array',
+                'bank_info.iban' => 'nullable|string|max:255',
+                'bank_info.bankName' => 'nullable|string|max:255',
+                'bank_info.paymentMethod' => 'nullable|string|max:255',
+            ]);
+
+            $learner = $user->learner;
+            if (!$learner) {
+                $learner = Learner::create(['user_id' => $user->id]);
+            }
+
+            $learner->update($validated);
+
+            return response()->json([
+                'message' => 'Additional information updated successfully',
+                'data' => [
+                    'fields_of_interest' => $learner->fields_of_interest,
+                    'languages' => $learner->languages,
+                    'certifications' => $learner->certifications,
+                    'bank_info' => $learner->bank_info,
+                ]
+            ]);
+        } catch (ValidationException $e) {
+            return response()->json(['message' => 'Validation failed', 'errors' => $e->errors()], 422);
+        } catch (\Exception $e) {
+            Log::error('Error updating additional info', [
+                'user_id' => $user->id,
+                'error' => $e->getMessage()
+            ]);
+            return response()->json(['message' => 'Internal server error'], 500);
+        }
+    }
+
+    /**
+     * Update notification preferences
+     */
+    public function updateNotifications(Request $request): \Illuminate\Http\JsonResponse
+    {
+        $user = Auth::user();
+        if (!$user || $user->role !== 'learner') {
+            return response()->json(['message' => 'Unauthorized'], 403);
+        }
+
+        try {
+            $validated = $request->validate([
+                'notifications' => 'required|array',
+                'notifications.email' => 'required|boolean',
+                'notifications.app' => 'required|boolean',
+            ]);
+
+            $user->update([
+                'notifications' => $validated['notifications']
+            ]);
+
+            return response()->json([
+                'message' => 'Notification preferences updated successfully',
+                'data' => [
+                    'notifications' => $user->notifications
+                ]
+            ]);
+        } catch (ValidationException $e) {
+            return response()->json(['message' => 'Validation failed', 'errors' => $e->errors()], 422);
+        } catch (\Exception $e) {
+            Log::error('Error updating notifications', [
+                'user_id' => $user->id,
+                'error' => $e->getMessage()
+            ]);
+            return response()->json(['message' => 'Internal server error'], 500);
+        }
+    }
+
+    //--------------------------------------------------------------------------------------
+
 
     //--------------------------------------------------------------------------------------
 

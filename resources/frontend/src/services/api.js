@@ -313,75 +313,21 @@ export const getEnrolledCourses = async (forceRefresh = false) => {
 };
 
 export const getLearnerSettings = async (forceRefresh = false) => {
-    if (!isAuthenticated()) {
-        console.error('Cannot fetch settings: User not authenticated');
-        throw new Error('Authentication required');
-    }
-
     if (!forceRefresh && settingsCache) {
-        console.log('Returning cached settings');
         return { data: settingsCache };
     }
 
     try {
-        console.log('Fetching learner settings');
         const response = await api.get('/learner/settings');
         console.log('Fetched learner settings:', response.data);
         settingsCache = response.data;
         return response;
     } catch (error) {
-        console.error('Failed to fetch learner settings');
-        throw error;
-    }
-}; //fix later
-
-export const updateLearnerSettings = async (data) => {
-    if (!isAuthenticated()) {
-        console.error('Cannot update settings: User not authenticated');
-        throw new Error('Authentication required');
-    }
-
-    try {
-        console.log('Updating learner settings with:', {
-            ...data,
-            current_password: '********',
-            new_password: '********',
-            new_password_confirmation: '********'
-        });
-
-        const formattedData = new FormData();
-        const jsonFields = ['notifications', 'languages', 'certifications', 'fields_of_interest', 'bank_info'];
-        const passwordFields = ['current_password', 'new_password', 'new_password_confirmation'];
-
-        Object.keys(data).forEach(key => {
-            const value = data[key];
-
-            if (key === 'avatar' && value instanceof File) {
-                formattedData.append('avatar', value);
-            } else if (jsonFields.includes(key)) {
-                if (value != null) formattedData.append(key, JSON.stringify(value));
-            } else if (passwordFields.includes(key)) {
-                if (value) formattedData.append(key, value);
-            } else {
-                formattedData.append(key, value !== undefined ? value : '');
-            }
-        });
-
-        const response = await api.patch('/learner/settings', formattedData, {
-            headers: {
-                'Accept': 'application/json'
-                // Don't manually set 'Content-Type' for FormData
-            }
-        });
-
-        console.log('Updated learner settings:', response.data);
-        settingsCache = null;
-        return response.data;
-    } catch (error) {
-        console.error('Failed to update learner settings:', error.response?.data || error.message);
+        console.error('Error fetching learner settings:', error);
         throw error;
     }
 };
+
 export const submitContactForm = async (data) => {
     try {
         return await api.post('/contact', data);
@@ -660,6 +606,56 @@ export const markModuleAsCompleted = async (courseId, moduleId) => {
         console.error('Frontend: Failed to mark module as completed:', error.response?.data || error);
         throw error;
     }
+};
+
+const handleApiError = (error) => {
+    if (error.response) {
+        // The request was made and the server responded with a status code
+        // that falls out of the range of 2xx
+        throw new Error(error.response.data.message || 'An error occurred');
+    } else if (error.request) {
+        // The request was made but no response was received
+        throw new Error('No response from server');
+    } else {
+        // Something happened in setting up the request that triggered an Error
+        throw new Error(error.message || 'An error occurred');
+    }
+};
+
+// Personal Information Section
+export const updatePersonalInfo = async (formData) => {
+    try {
+        const response = await api.patch('/learner/personal-info', formData, {
+            headers: {
+                'Content-Type': 'multipart/form-data',
+            },
+        });
+        if (!response.data || !response.data.data) {
+            throw new Error('Invalid response format');
+        }
+        return response.data;
+    } catch (error) {
+        console.error('Error updating personal info:', error);
+        throw error;
+    }
+};
+
+// Password Section
+export const updatePassword = async (data) => {
+    const response = await api.patch('/learner/password', data);
+    return response.data;
+};
+
+// Additional Information Section
+export const updateAdditionalInfo = async (data) => {
+    const response = await api.patch('/learner/additional-info', data);
+    return response.data;
+};
+
+// Notifications Section
+export const updateNotifications = async (data) => {
+    const response = await api.patch('/learner/notifications', data);
+    return response.data;
 };
 
 export default api;

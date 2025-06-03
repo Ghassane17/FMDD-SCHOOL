@@ -2,7 +2,7 @@ import { useState, useEffect, useCallback, useRef } from 'react';
 import { Link, useNavigate } from 'react-router-dom';
 import { Bell, LogOut, Menu, Search, User, Settings } from 'lucide-react';
 import { toast } from 'sonner';
-import { getLearnerNotifications, markNotificationAsRead, updateLearnerSettings, logout } from '../../services/api.js';
+import { getLearnerNotifications, markNotificationAsRead, updateNotifications, logout } from '../../services/api.js';
 
 const API_URL = import.meta.env.VITE_API_BASE_URL || 'http://localhost:8000';
 const FALLBACK_AVATAR = '/storage/WsuhBYEJy9VT5lSb3yV2IlyugJvzt7OEEtmsFeXH.jpg';
@@ -122,7 +122,7 @@ const Header = ({ school, avatar, notifications: initialNotifications = [] }) =>
         [type]: !notificationPreferences[type]
       };
 
-      await updateLearnerSettings({
+      await updateNotifications({
         notifications: newPreferences
       });
 

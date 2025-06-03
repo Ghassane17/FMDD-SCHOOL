@@ -1,5 +1,11 @@
 import React, { useEffect, useState, useCallback, useRef } from 'react';
-import { getLearnerSettings, updateLearnerSettings } from '@/services/api.js';
+import { 
+    getLearnerSettings, 
+    updatePersonalInfo, 
+    updatePassword, 
+    updateAdditionalInfo, 
+    updateNotifications 
+} from '@/services/api.js';
 import { toast } from 'sonner';
 import {
     TextField,
@@ -25,7 +31,8 @@ import {
     FormControl,
     InputLabel,
     Divider,
-    alpha
+    alpha,
+    Alert
 } from '@mui/material';
 import {
     Add as AddIcon,
@@ -77,6 +84,8 @@ const AccountSettings = () => {
     const [isAvatarLoading, setIsAvatarLoading] = useState(true);
     const [avatarSrc, setAvatarSrc] = useState(null);
     const avatarRef = useRef(null);
+    const [error, setError] = useState(null);
+    const [success, setSuccess] = useState(null);
 
     useEffect(() => {
         getLearnerSettings(true)
@@ -159,75 +168,101 @@ const AccountSettings = () => {
 
     const handleSectionSave = async (section) => {
         setSaving(prev => ({ ...prev, [section]: true }));
+        setError(null);
+        setSuccess(null);
+
+        let formData;
+        let response;
+        let user;
+        let hasChanges;
+
         try {
-            let dataToSend = {};
-            const passwordRegex = /^(?=.*[a-z])(?=.*[A-Z])(?=.*\d).{8,}$/;
-            
-            switch(section) {
+            switch (section) {
                 case 'personal':
-                    dataToSend = {
-                        username: settings.username,
-                        email: settings.email,
-                        bio: settings.bio,
-                        phone: settings.phone,
-                        avatar: settings.avatar instanceof File ? settings.avatar : null
-                    };
+                    formData = new FormData();
+                    // Always append all fields, even if empty
+                    formData.append('username', settings.username || '');
+                    formData.append('email', settings.email || '');
+                    formData.append('bio', settings.bio || '');
+                    formData.append('phone', settings.phone || '');
+                    
+                    // Only append avatar if it's a new file
+                    if (settings.avatar instanceof File) {
+                        formData.append('avatar', settings.avatar);
+                    }
+
+                    // Check if we have any changes to save
+                    hasChanges = 
+                        settings.username !== settings.initialUsername ||
+                        settings.email !== settings.initialEmail ||
+                        settings.bio !== settings.initialBio ||
+                        settings.phone !== settings.initialPhone ||
+                        settings.avatar instanceof File;
+
+                    if (!hasChanges) {
+                        setError('No changes to save');
+                        setSaving(prev => ({ ...prev, [section]: false }));
+                        return;
+                    }
+
+                    response = await updatePersonalInfo(formData);
+                    setSuccess(response.message || 'Personal information updated successfully');
+                    
+                    // Update local user data if username or email changed
+                    user = JSON.parse(localStorage.getItem('user'));
+                    if (user) {
+                        if (settings.username) user.username = settings.username;
+                        if (settings.email) user.email = settings.email;
+                        if (response.data?.avatar) user.avatar = response.data.avatar;
+                        localStorage.setItem('user', JSON.stringify(user));
+                    }
                     break;
+
                 case 'password':
-                    if (!settings.currentPassword) {
-                        toast.error('Veuillez entrer votre mot de passe actuel');
-                        return;
-                    }
-                    if (!settings.newPassword) {
-                        toast.error('Veuillez entrer un nouveau mot de passe');
-                        return;
-                    }
                     if (settings.newPassword !== settings.confirmPassword) {
-                        toast.error('Les mots de passe ne correspondent pas');
+                        setError('New password and confirmation do not match');
                         return;
                     }
-                    if (!passwordRegex.test(settings.newPassword)) {
-                        toast.error('Le mot de passe doit contenir au moins 8 caractères, une majuscule, une minuscule et un chiffre');
-                        return;
-                    }
-                    dataToSend = {
+                    await updatePassword({
                         current_password: settings.currentPassword,
                         new_password: settings.newPassword,
                         new_password_confirmation: settings.confirmPassword
-                    };
+                    });
                     break;
+
                 case 'additional':
-                    dataToSend = {
+                    await updateAdditionalInfo({
                         fields_of_interest: settings.fields_of_interest,
                         languages: settings.languages,
                         certifications: settings.certifications,
                         bank_info: settings.bank_info
-                    };
+                    });
                     break;
+
                 case 'notifications':
-                    dataToSend = {
+                    await updateNotifications({
                         notifications: settings.notifications
-                    };
+                    });
                     break;
             }
 
-            const response = await updateLearnerSettings(dataToSend);
-            if (response.data.data) {
-                setSettings(prev => ({
-                    ...prev,
-                    ...response.data.data,
-                    currentPassword: '',
-                    newPassword: '',
-                    confirmPassword: ''
-                }));
-                if (section === 'personal' && response.data.data.avatar) {
-                    setAvatarPreview(response.data.data.avatar);
-                }
-                toast.success('Mise à jour réussie !');
+            // Refresh settings after successful update
+            const updatedSettings = await getLearnerSettings();
+            setSettings(prev => ({
+                ...prev,
+                ...updatedSettings.data
+            }));
+        } catch (err) {
+            if (err.response?.data?.errors) {
+                // Handle validation errors
+                const errors = err.response.data.errors;
+                const errorMessages = Object.entries(errors)
+                    .map(([field, messages]) => `${field}: ${messages.join(', ')}`)
+                    .join('\n');
+                setError(errorMessages);
+            } else {
+                setError(err.message || 'Failed to update settings');
             }
-        } catch (error) {
-            console.error('Save Error:', error.response?.data || error);
-            toast.error(error.response?.data?.message || 'Erreur lors de la mise à jour');
         } finally {
             setSaving(prev => ({ ...prev, [section]: false }));
         }
@@ -560,6 +595,8 @@ const AccountSettings = () => {
                             onChange={handleChange}
                             variant="outlined"
                             fullWidth
+                            error={error?.includes('username')}
+                            helperText={error?.includes('username') ? error.split('\n').find(line => line.includes('username')) : ''}
                             sx={{ '& .MuiOutlinedInput-root': { borderRadius: 2 } }}
                         />
                         <TextField
@@ -569,6 +606,8 @@ const AccountSettings = () => {
                             onChange={handleChange}
                             variant="outlined"
                             fullWidth
+                            error={error?.includes('email')}
+                            helperText={error?.includes('email') ? error.split('\n').find(line => line.includes('email')) : ''}
                             sx={{ '& .MuiOutlinedInput-root': { borderRadius: 2 } }}
                         />
                         <TextField
@@ -580,6 +619,8 @@ const AccountSettings = () => {
                             fullWidth
                             multiline
                             rows={3}
+                            error={error?.includes('bio')}
+                            helperText={error?.includes('bio') ? error.split('\n').find(line => line.includes('bio')) : ''}
                             sx={{
                                 '& .MuiOutlinedInput-root': { borderRadius: 2 },
                                 gridColumn: { xs: '1', sm: '1 / -1' }
@@ -592,6 +633,8 @@ const AccountSettings = () => {
                             onChange={handleChange}
                             variant="outlined"
                             fullWidth
+                            error={error?.includes('phone')}
+                            helperText={error?.includes('phone') ? error.split('\n').find(line => line.includes('phone')) : ''}
                             sx={{ '& .MuiOutlinedInput-root': { borderRadius: 2 } }}
                         />
                     </Box>
@@ -1117,6 +1160,19 @@ const AccountSettings = () => {
             </Paper>
 
             {renderEditDialog()}
+
+            {/* Add error and success messages to the UI */}
+            {error && (
+                <Alert severity="error" sx={{ mb: 2 }}>
+                    {error}
+                </Alert>
+            )}
+
+            {success && (
+                <Alert severity="success" sx={{ mb: 2 }}>
+                    {success}
+                </Alert>
+            )}
         </Box>
     );
 };

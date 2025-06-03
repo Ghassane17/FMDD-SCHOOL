@@ -26,7 +26,7 @@ const navItems = [
 
 const authItems = [
   { label: 'Se connecter', path: '/login', variant: 'outlined' },
-  { label: 'Rejoindre', path: '/register', variant: 'contained' },
+  { label: "S'inscrire", path: '/register', variant: 'contained' },
 ];
 
 const MobileDrawer = ({ open, onClose, items }) => {
@@ -41,8 +41,8 @@ const MobileDrawer = ({ open, onClose, items }) => {
         <List>
           {items.map((item) => (
             <ListItem key={item.path} disablePadding>
-              <ListItemButton 
-                component={NavLink} 
+              <ListItemButton
+                component={NavLink}
                 to={item.path}
                 onClick={onClose}
               >
@@ -104,10 +104,10 @@ export default function Header() {
         </Toolbar>
       </AppBar>
 
-      <MobileDrawer 
-        open={mobileOpen} 
-        onClose={handleDrawerToggle} 
-        items={[...navItems, ...authItems]} 
+      <MobileDrawer
+        open={mobileOpen}
+        onClose={handleDrawerToggle}
+        items={[...navItems, ...authItems]}
       />
     </>
   );
