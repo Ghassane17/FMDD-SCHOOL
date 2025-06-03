@@ -182,7 +182,7 @@ export default function Hero() {
               },
             }}
           >
-            Rejoindre
+            S'inscrire
           </Button>
         </Box>
       </Container>

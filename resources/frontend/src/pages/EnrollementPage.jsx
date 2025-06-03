@@ -1,4 +1,4 @@
-import React, { useState, useEffect, useCallback, useRef } from 'react';
+import React, { useState, useEffect } from 'react';
 import { useParams, useNavigate } from 'react-router-dom';
 import { courseDetails, enrollNow, leaveCourse } from '@/services/api';
 import {
@@ -38,9 +38,6 @@ import {
     Person
 } from '@mui/icons-material';
 
-const API_URL = import.meta.env.VITE_API_BASE_URL || 'http://localhost:8000';
-const FALLBACK_IMAGE = '/storage/Test.png';
-
 const EnrollmentPage = () => {
     const { courseId } = useParams();
     const navigate = useNavigate();
@@ -49,12 +46,14 @@ const EnrollmentPage = () => {
     const [error, setError] = useState('');
     const [isEnrolling, setIsEnrolling] = useState(false);
     const [isEnrolled, setIsEnrolled] = useState(false);
-    const [isThumbnailLoading, setIsThumbnailLoading] = useState(true);
-    const [thumbnailSrc, setThumbnailSrc] = useState(null);
-    const [isInstructorAvatarLoading, setIsInstructorAvatarLoading] = useState(true);
-    const [instructorAvatarSrc, setInstructorAvatarSrc] = useState(null);
-    const thumbnailRef = useRef(null);
-    const instructorAvatarRef = useRef(null);
+    const [thumbnailLoading, setThumbnailLoading] = useState(true);
+    const [avatarLoading, setAvatarLoading] = useState(true);
+    const [thumbnailError, setThumbnailError] = useState(false);
+    const [avatarError, setAvatarError] = useState(false);
+
+    const API_URL= import.meta.env.VITE_API_BASE_URL || 'http://localhost:8000';
+    const FALLBACK_IMAGE = '/images/placeholder-thumbnail.jpg'; // New placeholder
+    const FALLBACK_AVATAR = '/storage/default-avatar.png'; // Kept existing, can change
 
     useEffect(() => {
         const fetchData = async () => {
@@ -82,59 +81,6 @@ const EnrollmentPage = () => {
         };
         fetchData();
     }, [courseId]);
-
-    // Initialize image sources
-    useEffect(() => {
-        if (course) {
-            // Handle course thumbnail
-            if (!course.course_thumbnail) {
-                setThumbnailSrc(`${API_URL}${FALLBACK_IMAGE}`);
-                setIsThumbnailLoading(false);
-                return;
-            }
-
-            if (course.course_thumbnail.startsWith('http')) {
-                setThumbnailSrc(course.course_thumbnail);
-            } else {
-                setThumbnailSrc(`${API_URL}${course.course_thumbnail}`);
-            }
-
-            // Handle instructor avatar
-            if (!course.instructor?.avatar) {
-                setInstructorAvatarSrc(`${API_URL}${FALLBACK_IMAGE}`);
-                setIsInstructorAvatarLoading(false);
-                return;
-            }
-
-            if (course.instructor.avatar.startsWith('http')) {
-                setInstructorAvatarSrc(course.instructor.avatar);
-            } else {
-                setInstructorAvatarSrc(`${API_URL}${course.instructor.avatar}`);
-            }
-        }
-    }, [course]);
-
-    // Handle course thumbnail loading
-    const handleThumbnailLoad = useCallback(() => {
-        setIsThumbnailLoading(false);
-    }, []);
-
-    const handleThumbnailError = useCallback(() => {
-        console.log('Course thumbnail load error, using fallback');
-        setThumbnailSrc(`${API_URL}${FALLBACK_IMAGE}`);
-        setIsThumbnailLoading(false);
-    }, []);
-
-    // Handle instructor avatar loading
-    const handleInstructorAvatarLoad = useCallback(() => {
-        setIsInstructorAvatarLoading(false);
-    }, []);
-
-    const handleInstructorAvatarError = useCallback(() => {
-        console.log('Instructor avatar load error, using fallback');
-        setInstructorAvatarSrc(`${API_URL}${FALLBACK_IMAGE}`);
-        setIsInstructorAvatarLoading(false);
-    }, []);
 
     const handleEnroll = async () => {
         setIsEnrolling(true);
@@ -181,6 +127,24 @@ const EnrollmentPage = () => {
             setError(err.response?.data?.message || 'Failed to leave the course.');
             setTimeout(() => setError(''), 5000); // Clear error after 5s
         }
+    };
+
+    const handleThumbnailLoad = () => {
+        setThumbnailLoading(false);
+    };
+
+    const handleThumbnailError = () => {
+        setThumbnailLoading(false);
+        setThumbnailError(true);
+    };
+
+    const handleAvatarLoad = () => {
+        setAvatarLoading(false);
+    };
+
+    const handleAvatarError = () => {
+        setAvatarLoading(false);
+        setAvatarError(true);
     };
 
     if (loading) {
@@ -348,28 +312,21 @@ const EnrollmentPage = () => {
                             }}>
                                 <Stack direction="row" alignItems="center" spacing={3}>
                                     <Avatar
-                                        src={instructorAvatarSrc}
-                                        sx={{ 
-                                            width: 56, 
-                                            height: 56, 
+                                        src={avatarError ? `${API_URL}${FALLBACK_AVATAR}` : `${API_URL}${course.instructor.avatar}`}
+                                        sx={{
+                                            width: 56,
+                                            height: 56,
                                             bgcolor: 'rgba(255,255,255,0.2)',
-                                            position: 'relative',
-                                            '&::before': {
-                                                content: '""',
-                                                position: 'absolute',
-                                                top: 0,
-                                                left: 0,
-                                                right: 0,
-                                                bottom: 0,
-                                                bgcolor: 'grey.200',
-                                                display: isInstructorAvatarLoading ? 'block' : 'none'
-                                            }
+                                            display: avatarLoading ? 'none' : 'block'
                                         }}
-                                        ref={instructorAvatarRef}
-                                        onLoad={handleInstructorAvatarLoad}
-                                        onError={handleInstructorAvatarError}
+                                        onLoad={handleAvatarLoad}
+                                        onError={handleAvatarError}
                                     >
-                                        <Person />
+                                        {avatarLoading ? (
+                                            <CircularProgress size={24} color="inherit" />
+                                        ) : (
+                                            <Person />
+                                        )}
                                     </Avatar>
                                     <Box>
                                         <Typography variant="body2" sx={{ opacity: 0.8, mb: 0.5 }}>
@@ -402,35 +359,32 @@ const EnrollmentPage = () => {
                                     boxShadow: '0 25px 50px -12px rgba(0, 0, 0, 0.25)',
                                     border: '1px solid rgba(255,255,255,0.1)'
                                 }}>
-                                    <Box sx={{ 
-                                        position: 'relative',
-                                        width: '100%',
-                                        height: '140px',
-                                        overflow: 'hidden',
-                                        bgcolor: 'grey.200'
-                                    }}>
-                                        <CardMedia
-                                            component="img"
-                                            ref={thumbnailRef}
-                                            image={thumbnailSrc}
-                                            alt={course.title}
-                                            sx={{ 
-                                                position: 'absolute',
-                                                top: 0,
-                                                left: 0,
-                                                width: '100%',
-                                                height: '100%',
-                                                objectFit: 'cover',
-                                                '&::before': {
-                                                    content: '""',
+                                    <Box sx={{ position: 'relative', height: 240 }}>
+                                        {thumbnailLoading && (
+                                            <Box
+                                                sx={{
                                                     position: 'absolute',
                                                     top: 0,
                                                     left: 0,
                                                     right: 0,
                                                     bottom: 0,
+                                                    display: 'flex',
+                                                    alignItems: 'center',
+                                                    justifyContent: 'center',
                                                     bgcolor: 'grey.200',
-                                                    display: isThumbnailLoading ? 'block' : 'none'
-                                                }
+                                                }}
+                                            >
+                                                <CircularProgress size={40} />
+                                            </Box>
+                                        )}
+                                        <CardMedia
+                                            component="img"
+                                            height="240"
+                                            image={thumbnailError ? `${API_URL}${FALLBACK_IMAGE}` : `${API_URL}${course.course_thumbnail}`}
+                                            alt={course.title}
+                                            sx={{
+                                                objectFit: 'cover',
+                                                display: thumbnailLoading ? 'none' : 'block'
                                             }}
                                             onLoad={handleThumbnailLoad}
                                             onError={handleThumbnailError}
@@ -649,29 +603,22 @@ const EnrollmentPage = () => {
 
                                 <Stack direction={{ xs: 'column', sm: 'row' }} spacing={3} alignItems="flex-start">
                                     <Avatar
-                                        src={instructorAvatarSrc}
+                                        src={avatarError ? `${API_URL}${FALLBACK_AVATAR}` : `${API_URL}${course.instructor.avatar}`}
                                         sx={{
-                                            width: 80,
-                                            height: 80,
+                                            width: 96,
+                                            height: 96,
                                             bgcolor: 'primary.main',
                                             alignSelf: { xs: 'center', sm: 'flex-start' },
-                                            position: 'relative',
-                                            '&::before': {
-                                                content: '""',
-                                                position: 'absolute',
-                                                top: 0,
-                                                left: 0,
-                                                right: 0,
-                                                bottom: 0,
-                                                bgcolor: 'grey.200',
-                                                display: isInstructorAvatarLoading ? 'block' : 'none'
-                                            }
+                                            display: avatarLoading ? 'none' : 'block'
                                         }}
-                                        ref={instructorAvatarRef}
-                                        onLoad={handleInstructorAvatarLoad}
-                                        onError={handleInstructorAvatarError}
+                                        onLoad={handleAvatarLoad}
+                                        onError={handleAvatarError}
                                     >
-                                        <Person sx={{ fontSize: 40 }} />
+                                        {avatarLoading ? (
+                                            <CircularProgress size={48} color="inherit" />
+                                        ) : (
+                                            <Person sx={{ fontSize: 48 }} />
+                                        )}
                                     </Avatar>
                                     <Box sx={{ flex: 1, width: '100%' }}>
                                         <Typography variant="h5" fontWeight="700" gutterBottom>
@@ -687,24 +634,28 @@ const EnrollmentPage = () => {
                                                     Skills & Expertise
                                                 </Typography>
                                                 <Stack direction="row" spacing={1} flexWrap="wrap" useFlexGap>
-                                                    {course.instructor.skills?.[0]?.map((skill, index) => (
-                                                        <Chip
-                                                            key={index}
-                                                            label={skill}
-                                                            variant="outlined"
-                                                            sx={{ mb: 1 }}
-                                                        />
-                                                    ))}
+                                                    {Array.isArray(course.instructor.skills) ? (
+                                                        course.instructor.skills.map((skill, index) => (
+                                                            <Chip
+                                                                key={index}
+                                                                label={skill}
+                                                                variant="outlined"
+                                                                sx={{ mb: 1 }}
+                                                            />
+                                                        ))
+                                                    ) : (
+                                                        <Typography color="text.secondary">No skills listed</Typography>
+                                                    )}
                                                 </Stack>
                                             </Box>
 
-                                            {course.instructor.certifications?.length > 0 && (
+                                            {Array.isArray(course.instructor.certifications) && course.instructor.certifications.length > 0 && (
                                                 <Box>
                                                     <Typography variant="h6" fontWeight="600" gutterBottom>
                                                         Certifications
                                                     </Typography>
                                                     <Stack spacing={2}>
-                                                        {course.instructor.certifications?.map((cert, index) => (
+                                                        {course.instructor.certifications.map((cert, index) => (
                                                             <Box key={index} sx={{
                                                                 p: 2,
                                                                 bgcolor: '#f8fafc',
@@ -723,13 +674,13 @@ const EnrollmentPage = () => {
                                                 </Box>
                                             )}
 
-                                            {course.instructor.languages?.length > 0 && (
+                                            {Array.isArray(course.instructor.languages) && course.instructor.languages.length > 0 && (
                                                 <Box>
                                                     <Typography variant="h6" fontWeight="600" gutterBottom>
                                                         Languages
                                                     </Typography>
                                                     <Stack direction="row" spacing={1} flexWrap="wrap" useFlexGap>
-                                                        {course.instructor.languages?.map((lang, index) => (
+                                                        {course.instructor.languages.map((lang, index) => (
                                                             <Chip
                                                                 key={index}
                                                                 label={lang.name}

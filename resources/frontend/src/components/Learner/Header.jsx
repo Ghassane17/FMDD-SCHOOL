@@ -2,7 +2,7 @@ import { useState, useEffect, useCallback, useRef } from 'react';
 import { Link, useNavigate } from 'react-router-dom';
 import { Bell, LogOut, Menu, Search, User, Settings } from 'lucide-react';
 import { toast } from 'sonner';
-import { getLearnerNotifications, markNotificationAsRead, updateNotifications, logout } from '../../services/api.js';
+import { getLearnerNotifications, markNotificationAsRead, updateNotifications, logout } from '@/services/api.js';
 
 const API_URL = import.meta.env.VITE_API_BASE_URL || 'http://localhost:8000';
 const FALLBACK_AVATAR = '/storage/WsuhBYEJy9VT5lSb3yV2IlyugJvzt7OEEtmsFeXH.jpg';
@@ -152,8 +152,8 @@ const Header = ({ school, avatar, notifications: initialNotifications = [] }) =>
       <div className="container mx-auto px-4 py-3 flex items-center justify-between">
         {/* Left Side: Logo + Mobile Menu */}
         <div className="flex items-center space-x-4">
-          <button 
-            onClick={() => toggle('mobileMenu')} 
+          <button
+            onClick={() => toggle('mobileMenu')}
             className="md:hidden focus:outline-none p-2 hover:bg-blue-600 rounded-full transition-colors"
           >
             <Menu className="w-6 h-6" />
@@ -313,9 +313,9 @@ const Header = ({ school, avatar, notifications: initialNotifications = [] }) =>
           </div>
 
           {/* Logout */}
-          <button 
+          <button
             onClick={handleLogout}
-            aria-label="Logout" 
+            aria-label="Logout"
             className="p-2 rounded-full hover:bg-blue-600 transition-colors"
           >
             <LogOut className="w-6 h-6" />

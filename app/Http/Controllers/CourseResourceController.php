@@ -232,7 +232,7 @@ class CourseResourceController extends Controller
         if ($moduleParam && $moduleParam !== 'undefined') {
             $moduleId = filter_var($moduleParam, FILTER_VALIDATE_INT);
             if ($moduleId) {
-                return $course->modules()->find($moduleId);
+                return $course->modules()->where('id', $moduleId)->first();
             }
         }
 

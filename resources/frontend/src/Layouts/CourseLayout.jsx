@@ -12,9 +12,11 @@ const CourseLayout = () => {
     const [loading, setLoading] = useState(true);
     const navigate = useNavigate();
 
+    // Utilisation de la variable d'environnement Vite
+    const apiBaseUrl = import.meta.env.VITE_API_URL || '';
+
     useEffect(() => {
         const user = JSON.parse(localStorage.getItem('user'));
-        console.log('Current learner from localStorage:', user);
         if (!user || user.role !== 'learner') {
             setError('Please log in as a learner.');
             setLoading(false);
@@ -25,22 +27,17 @@ const CourseLayout = () => {
 
         const fetchDashboard = async () => {
             try {
-                const response = await getLearnerDashboard(true); // Force refresh
-                console.log('Fetched learner dashboard:', response.data);
+                // Par exemple, si getLearnerDashboard accepte une URL de base
+                const response = await getLearnerDashboard(apiBaseUrl, true);
                 setDashboardData(response.data);
             } catch (err) {
-                console.error('Failed to fetch dashboard:', {
-                    status: err.response?.status,
-                    data: err.response?.data,
-                    message: err.message,
-                });
                 setError('Failed to load data.');
             } finally {
                 setLoading(false);
             }
         };
         fetchDashboard();
-    }, [navigate]);
+    }, [navigate, apiBaseUrl]);
 
     if (loading) return <Box>Loading...</Box>;
     if (error) return <Box color="error.main">{error}</Box>;
@@ -49,15 +46,12 @@ const CourseLayout = () => {
         <Box sx={{ minHeight: '100vh' }}>
             <CssBaseline />
             <Header
-                school= 'FMDD SCHOOL'
+                school='FMDD SCHOOL'
                 userName={currentLearner?.username || 'Learner'}
                 avatar={currentLearner?.avatar || 'https://via.placeholder.com/50'}
                 notifications={currentLearner?.notifications || []}
             />
-            <Box component="main" sx={{ 
-                mt: '10px',
-                minHeight: 'calc(100vh - 64px)'
-            }}>
+            <Box component="main" sx={{ mt: '10px', minHeight: 'calc(100vh - 64px)' }}>
                 <Outlet />
             </Box>
             <Footer />
