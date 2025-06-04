@@ -134,6 +134,10 @@ const CreateCourse = () => {
         errors[`exam_question_${index}`] = 'La question est requise';
       }
       
+      if (question.options.length < 2) {
+        errors[`exam_options_${index}`] = 'Au moins deux options sont requises';
+      }
+      
       // Check each option individually
       question.options.forEach((option, optionIndex) => {
         if (!option.trim()) {
@@ -207,20 +211,6 @@ const CreateCourse = () => {
         errors[`resource_${index}_url`] = 'Une URL est requise pour ce type de ressource';
       }
     });
-    
-    return errors;
-  };
-  
-  // Add validation for new quiz question
-  const validateNewQuizQuestion = () => {
-    const errors = {};
-    
-    if (!newQuizQuestion.question.trim()) {
-      errors.question = 'La question est requise';
-    }
-    if (newQuizQuestion.options.some(option => !option.trim())) {
-      errors.options = 'Toutes les options doivent être remplies';
-    }
     
     return errors;
   };
@@ -316,16 +306,59 @@ const CreateCourse = () => {
   // Handle creating and managing exam questions
   const [newQuestion, setNewQuestion] = useState({
     question: '',
-    options: ['', '', '', ''],
+    options: [''],
     correctAnswer: 0
   });
   
-  // Modify handleAddQuestion to include validation
+  // Add new state for quiz questions
+  const [newQuizQuestion, setNewQuizQuestion] = useState({
+    question: '',
+    options: [''],
+    correctAnswer: 0
+  });
+  
+  // Add functions to handle dynamic options for exam questions
+  const handleAddOption = () => {
+    setNewQuestion(prev => ({
+      ...prev,
+      options: [...prev.options, '']
+    }));
+  };
+
+  const handleRemoveOption = (index) => {
+    setNewQuestion(prev => ({
+      ...prev,
+      options: prev.options.filter((_, i) => i !== index),
+      correctAnswer: prev.correctAnswer >= index ? Math.max(0, prev.correctAnswer - 1) : prev.correctAnswer
+    }));
+  };
+  
+  // Add functions to handle dynamic options for quiz questions
+  const handleAddQuizOption = () => {
+    setNewQuizQuestion(prev => ({
+      ...prev,
+      options: [...prev.options, '']
+    }));
+  };
+
+  const handleRemoveQuizOption = (index) => {
+    setNewQuizQuestion(prev => ({
+      ...prev,
+      options: prev.options.filter((_, i) => i !== index),
+      correctAnswer: prev.correctAnswer >= index ? Math.max(0, prev.correctAnswer - 1) : prev.correctAnswer
+    }));
+  };
+  
+  // Modify handleAddQuestion to include validation for dynamic options
   const handleAddQuestion = () => {
     const errors = {};
     
     if (!newQuestion.question.trim()) {
       errors.question = 'La question est requise';
+    }
+    
+    if (newQuestion.options.length < 2) {
+      errors.options = 'Au moins deux options sont requises';
     }
     
     newQuestion.options.forEach((option, index) => {
@@ -348,7 +381,7 @@ const CreateCourse = () => {
     }));
     setNewQuestion({
       question: '',
-      options: ['', '', '', ''],
+      options: [''],
       correctAnswer: 0
     });
     setValidationErrors({});
@@ -555,13 +588,6 @@ const CreateCourse = () => {
     }
   };
   
-  // Add this new state for quiz questions
-  const [newQuizQuestion, setNewQuizQuestion] = useState({
-    question: '',
-    options: ['', '', '', ''],
-    correctAnswer: 0
-  });
-  
   // Modify handleAddQuizQuestion to include validation
   const handleAddQuizQuestion = () => {
     const errors = validateNewQuizQuestion();
@@ -580,7 +606,7 @@ const CreateCourse = () => {
     }));
     setNewQuizQuestion({
       question: '',
-      options: ['', '', '', ''],
+      options: [''],
       correctAnswer: 0
     });
     setValidationErrors({});
@@ -1113,15 +1139,36 @@ const CreateCourse = () => {
                                   onChange={() => setNewQuizQuestion(prev => ({...prev, correctAnswer: index}))}
                                   className="mr-3 h-4 w-4 text-blue-600 focus:ring-blue-500 border-gray-300"
                                 />
-                                <input
-                                  type="text"
-                                  value={option}
-                                  onChange={(e) => handleQuizQuestionOptionChange(index, e.target.value)}
-                                  className={`w-full px-4 py-3 border ${validationErrors.options ? 'border-red-500' : 'border-gray-300'} rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent transition-all duration-200`}
-                                  placeholder={`Option ${index + 1}`}
-                                />
+                                <div className="flex-1 flex items-center">
+                                  <input
+                                    type="text"
+                                    value={option}
+                                    onChange={(e) => handleQuizQuestionOptionChange(index, e.target.value)}
+                                    className={`w-full px-4 py-3 border ${
+                                      validationErrors[`quiz_option_${index}`] ? 'border-red-500' : 'border-gray-300'
+                                    } rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent transition-all duration-200`}
+                                    placeholder={`Option ${index + 1}`}
+                                  />
+                                  {newQuizQuestion.options.length > 1 && (
+                                    <button
+                                      type="button"
+                                      onClick={() => handleRemoveQuizOption(index)}
+                                      className="ml-2 text-red-500 hover:text-red-700 p-2"
+                                    >
+                                      <Trash className="h-4 w-4" />
+                                    </button>
+                                  )}
+                                </div>
                               </div>
                             ))}
+                            <button
+                              type="button"
+                              onClick={handleAddQuizOption}
+                              className="mt-2 px-3 py-1 text-sm bg-gray-100 text-gray-700 rounded-lg hover:bg-gray-200 flex items-center"
+                            >
+                              <Plus className="h-4 w-4 mr-1" />
+                              Ajouter une option
+                            </button>
                           </div>
                           
                           <div>
@@ -1332,7 +1379,7 @@ const CreateCourse = () => {
                         onChange={() => setNewQuestion(prev => ({...prev, correctAnswer: index}))}
                         className="mr-3 h-4 w-4 text-blue-600 focus:ring-blue-500 border-gray-300"
                       />
-                      <div className="flex-1">
+                      <div className="flex-1 flex items-center">
                         <input
                           type="text"
                           value={option}
@@ -1342,12 +1389,26 @@ const CreateCourse = () => {
                           } rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent transition-all duration-200`}
                           placeholder={`Option ${index + 1}`}
                         />
-                        {validationErrors[`option_${index}`] && (
-                          <ErrorAlert message={validationErrors[`option_${index}`]} />
+                        {newQuestion.options.length > 1 && (
+                          <button
+                            type="button"
+                            onClick={() => handleRemoveOption(index)}
+                            className="ml-2 text-red-500 hover:text-red-700 p-2"
+                          >
+                            <Trash className="h-4 w-4" />
+                          </button>
                         )}
                       </div>
                     </div>
                   ))}
+                  <button
+                    type="button"
+                    onClick={handleAddOption}
+                    className="mt-2 px-3 py-1 text-sm bg-gray-100 text-gray-700 rounded-lg hover:bg-gray-200 flex items-center"
+                  >
+                    <Plus className="h-4 w-4 mr-1" />
+                    Ajouter une option
+                  </button>
                 </div>
                 
                 <div>
@@ -1727,6 +1788,23 @@ const CreateCourse = () => {
       default:
         return null;
     }
+  };
+  
+  // Modify validateNewQuizQuestion to handle dynamic options
+  const validateNewQuizQuestion = () => {
+    const errors = {};
+    
+    if (!newQuizQuestion.question.trim()) {
+      errors.question = 'La question est requise';
+    }
+    if (newQuizQuestion.options.length < 2) {
+      errors.options = 'Au moins deux options sont requises';
+    }
+    if (newQuizQuestion.options.some(option => !option.trim())) {
+      errors.options = 'Toutes les options doivent être remplies';
+    }
+    
+    return errors;
   };
   
   return (

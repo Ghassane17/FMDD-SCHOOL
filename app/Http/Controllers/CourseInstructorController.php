@@ -179,7 +179,7 @@ class CourseInstructorController extends Controller
                                 QuizQuestion::create([
                                     'module_id' => $newModule->id,
                                     'question' => $quiz['question'],
-                                    'options' => json_encode($quiz['options']),
+                                    'options' => $quiz['options'],
                                     'correct_option' => $quiz['correctAnswer'],
                                 ]);
                             }
@@ -200,7 +200,7 @@ class CourseInstructorController extends Controller
                     ExamQuestion::create([
                         'exam_id'      => $exam->id,
                         'question_text'=> $q['question'],
-                        'options'      => json_encode($q['options']),
+                        'options'      => $q['options'],
                         'correct_index'=> $q['correctAnswer'],
                     ]);
                 }
