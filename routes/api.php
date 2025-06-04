@@ -72,4 +72,8 @@ Route::middleware('auth:sanctum')->group(function () {
     Route::get('/instructor/dashboard', [InstructorController::class, 'dashboard'])->name('instructor.dashboard');
     Route::patch('/instructor/availability', [InstructorController::class, 'updateAvailability'])->name('instructor.updateAvailability');
     Route::patch('/instructor/bankInfo', [InstructorController::class, 'updateBankInfo'])->name('instructor.updateBankInfo');
+    Route::get('/instructor/statistics', [InstructorController::class, 'getInstructorStatistics'])->name('instructor.getInstructorStatistics');
+    Route::patch('/instructor/skills', [InstructorController::class, 'updateInstructorSkills'])->name('instructor.updateInstructorSkills');
+    Route::patch('/instructor/languages', [InstructorController::class, 'updateInstructorLanguages'])->name('instructor.updateInstructorLanguages');
+    Route::patch('/instructor/certifications', [InstructorController::class, 'updateInstructorCertifications'])->name('instructor.updateInstructorCertifications');
 });

@@ -1,5 +1,5 @@
 import React, { useState, useEffect } from 'react';
-import { updateInstructorProfile } from '../../services/api_instructor';
+import { updateInstructorProfile, updateInstructorSkills, updateInstructorLanguages, updateInstructorCertifications } from '../../services/api_instructor';
 import { Loader2, User, Lock, Star, Globe, Award, Save } from 'lucide-react';
 import SkillsForm from "./profile-completion-formateur/SkillsForm";
 import LanguagesForm from "./profile-completion-formateur/LanguagesForm";
@@ -163,6 +163,18 @@ export default function AccountSettings({ instructorData }) {
       [name]: value
     }));
   };
+
+  const [skillsLoading, setSkillsLoading] = useState(false);
+  const [skillsError, setSkillsError] = useState(null);
+  const [skillsSuccess, setSkillsSuccess] = useState(null);
+
+  const [languagesLoading, setLanguagesLoading] = useState(false);
+  const [languagesError, setLanguagesError] = useState(null);
+  const [languagesSuccess, setLanguagesSuccess] = useState(null);
+
+  const [certificationsLoading, setCertificationsLoading] = useState(false);
+  const [certificationsError, setCertificationsError] = useState(null);
+  const [certificationsSuccess, setCertificationsSuccess] = useState(null);
 
   return (
     <Container maxWidth="xl" sx={{ py: 4 }}>
@@ -663,7 +675,7 @@ export default function AccountSettings({ instructorData }) {
 
       {/* Modals remain unchanged */}
       {showSkillsModal && (
-        <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50 p-4">
+        <div className="fixed inset-0 backdrop-blur-[2px] bg-black/25 flex items-center justify-center z-50 p-4">
           <div className="bg-white rounded-3xl shadow-2xl p-8 w-full max-w-2xl relative max-h-[90vh] overflow-y-auto">
             <button
               className="absolute top-4 right-4 text-gray-400 hover:text-gray-700 text-3xl font-light transition-colors duration-200"
@@ -672,29 +684,49 @@ export default function AccountSettings({ instructorData }) {
               ×
             </button>
             <SkillsForm data={skillsBuffer} updateData={setSkillsBuffer} />
-            <div className="flex justify-end gap-3 mt-8 pt-4 border-t border-gray-200">
-              <button
-                className="px-6 py-2.5 border border-gray-300 text-gray-700 rounded-xl hover:bg-gray-50 font-medium transition-colors duration-200"
-                onClick={() => setShowSkillsModal(false)}
-              >
-                Annuler
-              </button>
-              <button
-                className="px-6 py-2.5 bg-gradient-to-r from-indigo-600 to-blue-500 text-white rounded-xl font-semibold hover:from-indigo-700 hover:to-blue-600 shadow-lg transition-all duration-200 transform hover:scale-105"
-                onClick={() => {
-                  setSkills(skillsBuffer);
-                  setShowSkillsModal(false);
-                }}
-              >
-                Enregistrer
-              </button>
+            <div className="flex flex-col gap-2 justify-end mt-8 pt-4 border-t border-gray-200">
+              {skillsError && <div className="text-red-500 text-center">{skillsError}</div>}
+              {skillsSuccess && <div className="text-green-600 text-center">{skillsSuccess}</div>}
+              <div className="flex justify-end gap-3">
+                <button
+                  className="px-6 py-2.5 border border-gray-300 text-gray-700 rounded-xl hover:bg-gray-50 font-medium transition-colors duration-200"
+                  onClick={() => setShowSkillsModal(false)}
+                  disabled={skillsLoading}
+                >
+                  Annuler
+                </button>
+                <button
+                  className="px-6 py-2.5 bg-gradient-to-r from-indigo-600 to-blue-500 text-white rounded-xl font-semibold hover:from-indigo-700 hover:to-blue-600 shadow-lg transition-all duration-200 transform hover:scale-105 disabled:opacity-60"
+                  onClick={async () => {
+                    setSkillsLoading(true);
+                    setSkillsError(null);
+                    setSkillsSuccess(null);
+                    try {
+                      await updateInstructorSkills({ skills: skillsBuffer });
+                      setSkills(skillsBuffer);
+                      setSkillsSuccess('Compétences mises à jour avec succès');
+                      setTimeout(() => {
+                        setShowSkillsModal(false);
+                        setSkillsSuccess(null);
+                      }, 1200);
+                    } catch (err) {
+                      setSkillsError('Erreur lors de la mise à jour des compétences');
+                    } finally {
+                      setSkillsLoading(false);
+                    }
+                  }}
+                  disabled={skillsLoading}
+                >
+                  {skillsLoading ? 'Enregistrement...' : 'Enregistrer'}
+                </button>
+              </div>
             </div>
           </div>
         </div>
       )}
 
       {showLanguagesModal && (
-        <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50 p-4">
+        <div className="fixed inset-0 backdrop-blur-[2px] bg-black/25 flex items-center justify-center z-50 p-4">
           <div className="bg-white rounded-3xl shadow-2xl p-8 w-full max-w-2xl relative max-h-[90vh] overflow-y-auto">
             <button
               className="absolute top-4 right-4 text-gray-400 hover:text-gray-700 text-3xl font-light transition-colors duration-200"
@@ -703,29 +735,49 @@ export default function AccountSettings({ instructorData }) {
               ×
             </button>
             <LanguagesForm data={languagesBuffer} updateData={setLanguagesBuffer} />
-            <div className="flex justify-end gap-3 mt-8 pt-4 border-t border-gray-200">
-              <button
-                className="px-6 py-2.5 border border-gray-300 text-gray-700 rounded-xl hover:bg-gray-50 font-medium transition-colors duration-200"
-                onClick={() => setShowLanguagesModal(false)}
-              >
-                Annuler
-              </button>
-              <button
-                className="px-6 py-2.5 bg-gradient-to-r from-green-600 to-emerald-500 text-white rounded-xl font-semibold hover:from-green-700 hover:to-emerald-600 shadow-lg transition-all duration-200 transform hover:scale-105"
-                onClick={() => {
-                  setLanguages(languagesBuffer);
-                  setShowLanguagesModal(false);
-                }}
-              >
-                Enregistrer
-              </button>
+            <div className="flex flex-col gap-2 justify-end mt-8 pt-4 border-t border-gray-200">
+              {languagesError && <div className="text-red-500 text-center">{languagesError}</div>}
+              {languagesSuccess && <div className="text-green-600 text-center">{languagesSuccess}</div>}
+              <div className="flex justify-end gap-3">
+                <button
+                  className="px-6 py-2.5 border border-gray-300 text-gray-700 rounded-xl hover:bg-gray-50 font-medium transition-colors duration-200"
+                  onClick={() => setShowLanguagesModal(false)}
+                  disabled={languagesLoading}
+                >
+                  Annuler
+                </button>
+                <button
+                  className="px-6 py-2.5 bg-gradient-to-r from-green-600 to-emerald-500 text-white rounded-xl font-semibold hover:from-green-700 hover:to-emerald-600 shadow-lg transition-all duration-200 transform hover:scale-105 disabled:opacity-60"
+                  onClick={async () => {
+                    setLanguagesLoading(true);
+                    setLanguagesError(null);
+                    setLanguagesSuccess(null);
+                    try {
+                      await updateInstructorLanguages({ languages: languagesBuffer });
+                      setLanguages(languagesBuffer);
+                      setLanguagesSuccess('Langues mises à jour avec succès');
+                      setTimeout(() => {
+                        setShowLanguagesModal(false);
+                        setLanguagesSuccess(null);
+                      }, 1200);
+                    } catch (err) {
+                      setLanguagesError('Erreur lors de la mise à jour des langues');
+                    } finally {
+                      setLanguagesLoading(false);
+                    }
+                  }}
+                  disabled={languagesLoading}
+                >
+                  {languagesLoading ? 'Enregistrement...' : 'Enregistrer'}
+                </button>
+              </div>
             </div>
           </div>
         </div>
       )}
 
       {showCertificationsModal && (
-        <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50 p-4">
+        <div className="fixed inset-0 backdrop-blur-[2px] bg-black/25 flex items-center justify-center z-50 p-4">
           <div className="bg-white rounded-3xl shadow-2xl p-8 w-full max-w-2xl relative max-h-[90vh] overflow-y-auto">
             <button
               className="absolute top-4 right-4 text-gray-400 hover:text-gray-700 text-3xl font-light transition-colors duration-200"
@@ -734,22 +786,42 @@ export default function AccountSettings({ instructorData }) {
               ×
             </button>
             <CertificationsForm data={certificationsBuffer} updateData={setCertificationsBuffer} />
-            <div className="flex justify-end gap-3 mt-8 pt-4 border-t border-gray-200">
-              <button
-                className="px-6 py-2.5 border border-gray-300 text-gray-700 rounded-xl hover:bg-gray-50 font-medium transition-colors duration-200"
-                onClick={() => setShowCertificationsModal(false)}
-              >
-                Annuler
-              </button>
-              <button
-                className="px-6 py-2.5 bg-gradient-to-r from-orange-600 to-amber-500 text-white rounded-xl font-semibold hover:from-orange-700 hover:to-amber-600 shadow-lg transition-all duration-200 transform hover:scale-105"
-                onClick={() => {
-                  setCertifications(certificationsBuffer);
-                  setShowCertificationsModal(false);
-                }}
-              >
-                Enregistrer
-              </button>
+            <div className="flex flex-col gap-2 justify-end mt-8 pt-4 border-t border-gray-200">
+              {certificationsError && <div className="text-red-500 text-center">{certificationsError}</div>}
+              {certificationsSuccess && <div className="text-green-600 text-center">{certificationsSuccess}</div>}
+              <div className="flex justify-end gap-3">
+                <button
+                  className="px-6 py-2.5 border border-gray-300 text-gray-700 rounded-xl hover:bg-gray-50 font-medium transition-colors duration-200"
+                  onClick={() => setShowCertificationsModal(false)}
+                  disabled={certificationsLoading}
+                >
+                  Annuler
+                </button>
+                <button
+                  className="px-6 py-2.5 bg-gradient-to-r from-orange-600 to-amber-500 text-white rounded-xl font-semibold hover:from-orange-700 hover:to-amber-600 shadow-lg transition-all duration-200 transform hover:scale-105 disabled:opacity-60"
+                  onClick={async () => {
+                    setCertificationsLoading(true);
+                    setCertificationsError(null);
+                    setCertificationsSuccess(null);
+                    try {
+                      await updateInstructorCertifications({ certifications: certificationsBuffer });
+                      setCertifications(certificationsBuffer);
+                      setCertificationsSuccess('Certifications mises à jour avec succès');
+                      setTimeout(() => {
+                        setShowCertificationsModal(false);
+                        setCertificationsSuccess(null);
+                      }, 1200);
+                    } catch (err) {
+                      setCertificationsError('Erreur lors de la mise à jour des certifications');
+                    } finally {
+                      setCertificationsLoading(false);
+                    }
+                  }}
+                  disabled={certificationsLoading}
+                >
+                  {certificationsLoading ? 'Enregistrement...' : 'Enregistrer'}
+                </button>
+              </div>
             </div>
           </div>
         </div>

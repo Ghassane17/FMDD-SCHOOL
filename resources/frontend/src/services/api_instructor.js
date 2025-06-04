@@ -173,3 +173,65 @@ export const createCourse = async (courseData) => {
     }
 };
 
+
+/**
+ * Get instructor statistics
+ * @returns {Promise} Promise object containing instructor statistics data
+ */
+export const getInstructorStatistics = async () => {
+    try {
+        const response = await api.get('/instructor/statistics');
+        return response.data;
+    } catch (error) {
+        console.error('Error fetching instructor statistics:', error);
+        throw error;
+    }
+};
+
+/**
+ * Update instructor skills
+ * @param {Object} skillsData - The skills data to update
+ * @returns {Promise} Promise object containing updated skills data
+ */
+
+export const updateInstructorSkills = async (skillsData) => {
+    try {
+        const response = await api.patch('/instructor/skills', skillsData);
+        return response.data;
+    } catch (error) {
+        console.error('Error updating instructor skills:', error);
+        throw error;
+    }
+};
+
+/**
+ * Update instructor languages
+ * @param {Object} languagesData - The languages data to update
+ * @returns {Promise} Promise object containing updated languages data
+ */
+
+export const updateInstructorLanguages = async (languagesData) => {
+    try {
+        const response = await api.patch('/instructor/languages', languagesData);
+        return response.data;
+    } catch (error) {
+        console.error('Error updating instructor languages:', error);
+        throw error;
+    }
+};
+
+/**
+ * Update instructor certifications
+ * @param {Object} certificationsData - The certifications data to update
+ * @returns {Promise} Promise object containing updated certifications data
+ */
+
+export const updateInstructorCertifications = async (certificationsData) => {
+    try {
+        const response = await api.patch('/instructor/certifications', certificationsData);
+        return response.data;
+    } catch (error) {
+        console.error('Error updating instructor certifications:', error);
+        throw error;
+    }
+};

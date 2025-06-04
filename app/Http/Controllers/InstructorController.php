@@ -271,6 +271,77 @@ class InstructorController extends Controller
         }
     }
 
+    public function getInstructorStatistics()
+    {
+        $user = Auth::user();
+        if (!$user || $user->role !== 'instructor') {
+            return response()->json(['message' => 'Unauthorized'], 403);
+        }
+        $instructor = Instructor::where('user_id', $user->id)->first();
+        if (!$instructor) {
+            return response()->json(['message' => 'Instructor profile not found'], 404);
+        }
+
+        // Make sure to import the Course model at the top of the file:
+        // use App\Models\Course;
+
+        $courses = \App\Models\Course::where('instructor_id', $instructor->id)->get();
+        $totalCourses = $courses->count();
+        $totalStudents = $courses->sum('students_count') ?? 0;
+        $averageRating = $courses->whereNotNull('rating')->where('rating', '!=', 0)->avg('rating');
+        return response()->json([
+            'totalCourses' => $totalCourses,
+            'totalStudents' => $totalStudents,
+            'averageRating' => $averageRating
+        ], 200);
+
+    }
+
+    public function updateInstructorSkills(Request $request)
+    {
+        $user = Auth::user();
+        if (!$user || $user->role !== 'instructor') {
+            return response()->json(['message' => 'Unauthorized'], 403);
+        }
+        $instructor = Instructor::where('user_id', $user->id)->first();
+        if (!$instructor) {
+            return response()->json(['message' => 'Instructor profile not found'], 404);
+        }
+        $instructor->skills = $request->input('skills');
+        $instructor->save();
+        return response()->json(['message' => 'Skills updated successfully'], 200);
+    }
+
+    public function updateInstructorLanguages(Request $request)
+    {
+        $user = Auth::user();
+        if (!$user || $user->role !== 'instructor') {
+            return response()->json(['message' => 'Unauthorized'], 403);
+        }
+        $instructor = Instructor::where('user_id', $user->id)->first();
+        if (!$instructor) {
+            return response()->json(['message' => 'Instructor profile not found'], 404);
+        }
+        $instructor->languages = $request->input('languages');
+        $instructor->save();
+        return response()->json(['message' => 'Languages updated successfully'], 200);
+    }
+
+    public function updateInstructorCertifications(Request $request)
+    {
+        $user = Auth::user();
+        if (!$user || $user->role !== 'instructor') {
+            return response()->json(['message' => 'Unauthorized'], 403);
+        }
+        $instructor = Instructor::where('user_id', $user->id)->first();
+        if (!$instructor) {
+            return response()->json(['message' => 'Instructor profile not found'], 404);
+        }
+        $instructor->certifications = $request->input('certifications');
+        $instructor->save();
+        return response()->json(['message' => 'Certifications updated successfully'], 200);
+    }
+
     
 }
 
