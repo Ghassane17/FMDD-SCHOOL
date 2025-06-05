@@ -1,5 +1,7 @@
 import axios from 'axios';
 
+const API_URL = import.meta.env.VITE_API_BASE_URL || 'http://localhost:8000/api';
+
 // Déterminer l'URL de base et l'afficher explicitement
 const apiBaseUrl = import.meta.env.VITE_API_BASE_URL || 'http://localhost:8000/api';
 console.log('Using API base URL:', apiBaseUrl);
@@ -596,11 +598,11 @@ export const markModuleAsCompleted = async (courseId, moduleId) => {
         console.log('Frontend: Marking module as completed:', { courseId, moduleId });
         const response = await api.post(`/learner/courses/${courseId}/modules/${moduleId}/complete`);
         console.log('Frontend: Module completion response:', response.data);
-        
+
         if (!response.data.success) {
             throw new Error(response.data.message || 'Failed to mark module as completed');
         }
-        
+
         return response.data;
     } catch (error) {
         console.error('Frontend: Failed to mark module as completed:', error.response?.data || error);
@@ -658,4 +660,54 @@ export const updateNotifications = async (data) => {
     return response.data;
 };
 
+export const downloadResource = async (resourceId) => {
+    try {
+        const token = localStorage.getItem('token');
+        if (!token) {
+            throw new Error('No authentication token found');
+        }
+
+        console.log('🌐 Initiating resource download:', { resourceId });
+        const response = await axios.get(`${API_URL}/download-resource`, {
+            params: { resource_id: resourceId },
+            headers: { Authorization: `Bearer ${token}` },
+            responseType: 'blob'
+        });
+
+        const contentType = response.headers['content-type'];
+        if (contentType.includes('application/json')) {
+            const text = await response.data.text();
+            const json = JSON.parse(text);
+            if (json.redirect_url) {
+                console.log('🌐 Redirecting to external link:', json.redirect_url);
+                window.open(json.redirect_url, '_blank');
+                toast.success('Opening external resource');
+                return { success: true, isRedirect: true };
+            }
+            throw new Error(json.error || 'Download failed');
+        }
+
+        const fileName = response.headers['content-disposition']
+            ? response.headers['content-disposition'].match(/filename="(.+)"/)?.[1] || `resource_${resourceId}`
+            : `resource_${resourceId}`;
+        const url = window.URL.createObjectURL(new Blob([response.data]));
+        const link = document.createElement('a');
+        link.href = url;
+        link.setAttribute('download', fileName);
+        document.body.appendChild(link);
+        link.click();
+        document.body.removeChild(link);
+        window.URL.revokeObjectURL(url);
+
+        console.log('🌐 Resource downloaded successfully:', { resourceId, fileName });
+        toast.success(`Downloaded ${fileName}`);
+        return { success: true, isRedirect: false };
+
+    } catch (error) {
+        console.error('❌ Resource download error:', error.response || error);
+        const message = error.response?.data?.error || error.message || 'Failed to download resource';
+        toast.error(message);
+        throw new Error(message);
+    }
+};
 export default api;

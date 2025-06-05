@@ -3,6 +3,7 @@
 use App\Http\Controllers\CommentController;
 use App\Http\Controllers\CourseInstructorController;
 use App\Http\Controllers\CourseResourceController;
+use App\Http\Controllers\DownloadController;
 use App\Http\Controllers\ExamController;
 use App\Http\Controllers\PublicController;
 use Illuminate\Support\Facades\Route;
@@ -76,4 +77,9 @@ Route::middleware('auth:sanctum')->group(function () {
     Route::patch('/instructor/skills', [InstructorController::class, 'updateInstructorSkills'])->name('instructor.updateInstructorSkills');
     Route::patch('/instructor/languages', [InstructorController::class, 'updateInstructorLanguages'])->name('instructor.updateInstructorLanguages');
     Route::patch('/instructor/certifications', [InstructorController::class, 'updateInstructorCertifications'])->name('instructor.updateInstructorCertifications');
+
+
+
+    // Download file by path
+    Route::get('/download-resource', [DownloadController::class, 'downloadResource']);
 });

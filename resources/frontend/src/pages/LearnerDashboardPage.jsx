@@ -51,7 +51,15 @@ const LearnerDashboardPage = () => {
     const [activeTab, setActiveTab] = useState(0)
     const [searchQuery, setSearchQuery] = useState("")
     const [sortOption, setSortOption] = useState("rating-desc")
+    const [overallProgress, setOverallProgress] = useState(0)
     const navigate = useNavigate()
+
+    // Calculate overall progress from enrolled courses
+    const calculateOverallProgress = (enrolledCourses) => {
+        if (!enrolledCourses || enrolledCourses.length === 0) return 0;
+        const totalProgress = enrolledCourses.reduce((sum, course) => sum + (course.progress || 0), 0);
+        return Math.round(totalProgress / enrolledCourses.length);
+    }
 
     const fetchData = async () => {
         try {
@@ -78,6 +86,14 @@ const LearnerDashboardPage = () => {
         }
         fetchData()
     }, [navigate])
+
+    // Update overall progress when dashboard changes
+    useEffect(() => {
+        if (dashboard?.enrolled_courses) {
+            const progress = calculateOverallProgress(dashboard.enrolled_courses)
+            setOverallProgress(progress)
+        }
+    }, [dashboard])
 
     const getSortedEnrolledCourses = () => {
         const filtered =
@@ -206,7 +222,7 @@ const LearnerDashboardPage = () => {
                     <Grid item xs={12} sm={6} md={3}>
                         <Paper className="p-4 text-center shadow-sm border border-gray-200">
                             <Typography variant="h4" className="font-bold text-blue-600 mb-1">
-                                {dashboard?.overall_progress || 0}%
+                                {overallProgress}%
                             </Typography>
                             <Typography variant="body2" className="text-gray-600">
                                 Overall Progress
@@ -310,8 +326,6 @@ const LearnerDashboardPage = () => {
                                 }}
                             />
                             <Stack direction="row" spacing={2} alignItems="center">
-
-
                                 <FormControl sx={{ minWidth: 200 }} size="small">
                                     <InputLabel id="sort-label">Trier par</InputLabel>
                                     <Select
