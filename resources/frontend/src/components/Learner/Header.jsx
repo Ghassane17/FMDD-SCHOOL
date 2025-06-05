@@ -139,7 +139,7 @@ const Header = ({ school, avatar, notifications: initialNotifications = [] }) =>
     }
   };
 
-  const hasUnread = notifications?.some((n) => !n.read);
+  //const hasUnread = notifications?.some((n) => !n.read);
 
   const handleLogout = () => {
     logout();
@@ -188,7 +188,9 @@ const Header = ({ school, avatar, notifications: initialNotifications = [] }) =>
               disabled={loading}
             >
               <Bell className="w-6 h-6" />
+{/*
               {hasUnread && <span className="absolute top-1 right-1 w-2 h-2 bg-red-500 rounded-full"></span>}
+*/}
             </button>
             {open.notifications && (
               <div className="absolute right-0 mt-2 w-80 bg-white text-black rounded-lg shadow-lg z-20 max-h-[80vh] overflow-y-auto">

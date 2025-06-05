@@ -1,9 +1,9 @@
-import { useEffect, useState } from 'react';
-import { useNavigate } from 'react-router-dom';
-import { getLearnerDashboard, getAllCourses } from '../services/api';
-import LearnerStats from '../components/Learner/LearnerStats.jsx';
-import StatsCard from '../components/Learner/StatsCard.jsx';
-import CourseCard from '../components/Learner/CourseCard.jsx';
+"use client"
+
+import { useEffect, useState } from "react"
+import { useNavigate } from "react-router-dom"
+import { getLearnerDashboard, getAllCourses } from "../services/api"
+import CourseCard from "../components/Learner/CourseCard.jsx"
 import {
     Alert,
     Container,
@@ -12,27 +12,25 @@ import {
     Box,
     CircularProgress,
     Paper,
-    Divider,
     Button,
     Stack,
     IconButton,
     Tooltip,
-    useTheme,
-    Fade,
     Chip,
     Tabs,
     Tab,
     InputAdornment,
     TextField,
-    Skeleton,
-    Avatar
-} from '@mui/material';
+    Avatar,
+    FormControl,
+    InputLabel,
+    Select,
+    MenuItem,
+} from "@mui/material"
 import {
     Refresh as RefreshIcon,
-    FilterList as FilterListIcon,
     Sort as SortIcon,
     Search as SearchIcon,
-    Star as StarIcon,
     TrendingUp as TrendingUpIcon,
     NewReleases as NewReleasesIcon,
     School as SchoolIcon,
@@ -40,142 +38,154 @@ import {
     AccessTime as AccessTimeIcon,
     EmojiEvents as EmojiEventsIcon,
     Lightbulb as LightbulbIcon,
-    MenuBook as MenuBookIcon
-} from '@mui/icons-material';
+    MenuBook as MenuBookIcon,
+    Star as StarIcon,
+} from "@mui/icons-material"
 
 const LearnerDashboardPage = () => {
-    const [dashboard, setDashboard] = useState(null);
-    const [allCourses, setAllCourses] = useState([]);
-    const [error, setError] = useState('');
-    const [loading, setLoading] = useState(true);
-    const [refreshing, setRefreshing] = useState(false);
-    const [activeTab, setActiveTab] = useState(0);
-    const [searchQuery, setSearchQuery] = useState('');
-    const navigate = useNavigate();
-    const theme = useTheme();
+    const [dashboard, setDashboard] = useState(null)
+    const [allCourses, setAllCourses] = useState([])
+    const [error, setError] = useState("")
+    const [loading, setLoading] = useState(true)
+    const [refreshing, setRefreshing] = useState(false)
+    const [activeTab, setActiveTab] = useState(0)
+    const [searchQuery, setSearchQuery] = useState("")
+    const [sortOption, setSortOption] = useState("rating-desc")
+    const navigate = useNavigate()
 
     const fetchData = async () => {
         try {
-            setRefreshing(true);
-            const [dashboardResponse, coursesResponse] = await Promise.all([
-                getLearnerDashboard(true),
-                getAllCourses()
-            ]);
-            setDashboard(dashboardResponse.data);
-            setAllCourses(coursesResponse.data.courses);
+            setRefreshing(true)
+            const [dashboardResponse, coursesResponse] = await Promise.all([getLearnerDashboard(true), getAllCourses()])
+            setDashboard(dashboardResponse.data)
+            setAllCourses(coursesResponse.data.courses)
         } catch (err) {
-            console.error('Failed to fetch data:', err);
-            setError(err.response?.data?.message || 'Failed to load dashboard. Please try again.');
+            console.error("Failed to fetch data:", err)
+            setError(err.response?.data?.message || "Failed to load dashboard. Please try again.")
         } finally {
-            setLoading(false);
-            setRefreshing(false);
+            setLoading(false)
+            setRefreshing(false)
         }
-    };
+    }
 
     useEffect(() => {
-        const user = JSON.parse(localStorage.getItem('user'));
-        if (!user || user.role !== 'learner') {
-            setError('Access denied. Please login as a learner.');
-            setLoading(false);
-            setTimeout(() => navigate('/login'), 2000);
-            return;
+        const user = JSON.parse(localStorage.getItem("user"))
+        if (!user || user.role !== "learner") {
+            setError("Access denied. Please login as a learner.")
+            setLoading(false)
+            setTimeout(() => navigate("/login"), 2000)
+            return
         }
-        fetchData();
-    }, [navigate]);
+        fetchData()
+    }, [navigate])
 
-    const filteredEnrolledCourses = dashboard?.enrolled_courses?.filter(course =>
-        course.title.toLowerCase().includes(searchQuery.toLowerCase())
-    ) || [];
+    const getSortedEnrolledCourses = () => {
+        const filtered =
+            dashboard?.enrolled_courses?.filter((course) => course.title.toLowerCase().includes(searchQuery.toLowerCase())) ||
+            []
 
-    const filteredAvailableCourses = allCourses.filter(course =>
-        course.title.toLowerCase().includes(searchQuery.toLowerCase())
-    );
+        return [...filtered].sort((a, b) => {
+            switch (sortOption) {
+                case "rating-desc":
+                    return (b.rating || 0) - (a.rating || 0)
+                case "rating-asc":
+                    return (a.rating || 0) - (b.rating || 0)
+                case "popularity-desc":
+                    return (b.students || 0) - (a.students || 0)
+                case "popularity-asc":
+                    return (a.students || 0) - (b.students || 0)
+                default:
+                    return 0
+            }
+        })
+    }
+
+    const getSortedAvailableCourses = () => {
+        const filtered = allCourses.filter((course) => course.title.toLowerCase().includes(searchQuery.toLowerCase()))
+
+        return [...filtered].sort((a, b) => {
+            switch (sortOption) {
+                case "rating-desc":
+                    return (b.rating || 0) - (a.rating || 0)
+                case "rating-asc":
+                    return (a.rating || 0) - (b.rating || 0)
+                case "popularity-desc":
+                    return (b.students || 0) - (a.students || 0)
+                case "popularity-asc":
+                    return (a.students || 0) - (b.students || 0)
+                default:
+                    return 0
+            }
+        })
+    }
+
+    const sortedEnrolledCourses = getSortedEnrolledCourses()
+    const sortedAvailableCourses = getSortedAvailableCourses()
 
     const handleTabChange = (event, newValue) => {
-        setActiveTab(newValue);
-    };
+        setActiveTab(newValue)
+    }
+
+    if (loading) {
+        return (
+            <Box className="min-h-screen bg-gray-50 flex items-center justify-center">
+                <Box className="text-center">
+                    <CircularProgress size={40} className="mb-4 text-gray-600" />
+                    <Typography variant="body1" className="text-gray-600">
+                        Loading your dashboard...
+                    </Typography>
+                </Box>
+            </Box>
+        )
+    }
+
+    if (error) {
+        return (
+            <Container maxWidth="md" className="py-16 min-h-screen bg-gray-50">
+                <Box className="text-center">
+                    <Alert severity="error" className="mb-6">
+                        {error}
+                    </Alert>
+                    <Button variant="contained" onClick={() => navigate("/login")} className="bg-blue-600 hover:bg-blue-700">
+                        Go to Login
+                    </Button>
+                </Box>
+            </Container>
+        )
+    }
 
     return (
-        <Container maxWidth="lg" sx={{ py: 6 }}>
-            {/* Header Section */}
-            <Box sx={{ mb: 6 }}>
-                <Paper
-                    elevation={4}
-                    sx={{
-                        p: 5,
-                        borderRadius: 3,
-                        background: `linear-gradient(135deg, ${theme.palette.primary.main} 0%, ${theme.palette.primary.dark} 100%)`,
-                        color: 'white',
-                        position: 'relative',
-                        overflow: 'hidden',
-                        '&:before': {
-                            content: '""',
-                            position: 'absolute',
-                            top: -50,
-                            right: -50,
-                            width: 200,
-                            height: 200,
-                            background: 'radial-gradient(circle, rgba(255,255,255,0.15) 0%, transparent 70%)',
-                            borderRadius: '50%'
-                        }
-                    }}
-                >
-                    <Box display="flex" justifyContent="space-between" alignItems="flex-start">
+        <Box className="min-h-screen bg-gray-50">
+            <Container maxWidth="xl" className="py-8">
+                {/* Header Section */}
+                <Paper className="mb-8 p-6 shadow-sm border border-gray-200">
+                    <Box className="flex justify-between items-start">
                         <Box>
-                            <Typography variant="h3" component="h1" sx={{
-                                fontWeight: 700,
-                                mb: 2,
-                                display: 'flex',
-                                alignItems: 'center',
-                                gap: 2
-                            }}>
-                                <SchoolIcon sx={{ fontSize: 40 }} />
-                                Welcome Back, {dashboard?.user?.name}!
+                            <Typography variant="h4" className="font-bold text-gray-900 mb-2">
+                                Welcome back, {dashboard?.user?.name}!
                             </Typography>
-                            <Typography variant="h6" sx={{
-                                opacity: 0.9,
-                                mb: 3,
-                                display: 'flex',
-                                alignItems: 'center',
-                                gap: 1
-                            }}>
-                                <LightbulbIcon fontSize="small" />
+                            <Typography variant="body1" className="text-gray-600 mb-4">
                                 Continue your learning journey
                             </Typography>
 
-                            <Stack direction="row" spacing={2}>
+                            <Stack direction="row" spacing={2} className="flex-wrap gap-2">
                                 <Chip
                                     label={`${dashboard?.courses_enrolled || 0} Enrolled`}
-                                    color="secondary"
-                                    size="medium"
                                     icon={<MenuBookIcon />}
-                                    sx={{
-                                        color: 'white',
-                                        px: 1,
-                                        py: 1.5
-                                    }}
+                                    className="bg-blue-50 text-blue-700 border-blue-200"
+                                    variant="outlined"
                                 />
                                 <Chip
                                     label={`${dashboard?.courses_completed || 0} Completed`}
-                                    color="success"
-                                    size="medium"
                                     icon={<CheckCircleIcon />}
-                                    sx={{
-                                        color: 'white',
-                                        px: 1,
-                                        py: 1.5
-                                    }}
+                                    className="bg-green-50 text-green-700 border-green-200"
+                                    variant="outlined"
                                 />
                                 <Chip
-                                    label={`Last active: ${dashboard?.last_connection || 'Recently'}`}
-                                    color="info"
-                                    size="medium"
+                                    label={`Last active: ${dashboard?.last_connection || "Recently"}`}
                                     icon={<AccessTimeIcon />}
-                                    sx={{
-                                        color: 'white',
-                                        px: 1,
-                                        py: 1.5
-                                    }}
+                                    className="bg-gray-50 text-gray-700 border-gray-200"
+                                    variant="outlined"
                                 />
                             </Stack>
                         </Box>
@@ -183,388 +193,261 @@ const LearnerDashboardPage = () => {
                             <IconButton
                                 onClick={fetchData}
                                 disabled={refreshing}
-                                sx={{
-                                    bgcolor: 'rgba(255, 255, 255, 0.2)',
-                                    color: 'white',
-                                    '&:hover': {
-                                        bgcolor: 'rgba(255, 255, 255, 0.3)',
-                                        transform: 'scale(1.1)'
-                                    },
-                                    transition: 'all 0.3s ease',
-                                    width: 56,
-                                    height: 56
-                                }}
+                                className="bg-gray-100 hover:bg-gray-200 text-gray-600"
                             >
-                                {refreshing ?
-                                    <CircularProgress size={28} color="inherit" /> :
-                                    <RefreshIcon sx={{ fontSize: 28 }} />
-                                }
+                                {refreshing ? <CircularProgress size={20} /> : <RefreshIcon />}
                             </IconButton>
                         </Tooltip>
                     </Box>
                 </Paper>
-            </Box>
 
-            {/* Stats and Profile Section */}
-           {/* <Grid container spacing={4} sx={{ mb: 6 }}>
-                <Grid item xs={12} md={4}>
-                    <Paper elevation={4} sx={{
-                        p: 4,
-                        height: '100%',
-                        borderRadius: 3,
-                        borderLeft: `6px solid ${theme.palette.secondary.main}`,
-                        transition: 'all 0.3s ease',
-                        '&:hover': {
-                            transform: 'translateY(-5px)',
-                            boxShadow: theme.shadows[8]
-                        }
-                    }}>
-                        <LearnerStats
-                            school="FMDD SCHOOL"
-                            userName={dashboard?.user?.name}
-                            lastLogin={dashboard?.last_connection}
-                            avatar={dashboard?.user?.avatar}
-                        />
-                    </Paper>
+                {/* Stats Cards */}
+                <Grid container spacing={3} className="mb-8">
+                    <Grid item xs={12} sm={6} md={3}>
+                        <Paper className="p-4 text-center shadow-sm border border-gray-200">
+                            <Typography variant="h4" className="font-bold text-blue-600 mb-1">
+                                {dashboard?.overall_progress || 0}%
+                            </Typography>
+                            <Typography variant="body2" className="text-gray-600">
+                                Overall Progress
+                            </Typography>
+                        </Paper>
+                    </Grid>
+                    <Grid item xs={12} sm={6} md={3}>
+                        <Paper className="p-4 text-center shadow-sm border border-gray-200">
+                            <Typography variant="h4" className="font-bold text-green-600 mb-1">
+                                {dashboard?.courses_enrolled || 0}
+                            </Typography>
+                            <Typography variant="body2" className="text-gray-600">
+                                Enrolled Courses
+                            </Typography>
+                        </Paper>
+                    </Grid>
+                    <Grid item xs={12} sm={6} md={3}>
+                        <Paper className="p-4 text-center shadow-sm border border-gray-200">
+                            <Typography variant="h4" className="font-bold text-purple-600 mb-1">
+                                {dashboard?.courses_completed || 0}
+                            </Typography>
+                            <Typography variant="body2" className="text-gray-600">
+                                Completed
+                            </Typography>
+                        </Paper>
+                    </Grid>
+                    <Grid item xs={12} sm={6} md={3}>
+                        <Paper className="p-4 text-center shadow-sm border border-gray-200">
+                            <Typography variant="h4" className="font-bold text-orange-600 mb-1">
+                                {allCourses.length}
+                            </Typography>
+                            <Typography variant="body2" className="text-gray-600">
+                                Available Courses
+                            </Typography>
+                        </Paper>
+                    </Grid>
                 </Grid>
-                <Grid item xs={12} md={8}>
-                    <Paper elevation={4} sx={{
-                        p: 4,
-                        height: '100%',
-                        borderRadius: 3,
-                        borderLeft: `6px solid ${theme.palette.info.main}`,
-                        transition: 'all 0.3s ease',
-                        '&:hover': {
-                            transform: 'translateY(-5px)',
-                            boxShadow: theme.shadows[8]
-                        }
-                    }}>
-                        <StatsCard
-                            totalCourses={dashboard?.courses_enrolled}
-                            completedCourses={dashboard?.courses_completed}
-                            lastActivity={dashboard?.last_connection}
-                            progress={dashboard?.overall_progress}
-                        />
-                    </Paper>
-                </Grid>
-            </Grid>*/}
 
-            {/* Combined Courses Section with Tabs */}
-            <Paper elevation={4} sx={{ mb: 6, borderRadius: 3 }}>
-                <Box sx={{ borderBottom: 1, borderColor: 'divider' }}>
-                    <Tabs
-                        value={activeTab}
-                        onChange={handleTabChange}
-                        variant="fullWidth"
-                        sx={{
-                            '& .MuiTabs-indicator': {
-                                height: 4,
-                                backgroundColor: theme.palette.primary.main
-                            }
-                        }}
-                    >
-                        <Tab
-                            label={
-                                <Box display="flex" alignItems="center" gap={1}>
-                                    <TrendingUpIcon />
-                                    <span>My Courses</span>
-                                    <Chip
-                                        label={filteredEnrolledCourses.length}
-                                        size="small"
-                                        color="primary"
-                                        sx={{ color: 'white' }}
-                                    />
-                                </Box>
-                            }
-                            sx={{
-                                fontWeight: 600,
-                                py: 2.5,
-                                '&.Mui-selected': {
-                                    color: theme.palette.primary.main
+                {/* Courses Section */}
+                <Paper className="shadow-sm border border-gray-200">
+                    {/* Tabs */}
+                    <Box className="border-b border-gray-200">
+                        <Tabs value={activeTab} onChange={handleTabChange} className="px-6">
+                            <Tab
+                                label={
+                                    <Box className="flex items-center gap-2">
+                                        <TrendingUpIcon />
+                                        <span>My Courses</span>
+                                        <Chip
+                                            label={sortedEnrolledCourses.length}
+                                            size="small"
+                                            className="bg-blue-100 text-blue-700 text-xs"
+                                        />
+                                    </Box>
                                 }
-                            }}
-                        />
-                        <Tab
-                            label={
-                                <Box display="flex" alignItems="center" gap={1}>
-                                    <NewReleasesIcon />
-                                    <span>Available Courses</span>
-                                    <Chip
-                                        label={filteredAvailableCourses.length}
-                                        size="small"
-                                        color="primary"
-                                        sx={{ color: 'white' }}
-                                    />
-                                </Box>
-                            }
-                            sx={{
-                                fontWeight: 600,
-                                py: 2.5,
-                                '&.Mui-selected': {
-                                    color: theme.palette.primary.main
+                                className="font-medium"
+                            />
+                            <Tab
+                                label={
+                                    <Box className="flex items-center gap-2">
+                                        <NewReleasesIcon />
+                                        <span>Available Courses</span>
+                                        <Chip
+                                            label={sortedAvailableCourses.length}
+                                            size="small"
+                                            className="bg-blue-100 text-blue-700 text-xs"
+                                        />
+                                    </Box>
                                 }
-                            }}
-                        />
-                    </Tabs>
-                </Box>
+                                className="font-medium"
+                            />
+                        </Tabs>
+                    </Box>
 
-                {/* Search and Filter Bar */}
-                <Box sx={{ p: 4, pb: 0 }}>
-                    <Box display="flex" justifyContent="space-between" alignItems="center" mb={4}>
-                        <TextField
-                            placeholder="Search courses..."
-                            variant="outlined"
-                            size="medium"
-                            value={searchQuery}
-                            onChange={(e) => setSearchQuery(e.target.value)}
-                            sx={{
-                                width: '45%',
-                                '& .MuiOutlinedInput-root': {
-                                    borderRadius: 3,
-                                    '& fieldset': {
-                                        borderColor: theme.palette.divider
+                    {/* Search and Filter Bar */}
+                    <Box className="p-6 pb-4">
+                        <Stack
+                            direction={{ xs: "column", sm: "row" }}
+                            spacing={2}
+                            justifyContent="space-between"
+                            alignItems={{ xs: "flex-start", sm: "center" }}
+                        >
+                            <TextField
+                                placeholder="Search courses..."
+                                variant="outlined"
+                                size="medium"
+                                value={searchQuery}
+                                onChange={(e) => setSearchQuery(e.target.value)}
+                                className="w-full max-w-md"
+                                InputProps={{
+                                    startAdornment: (
+                                        <InputAdornment position="start">
+                                            <SearchIcon className="text-gray-400" />
+                                        </InputAdornment>
+                                    ),
+                                }}
+                                sx={{
+                                    "& .MuiOutlinedInput-root": {
+                                        borderRadius: 2,
                                     },
-                                    '&:hover fieldset': {
-                                        borderColor: theme.palette.primary.light
-                                    }
-                                }
-                            }}
-                            InputProps={{
-                                startAdornment: (
-                                    <InputAdornment position="start">
-                                        <SearchIcon color="action" />
-                                    </InputAdornment>
-                                ),
-                            }}
-                        />
-                        <Stack direction="row" spacing={2}>
-                            <Button
-                                variant="outlined"
-                                startIcon={<FilterListIcon />}
-                                sx={{
-                                    borderRadius: 3,
-                                    px: 3,
-                                    py: 1,
-                                    borderWidth: 2,
-                                    '&:hover': {
-                                        borderWidth: 2
-                                    }
                                 }}
-                            >
-                                Filter
-                            </Button>
-                            <Button
-                                variant="outlined"
-                                startIcon={<SortIcon />}
-                                sx={{
-                                    borderRadius: 3,
-                                    px: 3,
-                                    py: 1,
-                                    borderWidth: 2,
-                                    '&:hover': {
-                                        borderWidth: 2
-                                    }
-                                }}
-                            >
-                                Sort
-                            </Button>
+                            />
+                            <Stack direction="row" spacing={2} alignItems="center">
+
+
+                                <FormControl sx={{ minWidth: 200 }} size="small">
+                                    <InputLabel id="sort-label">Trier par</InputLabel>
+                                    <Select
+                                        labelId="sort-label"
+                                        value={sortOption}
+                                        onChange={(e) => setSortOption(e.target.value)}
+                                        label="Trier par"
+                                        startAdornment={<SortIcon sx={{ mr: 1, color: "action.active" }} />}
+                                    >
+                                        <MenuItem value="rating-desc">
+                                            <Stack direction="row" alignItems="center" spacing={1}>
+                                                <StarIcon fontSize="small" />
+                                                <span>Meilleures notes</span>
+                                            </Stack>
+                                        </MenuItem>
+                                        <MenuItem value="rating-asc">
+                                            <Stack direction="row" alignItems="center" spacing={1}>
+                                                <StarIcon fontSize="small" />
+                                                <span>Notes croissantes</span>
+                                            </Stack>
+                                        </MenuItem>
+                                        <MenuItem value="popularity-desc">Plus populaires</MenuItem>
+                                        <MenuItem value="popularity-asc">Moins populaires</MenuItem>
+                                    </Select>
+                                </FormControl>
+                            </Stack>
                         </Stack>
                     </Box>
-                    <Divider sx={{ mb: 4 }} />
-                </Box>
 
-                {/* Tab Content */}
-                <Box sx={{ p: 4 }}>
-                    {activeTab === 0 ? (
-                        <>
-                            {filteredEnrolledCourses.length > 0 ? (
-                                <Grid container spacing={4}>
-                                    {filteredEnrolledCourses.map((course) => (
-                                        <Grid item xs={12} sm={6} md={4} key={course.id}>
-                                            <Fade in={true}>
-                                                <Box>
-                                                    <CourseCard
-                                                        id={course.id}
-                                                        title={course.title}
-                                                        description={course.description}
-                                                        progress={course.progress}
-                                                        lastAccessed={course.last_accessed}
-                                                        image={course.course_thumbnail}
-                                                        level={course.level}
-                                                        students={course.students}
-                                                        rating={course.rating}
-                                                        enrolled
-                                                    />
-                                                </Box>
-                                            </Fade>
-                                        </Grid>
-                                    ))}
-                                </Grid>
-                            ) : (
-                                <Box textAlign="center" py={8}>
-                                    <Avatar sx={{
-                                        bgcolor: theme.palette.action.selected,
-                                        width: 120,
-                                        height: 120,
-                                        mb: 4,
-                                        mx: 'auto'
-                                    }}>
-                                        <MenuBookIcon sx={{ fontSize: 60 }} />
-                                    </Avatar>
-                                    <Typography variant="h5" gutterBottom sx={{ fontWeight: 600 }}>
-                                        {searchQuery ? 'No courses found' : 'No enrolled courses'}
-                                    </Typography>
-                                    <Typography variant="body1" color="textSecondary" sx={{
-                                        mb: 4,
-                                        maxWidth: 500,
-                                        mx: 'auto'
-                                    }}>
-                                        {searchQuery ?
-                                            "We couldn't find any courses matching your search." :
-                                            "You haven't enrolled in any courses yet. Browse our catalog to get started!"
-                                        }
-                                    </Typography>
-                                    <Button
-                                        variant="contained"
-                                        onClick={() => setActiveTab(1)}
-                                        startIcon={<NewReleasesIcon />}
-                                        sx={{
-                                            background: `linear-gradient(135deg, ${theme.palette.primary.main} 0%, ${theme.palette.primary.dark} 100%)`,
-                                            color: 'white',
-                                            px: 5,
-                                            py: 1.5,
-                                            borderRadius: 3,
-                                            boxShadow: theme.shadows[4],
-                                            '&:hover': {
-                                                boxShadow: theme.shadows[8]
-                                            }
-                                        }}
-                                    >
-                                        Browse Courses
-                                    </Button>
-                                </Box>
-                            )}
-                        </>
-                    ) : (
-                        <>
-                            {filteredAvailableCourses.length > 0 ? (
-                                <Grid container spacing={4}>
-                                    {filteredAvailableCourses.map((course) => (
-                                        <Grid item xs={12} sm={6} md={4} key={course.id}>
-                                            <Fade in={true}>
-                                                <Box>
-                                                    <CourseCard
-                                                        id={course.id}
-                                                        title={course.title}
-                                                        description={course.description}
-                                                        image={course.course_thumbnail}
-                                                        level={course.level}
-                                                        students={course.students}
-                                                        rating={course.rating}
-                                                    />
-                                                </Box>
-                                            </Fade>
-                                        </Grid>
-                                    ))}
-                                </Grid>
-                            ) : (
-                                <Box textAlign="center" py={8}>
-                                    <Avatar sx={{
-                                        bgcolor: theme.palette.action.selected,
-                                        width: 120,
-                                        height: 120,
-                                        mb: 4,
-                                        mx: 'auto'
-                                    }}>
-                                        <SchoolIcon sx={{ fontSize: 60 }} />
-                                    </Avatar>
-                                    <Typography variant="h5" gutterBottom sx={{ fontWeight: 600 }}>
-                                        {searchQuery ? 'No courses found' : 'No available courses'}
-                                    </Typography>
-                                    <Typography variant="body1" color="textSecondary" sx={{
-                                        mb: 4,
-                                        maxWidth: 500,
-                                        mx: 'auto'
-                                    }}>
-                                        {searchQuery ?
-                                            "We couldn't find any courses matching your search." :
-                                            "There are currently no courses available. Please check back later!"
-                                        }
-                                    </Typography>
-                                    <Button
-                                        variant="outlined"
-                                        onClick={() => setSearchQuery('')}
-                                        startIcon={<RefreshIcon />}
-                                        sx={{
-                                            px: 5,
-                                            py: 1.5,
-                                            borderRadius: 3,
-                                            borderWidth: 2,
-                                            '&:hover': {
-                                                borderWidth: 2
-                                            }
-                                        }}
-                                    >
-                                        Clear Search
-                                    </Button>
-                                </Box>
-                            )}
-                        </>
-                    )}
-                </Box>
-            </Paper>
-
-            {/* Motivation Section */}
-            <Fade in={true} timeout={1000}>
-                <Paper elevation={4} sx={{
-                    p: 4,
-                    mb: 6,
-                    borderRadius: 3,
-                    background: theme.palette.mode === 'dark' ?
-                        'linear-gradient(135deg, rgba(25, 118, 210, 0.2) 0%, rgba(156, 39, 176, 0.2) 100%)' :
-                        'linear-gradient(135deg, rgba(25, 118, 210, 0.1) 0%, rgba(156, 39, 176, 0.1) 100%)',
-                    textAlign: 'center',
-                    borderLeft: `6px solid ${theme.palette.success.main}`,
-                    position: 'relative',
-                    overflow: 'hidden',
-                    '&:before': {
-                        content: '""',
-                        position: 'absolute',
-                        top: 0,
-                        right: 0,
-                        width: 100,
-                        height: 100,
-                        background: `url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 24 24' fill='${encodeURIComponent(theme.palette.success.main)}'%3E%3Cpath d='M12 2L15.09 8.26L22 9.27L17 14.14L18.18 21.02L12 17.77L5.82 21.02L7 14.14L2 9.27L8.91 8.26L12 2z'/%3E%3C/svg%3E")`,
-                        opacity: 0.1,
-                        transform: 'rotate(20deg)'
-                    }
-                }}>
-                    <Box display="flex" justifyContent="center" mb={3}>
-                        <EmojiEventsIcon sx={{
-                            fontSize: 60,
-                            color: theme.palette.success.main
-                        }} />
+                    {/* Tab Content */}
+                    <Box className="p-6 pt-0">
+                        {activeTab === 0 ? (
+                            <>
+                                {sortedEnrolledCourses.length > 0 ? (
+                                    <Grid container spacing={3}>
+                                        {sortedEnrolledCourses.map((course) => (
+                                            <Grid item xs={12} lg={6} key={course.id}>
+                                                <CourseCard
+                                                    id={course.id}
+                                                    title={course.title}
+                                                    description={course.description}
+                                                    progress={course.progress}
+                                                    lastAccessed={course.last_accessed}
+                                                    image={course.course_thumbnail}
+                                                    level={course.level}
+                                                    students={course.students}
+                                                    rating={course.rating}
+                                                    enrolled
+                                                />
+                                            </Grid>
+                                        ))}
+                                    </Grid>
+                                ) : (
+                                    <Box className="text-center py-12">
+                                        <Avatar className="w-20 h-20 bg-gray-100 mx-auto mb-4">
+                                            <MenuBookIcon className="text-gray-400 text-3xl" />
+                                        </Avatar>
+                                        <Typography variant="h6" className="font-semibold mb-2 text-gray-900">
+                                            {searchQuery ? "No courses found" : "No enrolled courses"}
+                                        </Typography>
+                                        <Typography className="text-gray-600 mb-6 max-w-md mx-auto">
+                                            {searchQuery
+                                                ? "We couldn't find any courses matching your search."
+                                                : "You haven't enrolled in any courses yet. Browse our catalog to get started!"}
+                                        </Typography>
+                                        <Button
+                                            variant="contained"
+                                            onClick={() => setActiveTab(1)}
+                                            startIcon={<NewReleasesIcon />}
+                                            className="bg-blue-600 hover:bg-blue-700"
+                                        >
+                                            Browse Courses
+                                        </Button>
+                                    </Box>
+                                )}
+                            </>
+                        ) : (
+                            <>
+                                {sortedAvailableCourses.length > 0 ? (
+                                    <Grid container spacing={3}>
+                                        {sortedAvailableCourses.map((course) => (
+                                            <Grid item xs={12} lg={6} key={course.id}>
+                                                <CourseCard
+                                                    id={course.id}
+                                                    title={course.title}
+                                                    description={course.description}
+                                                    image={course.course_thumbnail}
+                                                    level={course.level}
+                                                    students={course.students}
+                                                    rating={course.rating}
+                                                />
+                                            </Grid>
+                                        ))}
+                                    </Grid>
+                                ) : (
+                                    <Box className="text-center py-12">
+                                        <Avatar className="w-20 h-20 bg-gray-100 mx-auto mb-4">
+                                            <SchoolIcon className="text-gray-400 text-3xl" />
+                                        </Avatar>
+                                        <Typography variant="h6" className="font-semibold mb-2 text-gray-900">
+                                            {searchQuery ? "No courses found" : "No available courses"}
+                                        </Typography>
+                                        <Typography className="text-gray-600 mb-6 max-w-md mx-auto">
+                                            {searchQuery
+                                                ? "We couldn't find any courses matching your search."
+                                                : "There are currently no courses available. Please check back later!"}
+                                        </Typography>
+                                        <Button
+                                            variant="outlined"
+                                            onClick={() => setSearchQuery("")}
+                                            startIcon={<RefreshIcon />}
+                                            className="border-gray-300 text-gray-600"
+                                        >
+                                            Clear Search
+                                        </Button>
+                                    </Box>
+                                )}
+                            </>
+                        )}
                     </Box>
-                    <Typography variant="h5" sx={{
-                        mb: 2,
-                        fontWeight: 600,
-                        fontStyle: 'italic'
-                    }}>
+                </Paper>
+
+                {/* Motivation Section */}
+                <Paper className="mt-8 p-6 text-center shadow-sm border border-gray-200 bg-gradient-to-r from-blue-50 to-indigo-50">
+                    <EmojiEventsIcon className="text-blue-600 text-4xl mb-3" />
+                    <Typography variant="h6" className="font-semibold mb-2 text-gray-900 italic">
                         "Education is the most powerful weapon which you can use to change the world."
                     </Typography>
-                    <Typography variant="body1" color="textSecondary" sx={{
-                        display: 'flex',
-                        alignItems: 'center',
-                        justifyContent: 'center',
-                        gap: 1
-                    }}>
+                    <Typography className="text-gray-600 flex items-center justify-center gap-1">
                         <LightbulbIcon fontSize="small" />
                         Keep learning and growing every day!
                     </Typography>
                 </Paper>
-            </Fade>
-        </Container>
-    );
-};
+            </Container>
+        </Box>
+    )
+}
 
-export default LearnerDashboardPage;
+export default LearnerDashboardPage

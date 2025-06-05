@@ -1,10 +1,10 @@
 import React, { useEffect, useState, useCallback, useRef } from 'react';
-import { 
-    getLearnerSettings, 
-    updatePersonalInfo, 
-    updatePassword, 
-    updateAdditionalInfo, 
-    updateNotifications 
+import {
+    getLearnerSettings,
+    updatePersonalInfo,
+    updatePassword,
+    updateAdditionalInfo,
+    updateNotifications
 } from '@/services/api.js';
 import { toast } from 'sonner';
 import {
@@ -185,14 +185,14 @@ const AccountSettings = () => {
                     formData.append('email', settings.email || '');
                     formData.append('bio', settings.bio || '');
                     formData.append('phone', settings.phone || '');
-                    
+
                     // Only append avatar if it's a new file
                     if (settings.avatar instanceof File) {
                         formData.append('avatar', settings.avatar);
                     }
 
                     // Check if we have any changes to save
-                    hasChanges = 
+                    hasChanges =
                         settings.username !== settings.initialUsername ||
                         settings.email !== settings.initialEmail ||
                         settings.bio !== settings.initialBio ||
@@ -207,7 +207,7 @@ const AccountSettings = () => {
 
                     response = await updatePersonalInfo(formData);
                     setSuccess(response.message || 'Personal information updated successfully');
-                    
+
                     // Update local user data if username or email changed
                     user = JSON.parse(localStorage.getItem('user'));
                     if (user) {

@@ -76,7 +76,7 @@ class CourseResourceController extends Controller
                 ]);
                 return response()->json([
                     'success' => false,
-                    'message' => 'No module found for this course',
+                    'message' => 'No modules available for this course or specified module not found',
                 ], 404);
             }
 
@@ -126,7 +126,8 @@ class CourseResourceController extends Controller
                             'skills' => $course->instructor->skills,
                             'certifications' => $course->instructor->certifications,
                             'languages' => $course->instructor->languages
-                        ]
+                        ],
+                        'exam' => $course->exam ? ['id' => $course->exam->id] : null
                     ],
                     'currentModule' => $this->formatModuleData($module, $quizQuestions, $resources),
                     'modules' => $allModules,
@@ -146,7 +147,6 @@ class CourseResourceController extends Controller
             ], 500);
         }
     }
-
     /**
      * Get a specific resource for a course
      */
@@ -232,46 +232,82 @@ class CourseResourceController extends Controller
         if ($moduleParam && $moduleParam !== 'undefined') {
             $moduleId = filter_var($moduleParam, FILTER_VALIDATE_INT);
             if ($moduleId) {
-                return $course->modules()->where('id', $moduleId)->first();
+                // Ensure module belongs to the course
+                $module = $course->modules()->where('id', $moduleId)->first();
+                if ($module) {
+                    return $module;
+                }
+                Log::warning('Module ID does not belong to course', [
+                    'course_id' => $course->id,
+                    'module_id' => $moduleId,
+                ]);
             }
         }
 
         // Return first module by order
         return $course->modules()->orderBy('order')->first();
     }
-
     /**
      * Get quiz questions for a quiz module
      */
     protected function getQuizQuestions(Module $module)
     {
         return QuizQuestion::where('module_id', $module->id)->get()->map(function ($question) {
-            // The options field is already cast to an array by Laravel
+            // Log raw data for debugging
+            Log::info('Raw quiz question data', [
+                'question_id' => $question->id,
+                'options' => $question->options,
+                'correct_option' => $question->correct_option,
+                'options_type' => gettype($question->options),
+            ]);
+
+            // Initialize options
             $options = $question->options;
 
-            if (!is_array($options)) {
+            // Check if options is a string (possible double-encoded JSON)
+            if (is_string($options)) {
+                // Attempt to decode the string
+                $decodedOptions = json_decode($options, true);
+                if (json_last_error() === JSON_ERROR_NONE && is_array($decodedOptions)) {
+                    $options = $decodedOptions;
+                    Log::info('Successfully decoded string options', [
+                        'question_id' => $question->id,
+                        'decoded_options' => $options,
+                    ]);
+                } else {
+                    Log::warning('Failed to decode options string', [
+                        'question_id' => $question->id,
+                        'options' => $options,
+                        'json_error' => json_last_error_msg(),
+                    ]);
+                    $options = [];
+                }
+            } elseif (!is_array($options)) {
+                // If options is neither a string nor an array, log warning and set to empty array
                 Log::warning('Invalid options format for quiz question', [
                     'question_id' => $question->id,
-                    'options' => $question->options,
+                    'options' => $options,
+                    'options_type' => gettype($options),
                 ]);
                 $options = [];
             }
 
+            // Map options to the required format
+            $formattedOptions = array_map(function ($opt, $index) {
+                return [
+                    'id' => $index,
+                    'text' => is_array($opt) ? ($opt['text'] ?? $opt) : ($opt ?? 'Invalid option'),
+                ];
+            }, $options, array_keys($options));
+
             return [
                 'id' => $question->id,
                 'question' => $question->question,
-                'options' => array_map(function ($opt, $index) {
-                    return [
-                        'id' => $index,
-                        'text' => is_array($opt) ? $opt['text'] : $opt,
-                    ];
-                }, $options, array_keys($options)),
-                'correct_option' => $question->correct_option,
+                'options' => $formattedOptions,
+                'correct_option' => $question->correct_option ?? -1, // Fallback if null
             ];
         })->toArray();
-    }
-
-    /**
+    }    /**
      * Get all resources for a course
      */
     private function getCourseResources(int $courseId): array

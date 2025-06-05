@@ -64,14 +64,61 @@ class ExamController extends Controller
                         'instructions' => $exam->instructions,
                         'duration_min' => $exam->duration_min,
                         'passing_score' => $exam->passing_score,
-                        'questions' => $exam->questions->map(
-                            fn($question) => [
+                        'questions' => $exam->questions->map(function ($question) {
+                            // Log raw question data for debugging
+                            Log::info('Raw exam question data', [
+                                'question_id' => $question->id,
+                                'options' => $question->options,
+                                'options_type' => gettype($question->options),
+                                'correct_index' => $question->correct_index,
+                            ]);
+
+                            // Initialize options
+                            $options = $question->options;
+
+                            // Check if options is a string (possible double-encoded JSON)
+                            if (is_string($options)) {
+                                // Attempt to decode the string
+                                $decodedOptions = json_decode($options, true);
+                                if (json_last_error() === JSON_ERROR_NONE && is_array($decodedOptions)) {
+                                    $options = $decodedOptions;
+                                    Log::info('Successfully decoded string options for exam question', [
+                                        'question_id' => $question->id,
+                                        'decoded_options' => $options,
+                                    ]);
+                                } else {
+                                    Log::warning('Failed to decode options string for exam question', [
+                                        'question_id' => $question->id,
+                                        'options' => $options,
+                                        'json_error' => json_last_error_msg(),
+                                    ]);
+                                    $options = [];
+                                }
+                            } elseif (!is_array($options)) {
+                                // If options is neither a string nor an array, log warning and set to empty array
+                                Log::warning('Invalid options format for exam question', [
+                                    'question_id' => $question->id,
+                                    'options' => $options,
+                                    'options_type' => gettype($question->options),
+                                ]);
+                                $options = [];
+                            }
+
+                            // Map options to the required format (consistent with quiz questions)
+                            $formattedOptions = array_map(function ($opt, $index) {
+                                return [
+                                    'id' => $index,
+                                    'text' => is_array($opt) ? ($opt['text'] ?? $opt) : ($opt ?? 'Invalid option'),
+                                ];
+                            }, $options, array_keys($options));
+
+                            return [
                                 'id' => $question->id,
                                 'question' => $question->question_text,
-                                'options' => is_array($question->options) ? $question->options : json_decode($question->options, true),
-                                'correct_index' => null,
-                            ],
-                        ),
+                                'options' => $formattedOptions,
+                                'correct_index' => $question->correct_index ?? null,
+                            ];
+                        })->toArray(),
                     ],
                 ],
             ]);
@@ -87,7 +134,6 @@ class ExamController extends Controller
             ], 500);
         }
     }
-
     public function submitExam(Request $request, Course $course): JsonResponse
     {
         try {
