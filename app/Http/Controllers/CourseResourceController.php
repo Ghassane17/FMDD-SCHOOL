@@ -6,7 +6,7 @@ use App\Models\Course;
 use App\Models\Learner;
 use App\Models\Module;
 use App\Models\QuizQuestion;
-use App\Models\Resource;
+use App\Models\CourseResource;
 use Illuminate\Http\Request;
 use Illuminate\Http\JsonResponse;
 use Illuminate\Support\Facades\Auth;
@@ -312,7 +312,7 @@ class CourseResourceController extends Controller
      */
     private function getCourseResources(int $courseId): array
     {
-        return Resource::where('course_id', $courseId)
+        return CourseResource::where('course_id', $courseId)
             ->get()
             ->map(function ($resource) {
                 return $this->formatResourceData($resource);
@@ -382,7 +382,7 @@ class CourseResourceController extends Controller
     /**
      * Format resource data for response
      */
-    private function formatResourceData(Resource $resource): array
+    private function formatResourceData(CourseResource $resource): array
     {
         return [
             'id' => $resource->id,

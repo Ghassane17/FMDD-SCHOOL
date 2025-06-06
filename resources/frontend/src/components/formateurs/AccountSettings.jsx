@@ -28,11 +28,12 @@ import {
   PhotoCamera as PhotoCameraIcon
 } from '@mui/icons-material';
 
-export default function AccountSettings({ instructorData }) {
+export default function AccountSettings({ instructorData, backend_url }) {
   const [profileLoading, setProfileLoading] = useState(false);
   const [passwordLoading, setPasswordLoading] = useState(false);
   const [error, setError] = useState(null);
   const [success, setSuccess] = useState(null);
+
 
   // Form states
   const [formData, setFormData] = useState({
@@ -56,6 +57,12 @@ export default function AccountSettings({ instructorData }) {
   // Add avatar state
   const [avatarPreview, setAvatarPreview] = useState(instructorData?.user?.avatar || null);
   const [avatar, setAvatar] = useState(null);
+
+  // Remove the incorrect avatar_url line and add proper URL construction
+  const getAvatarUrl = (avatarPath) => {
+    if (!avatarPath) return '/default-avatar.png';
+    return avatarPath.startsWith('http') ? avatarPath : `${backend_url}${avatarPath}`;
+  };
 
   // Update form data when instructorData changes
   useEffect(() => {
@@ -93,20 +100,14 @@ export default function AccountSettings({ instructorData }) {
     setSuccess(null);
 
     try {
-      let dataToSend;
+      const dataToSend = new FormData();
+      dataToSend.append('name', formData.name);
+      dataToSend.append('email', formData.email);
+      dataToSend.append('bio', formData.bio);
       if (avatar) {
-        dataToSend = new FormData();
-        dataToSend.append('name', formData.name);
-        dataToSend.append('email', formData.email);
-        dataToSend.append('bio', formData.bio);
         dataToSend.append('avatar', avatar);
-      } else {
-        dataToSend = {
-          name: formData.name,
-          email: formData.email,
-          bio: formData.bio
-        };
       }
+
       const response = await updateInstructorProfile(dataToSend);
       setSuccess('Profil mis à jour avec succès');
       if (response.instructor) {
@@ -237,7 +238,7 @@ export default function AccountSettings({ instructorData }) {
               <Box sx={{ display: 'flex', flexDirection: { xs: 'column', sm: 'row' }, alignItems: 'center', gap: { xs: 1.5, sm: 3 }, mb: { xs: 2, sm: 4 }, p: { xs: 1, sm: 3 }, bgcolor: 'rgba(25, 118, 210, 0.04)', borderRadius: 2 }}>
                 <Box sx={{ position: 'relative', mb: { xs: 1, sm: 0 } }}>
                   <Avatar
-                    src={avatarPreview || '/default-avatar.png'}
+                    src={avatarPreview ? getAvatarUrl(avatarPreview) : '/default-avatar.png'}
                     sx={{ width: { xs: 80, sm: 120 }, height: { xs: 80, sm: 120 }, border: '4px solid', borderColor: 'primary.main' }}
                   />
                   <input

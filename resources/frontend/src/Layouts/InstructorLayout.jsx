@@ -16,7 +16,6 @@ const InstructorLayout = () => {
             try {
                 const response = await getInstructorDashboard();
                 console.log('Instructor dashboard response:', response);
-                console.log('Instructor data:', response.instructor);
                 setCurrentInstructor(response.user);
                 setLoading(false);
             } catch (err) {
@@ -27,12 +26,14 @@ const InstructorLayout = () => {
             }
         };
     
+        console.log('Current instructor:', currentInstructor);
 
         fetchInstructorData();
     }, [navigate]);
 
     const handleLogout = () => {
         localStorage.removeItem('token');
+        localStorage.removeItem('instructorStats');
         navigate('/login');
     };
 

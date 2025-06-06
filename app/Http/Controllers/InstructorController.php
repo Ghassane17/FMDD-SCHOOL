@@ -60,6 +60,8 @@ class InstructorController extends Controller
                     'rating'      => $c->rating,
                     'image'       => $c->course_thumbnail,
                     'level'       => $c->level,
+                    'is_published' => $c->is_published,
+                    'duration_min' => $c->duration_min,
                 ]),
 
                 'payments'       => $instructor->payments->map(fn($p) => [
@@ -122,14 +124,7 @@ class InstructorController extends Controller
         ]);
     }
 
-
-
-
-
-
-
     //profile update (name, email, bio) & password change
-
     public function profile(Request $request)
     {
         try {
@@ -152,6 +147,7 @@ class InstructorController extends Controller
                 'bio' => 'sometimes|string|max:1000',
                 'current_password' => 'required_with:new_password|string',
                 'new_password' => 'required_with:current_password|string|min:8|confirmed',
+                'avatar' => 'sometimes|image|mimes:jpeg,png,jpg,gif|max:5120', // 5MB max
             ]);
 
             // 3) Handle password change if requested
@@ -162,24 +158,50 @@ class InstructorController extends Controller
                 $user->password = Hash::make($validated['new_password']);
             }
 
-            // 4) Update user profile
-            if (isset($validated['name'])) $user->username = $validated['name'];
-            if (isset($validated['email'])) $user->email = $validated['email'];
-            if (isset($validated['bio'])) $user->bio = $validated['bio'];
-            \App\Models\User::where('id', $user->id)->update([
-                'username' => $user->username,
-                'email' => $user->email,
-                'bio' => $user->bio
-            ]);
+            // 4) Handle avatar upload
+            if ($request->hasFile('avatar')) {
+                // Delete old avatar if exists
+                if ($user->avatar) {
+                    $oldAvatarPath = public_path('storage/' . str_replace('/storage/', '', $user->avatar));
+                    if (file_exists($oldAvatarPath)) {
+                        unlink($oldAvatarPath);
+                    }
+                }
 
-            // 5) Return updated user data
+                // Store new avatar
+                $avatarPath = $request->file('avatar')->store('avatars', 'public');
+                $user->avatar = '/storage/' . $avatarPath;
+            }
+
+            // 5) Update user profile
+            $updateData = [];
+            
+            if (isset($validated['name'])) {
+                $updateData['username'] = $validated['name'];
+            }
+            if (isset($validated['email'])) {
+                $updateData['email'] = $validated['email'];
+            }
+            if (isset($validated['bio'])) {
+                $updateData['bio'] = $validated['bio'];
+            }
+            if (isset($user->avatar)) {
+                $updateData['avatar'] = $user->avatar;
+            }
+
+            // Only update if there are changes
+            if (!empty($updateData)) {
+                \App\Models\User::where('id', $user->id)->update($updateData);
+            }
+
+            // 6) Return updated user data
             return response()->json([
                 'message' => 'Profile updated successfully',
                 'instructor' => [
                     'user' => [
-                        'name' => $user->username,
-                        'email' => $user->email,
-                        'bio' => $user->bio,
+                        'name' => $validated['name'] ?? $user->username,
+                        'email' => $validated['email'] ?? $user->email,
+                        'bio' => $validated['bio'] ?? $user->bio,
                         'avatar' => $user->avatar,
                     ]
                 ]
@@ -341,8 +363,6 @@ class InstructorController extends Controller
         $instructor->save();
         return response()->json(['message' => 'Certifications updated successfully'], 200);
     }
-
-    
 }
 
         

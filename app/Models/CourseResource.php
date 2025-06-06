@@ -5,7 +5,7 @@ namespace App\Models;
 use Illuminate\Database\Eloquent\Factories\HasFactory;
 use Illuminate\Database\Eloquent\Model;
 
-class Resource extends Model
+class CourseResource extends Model
 {
     use HasFactory;
 
@@ -14,6 +14,7 @@ class Resource extends Model
      *
      * @var array<int, string>
      */
+    protected $table = 'resources';
     protected $fillable = [
         'course_id',
         'name',
@@ -21,11 +22,6 @@ class Resource extends Model
         'url'
     ];
 
-    /**
-     * The attributes that should be cast.
-     *
-     * @var array<string, string>
-     */
     protected $casts = [
         'type' => 'string'
     ];

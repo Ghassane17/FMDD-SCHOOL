@@ -11,6 +11,8 @@ import AccountSettings from './AccountSettings';
 import PaymentSection from './PaymentSection';
 import { getInstructorDashboard } from '../../services/api_instructor';
 
+const API_URL = import.meta.env.VITE_API_BASE_URL || 'http://localhost:8000';
+
 const InstructorDashboard = () => {
   const [activeTab, setActiveTab] = useState('profile');
   const [loading, setLoading] = useState(true);
@@ -75,14 +77,14 @@ const InstructorDashboard = () => {
       case 'profile':
         return (
           <>
-            <ProfileHeader instructorData={instructorData} />
+            <ProfileHeader instructorData={instructorData} backend_url={API_URL} />
             <StatisticsCards instructorData={instructorData} />
             <SkillsSection instructorData={instructorData} />
             <CommentSection instructorData={instructorData} />
           </>
         );
       case 'courses':
-        return <CourseList instructorData={instructorData} />;
+        return <CourseList instructorData={instructorData} backend_url={API_URL} />;
       case 'calendar':
         return <InstructorCalendar availability={instructorData.availability} />;
       case 'payments':
@@ -94,7 +96,7 @@ const InstructorDashboard = () => {
           />
         );
       case 'settings':
-        return <AccountSettings instructorData={instructorData} />;
+        return <AccountSettings instructorData={instructorData} backend_url={API_URL} />;
       default:
         return (
           <div className="container mx-auto px-4 py-8">

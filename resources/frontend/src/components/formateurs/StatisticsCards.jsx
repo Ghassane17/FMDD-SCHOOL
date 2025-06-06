@@ -49,7 +49,7 @@ const StatisticsCards = () => {
     },
     {
       title: "Note moyenne globale",
-      value: (stats?.averageRating ?? '-') + "/5",
+      value: (stats?.averageRating ?? 0) + "/5",
       icon: <Star className="h-8 w-8 text-yellow-500 mb-2" />
     }
   ];

@@ -2,7 +2,7 @@
 
 namespace App\Models;
 
-use App\Http\Resources\CourseResource;
+use App\Models\CourseResource;
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Support\Facades\DB;
 use Reliese\Coders\Model\Relations\HasMany;

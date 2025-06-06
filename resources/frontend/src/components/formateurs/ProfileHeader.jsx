@@ -1,18 +1,22 @@
 import React, { useState } from 'react';
 
-const ProfileHeader = ({ instructorData }) => {
+const ProfileHeader = ({ instructorData, backend_url }) => {
   const [showContactModal, setShowContactModal] = useState(false);
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState(null);
 
   const user = instructorData?.user || {};
+  const avatar = user.avatar || '/default-avatar.png';
+  const avatar_url = avatar.startsWith('http') ? avatar : `${backend_url}${avatar}`;
+  console.log('Final avatar URL:', avatar_url);
+  
 
   return (
     <div className="bg-white rounded-2xl shadow-lg p-10 mb-10 flex flex-col md:flex-row items-center md:items-center gap-10 border-l-8 border-indigo-200 relative">
       <div className="flex-shrink-0 flex flex-col items-center justify-center w-full md:w-auto">
         <div className="relative">
           <img
-            src={user.avatar || '/default-avatar.png'}
+            src={avatar_url || '/default-avatar.png'}
             alt={user.name || 'Profile'}
             className="rounded-full w-40 h-40 object-cover border-4 border-blue-200 shadow-md mb-4 bg-white"
           />

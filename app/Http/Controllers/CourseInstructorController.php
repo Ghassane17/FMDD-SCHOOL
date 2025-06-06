@@ -5,7 +5,6 @@ namespace App\Http\Controllers;
 use App\Models\Course;
 use App\Models\Instructor;
 use App\Models\Module;
-use App\Models\Resource;
 use App\Models\QuizQuestion;
 use App\Models\Exam;
 use App\Models\ExamQuestion;
@@ -15,7 +14,7 @@ use Illuminate\Support\Facades\Log;
 use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Facades\Storage;
 use Illuminate\Support\Facades\Validator;
-use App\Http\Resources\CourseResource;
+use App\Models\CourseResource;
 
 class CourseInstructorController extends Controller
 {
@@ -70,6 +69,9 @@ class CourseInstructorController extends Controller
             return response()->json(['message' => 'Internal server error'], 500);
         }
     }
+
+
+    // ─── Create course ──────────────────────────────────────────
 
     public function createCourse(Request $request)
     {
@@ -219,7 +221,7 @@ class CourseInstructorController extends Controller
                             $url = $resource['url'];
                         }
 
-                        Resource::create([
+                        CourseResource::create([
                             'course_id' => $course->id,
                             'name'      => $resource['name'],
                             'type'      => $resource['type'],
@@ -249,6 +251,134 @@ class CourseInstructorController extends Controller
             ], 422);
         } catch (\Exception $e) {
             Log::error('Error in createCourse', [
+                'error' => $e->getMessage(),
+                'trace' => $e->getTraceAsString()
+            ]);
+            return response()->json(['message' => 'Internal server error'], 500);
+        }
+    }
+
+    // ─── Delete course ──────────────────────────────────────────
+
+    public function deleteCourse(Request $request, $courseId)
+    {
+        // 1️⃣ Authorization: only instructors can delete their own course
+        $user = Auth::user();
+        if (!$user || $user->role !== 'instructor') {
+            return response()->json(['message' => 'Unauthorized'], 403);
+        }
+
+        $instructor = Instructor::where('user_id', $user->id)->first();
+        if (!$instructor) {
+            return response()->json(['message' => 'Instructor profile not found'], 404);
+        }
+        
+        try {
+            DB::beginTransaction();
+            
+            // 2️⃣ Load course + relationships. Note we use 'exam' not 'exams'
+            $course = Course::with(['modules', 'resources', 'exam', 'learners'])
+                            ->find($courseId);
+
+            if (!$course) {
+                return response()->json(['message' => 'Course not found'], 404);
+            }
+
+            // Only the owner (instructor) may delete
+            if ($course->instructor_id !== $instructor->id) {
+                return response()->json(['message' => 'Unauthorized'], 403);
+            }
+
+            // 3️⃣ Delete all modules (and their quiz questions)
+            foreach ($course->modules as $module) {
+                if ($module->type === 'quiz') {
+                    // Remove quiz questions
+                    $module->quizQuestions()->delete();
+                }
+                $module->delete();
+            }
+
+            // 4️⃣ Delete all general resources (and their files)
+            foreach ($course->resources as $resource) {
+                if ($resource->url) {
+                    // remove the file from public storage
+                    $relative = str_replace('/storage/', '', $resource->url);
+                    if (Storage::disk('public')->exists($relative)) {
+                        Storage::disk('public')->delete($relative);
+                    }
+                }
+                $resource->delete();
+            }
+
+            // 5️⃣ Delete the single exam (if it exists) and its questions
+            if ($course->exam) {
+                // Delete exam questions first
+                ExamQuestion::where('exam_id', $course->exam->id)->delete();
+                $course->exam->delete();
+            }
+
+            // 6️⃣ Detach learners
+            $course->learners()->detach();
+
+            // 7️⃣ Finally, delete the course record
+            $course->delete();
+
+            // 8️⃣ Remove any leftover files on disk under 'courses/{id}'
+            if (Storage::disk('public')->exists("courses/{$courseId}")) {
+                Storage::disk('public')->deleteDirectory("courses/{$courseId}");
+            }
+
+            DB::commit();
+
+            return response()->json([
+                'success' => true,
+                'message' => 'Course deleted successfully'
+            ], 200);
+
+        } catch (\Exception $e) {
+            DB::rollBack();
+            Log::error('Error in deleteCourse', [
+                'course_id' => $courseId,
+                'error'     => $e->getMessage(),
+                'trace'     => $e->getTraceAsString(),
+            ]);
+            return response()->json([
+                'success' => false,
+                'message' => 'Failed to delete course',
+                'error'   => $e->getMessage()
+            ], 500);
+        }
+    }
+
+    // ─── Get course by ID ──────────────────────────────────────────
+
+    public function getCourseById(Request $request, $courseId)
+    {
+        // 1️⃣ Authorization
+        $user = Auth::user();
+        if (!$user || $user->role !== 'instructor') {
+            return response()->json(['message' => 'Unauthorized'], 403);
+        }
+
+        $instructor = Instructor::where('user_id', $user->id)->first();
+        if (!$instructor) {
+            return response()->json(['message' => 'Instructor profile not found'], 404);
+        }
+        
+        try {
+            $course = Course::find($courseId);
+            if (!$course) {
+                return response()->json(['message' => 'Course not found'], 404);
+            }
+
+            if ($course->instructor_id !== $instructor->id) {
+                return response()->json(['message' => 'Unauthorized'], 403);
+            }
+
+            return response()->json(['course' => $course , 'students' => $course->learners->count()], 200);
+
+        } catch (\Exception $e) {
+            Log::error('Error in getCourseById', [
                 'error' => $e->getMessage(),
                 'trace' => $e->getTraceAsString()
             ]);

@@ -235,3 +235,63 @@ export const updateInstructorCertifications = async (certificationsData) => {
         throw error;
     }
 };
+
+// ─── Courses functions ──────────────────────────────────────────
+
+/**
+ * Get instructor courses
+ * @returns {Promise} Promise object containing instructor courses data
+ */
+
+
+export const getInstructorCourses = async () => {
+    try {
+        const response = await api.get('/instructor/courses');
+        return response.data;
+    } catch (error) {
+        console.error('Error fetching instructor courses:', error);
+        throw error;
+    }
+};
+
+
+/**
+ * Fetch a course by ID
+ * @param {string} courseId - The ID of the course to fetch
+ * @returns {Promise} Promise object containing the course data
+ */
+
+export const getCourseById = async (courseId) => {
+    try {
+        const response = await api.get(`/instructor/courses/${courseId}`);
+        return response.data;
+    } catch (error) {
+        console.error('Error fetching course by ID:', error);
+        throw error;
+    }
+};
+
+
+/**
+ * Delete a course
+ * @param {string} courseId - The ID of the course to delete
+ * @returns {Promise} Promise object containing the deletion result
+ */
+
+export const deleteCourse = async (courseId) => {
+    try {
+        const response = await api.delete(`/instructor/courses/${courseId}`);
+        if (response.data.success) {
+            return response.data;
+        } else {
+            throw new Error(response.data.message || 'Failed to delete course');
+        }
+    } catch (error) {
+        console.error('Error deleting course:', error);
+        if (error.response?.data?.message) {
+            throw new Error(error.response.data.message);
+        }
+        throw error;
+    }
+};
+

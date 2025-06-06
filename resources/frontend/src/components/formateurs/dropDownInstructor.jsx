@@ -10,17 +10,24 @@ import {
 } from "@/components/ui/dropdown-menu"
 import { Users, BookOpen, Calendar, Inbox, CreditCard, Settings, LogOut, User, Mail } from "lucide-react"
 
+const API_URL = import.meta.env.VITE_API_BASE_URL || 'http://localhost:8000';
+
+
 export function DropDownInstructor({ currentInstructor }) {
   const navigate = useNavigate();
+  const backend_url = API_URL;
+
+  const avatar = currentInstructor.avatar;
+  const avatar_url = avatar.startsWith('http') ? avatar : `${backend_url}${avatar}`;
 
   return (
     <DropdownMenu>
       <DropdownMenuTrigger asChild>
         <button className="focus:outline-none">
         <div className="h-10 w-10 rounded-full bg-white overflow-hidden border-2 border-indigo-200 shadow">
-                                    {currentInstructor?.user?.avatar ? (
+                                    {avatar_url ? (
                                         <img
-                                            src={currentInstructor.user.avatar}
+                                            src={avatar_url}
                                             alt="Profile"
                                             className="h-full w-full object-cover"
                                         />
@@ -48,6 +55,7 @@ export function DropDownInstructor({ currentInstructor }) {
         <DropdownMenuSeparator />
         <DropdownMenuItem onClick={() => {
           localStorage.removeItem('token');
+          localStorage.removeItem('instructorStats');
           navigate('/login');
         }}>
           <LogOut className="w-4 h-4 mr-2" />

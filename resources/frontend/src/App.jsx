@@ -5,6 +5,9 @@ import LearnerRoutes from './routes/LearnerRoutes.jsx';
 import PublicRoutes from './routes/PublicRoutes.jsx';
 import ProtectedRoute from './components/ProtectedRoute.jsx';
 import ErrorBoundary from './components/ErrorBoundary.jsx';
+import ManageCourse from './components/formateurs/ManageCourse';
+
+
 
 const router = createBrowserRouter([
     {
@@ -28,6 +31,11 @@ const router = createBrowserRouter([
     {
         path: '/',
         ...PublicRoutes,
+        errorElement: <ErrorBoundary />,
+    },
+    {
+        path: '/manage-course/:courseId',
+        element: <ManageCourse />,
         errorElement: <ErrorBoundary />,
     },
 ]);
