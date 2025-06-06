@@ -4,9 +4,14 @@ import { Bell, LogOut, Menu, Search, User, Settings } from 'lucide-react';
 import { toast } from 'sonner';
 import { getLearnerNotifications, markNotificationAsRead, updateNotifications, logout } from '@/services/api.js';
 
+import { FaUserCircle } from 'react-icons/fa';
+
 const API_URL = import.meta.env.VITE_API_BASE_URL || 'http://localhost:8000';
 const FALLBACK_AVATAR = '/storage/WsuhBYEJy9VT5lSb3yV2IlyugJvzt7OEEtmsFeXH.jpg';
 const LOAD_TIMEOUT = 5000; // 5 seconds
+const FallbackAvatarIcon = () => (
+    <FaUserCircle size={48} color="#ccc" />
+);
 
 const Header = ({ school, avatar, notifications: initialNotifications = [] }) => {
   const [open, setOpen] = useState({
@@ -28,7 +33,7 @@ const Header = ({ school, avatar, notifications: initialNotifications = [] }) =>
   // Initialize avatar source
   useEffect(() => {
     if (!avatar) {
-      setAvatarSrc(`${API_URL}${FALLBACK_AVATAR}`);
+      setAvatarSrc(`${API_URL}${FallbackAvatarIcon}`);
       setIsAvatarLoading(false);
       return;
     }
@@ -50,7 +55,7 @@ const Header = ({ school, avatar, notifications: initialNotifications = [] }) =>
 
   const handleAvatarError = useCallback(() => {
     console.log('Avatar load error, using fallback');
-    setAvatarSrc(`${API_URL}${FALLBACK_AVATAR}`);
+    setAvatarSrc(`${API_URL}${FallbackAvatarIcon}`);
     setIsAvatarLoading(false);
   }, []);
 

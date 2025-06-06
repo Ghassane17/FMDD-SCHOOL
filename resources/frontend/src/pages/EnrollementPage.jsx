@@ -346,8 +346,14 @@ const EnrollmentPage = () => {
 
                     {/* Sidebar */}
                     <Grid item xs={12} md={4}>
-                        <Box className="sticky top-8">
-                            {/* Enrollment Card */}
+                        {/* Sticky Enrollment Card */}
+                        <Box
+                            sx={{
+                                position: "sticky",
+                                top: "2rem",
+                                zIndex: 10,
+                            }}
+                        >
                             {error && (
                                 <Alert severity="error" className="mb-4">
                                     {error}

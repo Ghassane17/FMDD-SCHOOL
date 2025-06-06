@@ -10,6 +10,8 @@ import LearnerCourse from '../pages/LearnerCourse.jsx';
 import ErrorBoundary from '../components/ErrorBoundary.jsx';
 import EnrollementPage from "@/pages/EnrollementPage.jsx";
 import FinalQuiz from "@/pages/FinalQuiz.jsx";
+import LearnerCourseLayout from "@/Layouts/LearnerCourseLayout.jsx";
+import CourseLearnerLayout from "@/Layouts/LearnerCourseLayout.jsx";
 
 const LearnerRoutes = {
     element: <CourseLayout />,
@@ -41,7 +43,13 @@ const LearnerRoutes = {
         },
         {
             path: 'courses/:courseId/:moduleId?',
-            element: <LearnerCourse />,
+            element: <CourseLearnerLayout />,
+            children: [
+                {
+                    index: true,
+                    element: <LearnerCourse />,
+                }
+            ]
         },
         {
             path: 'courses/:courseId/finalQuiz',

@@ -2,6 +2,8 @@ import React, { useState, useCallback, useRef } from 'react';
 import VideoPlayer from './VideoPlayer';
 import { FileText, Image, FileQuestion, Video, Download, ZoomIn, ZoomOut, RotateCw } from 'lucide-react';
 import { Box, IconButton, CircularProgress, Tooltip } from '@mui/material';
+import { toast } from 'react-hot-toast';
+import { downloadResource } from '../../services/api'; // Adjust path as needed
 
 const API_URL = import.meta.env.VITE_API_BASE_URL || 'http://localhost:8000';
 const FALLBACK_IMAGE = '/storage/Test.png';
@@ -98,14 +100,7 @@ const ContentRenderer = ({ type, textContent, filePath, quizQuestions = [], reso
         }
     }, []);
 
-    const handleDownload = useCallback((url) => {
-        const link = document.createElement('a');
-        link.href = url;
-        link.download = url.split('/').pop();
-        document.body.appendChild(link);
-        link.click();
-        document.body.removeChild(link);
-    }, []);
+
 
     // Get authentication token
     const getAuthToken = useCallback(() => {
@@ -116,15 +111,15 @@ const ContentRenderer = ({ type, textContent, filePath, quizQuestions = [], reso
     const getAuthenticatedUrl = useCallback((url) => {
         if (!url) return null;
         const token = getAuthToken();
-        
+
         // Clean the URL path - remove all leading slashes and storage/ prefixes
         let cleanUrl = url.replace(/^\/+/, '').replace(/^storage\/+/, '');
-        
+
         // If it's already a full URL, use it as is
         if (url.startsWith('http')) {
             return `${url}${url.includes('?') ? '&' : '?'}token=${token}`;
         }
-        
+
         // Otherwise construct the full URL
         const fullUrl = `${API_URL}/storage/${cleanUrl}`;
         return `${fullUrl}${fullUrl.includes('?') ? '&' : '?'}token=${token}`;
@@ -144,11 +139,11 @@ const ContentRenderer = ({ type, textContent, filePath, quizQuestions = [], reso
         const correctAnswers = Object.entries(answers).reduce((acc, [questionIndex, answerIndex]) => {
             return acc + (answerIndex === quizQuestions[questionIndex].correct_option ? 1 : 0);
         }, 0);
-        
+
         const finalScore = (correctAnswers / quizQuestions.length) * 100;
         setQuizScore(finalScore);
         setQuizCompleted(true);
-        
+
         // Call the onQuizComplete prop if provided
         if (onQuizComplete) {
             onQuizComplete(finalScore / 100);
@@ -179,10 +174,10 @@ const ContentRenderer = ({ type, textContent, filePath, quizQuestions = [], reso
 
             case 'pdf':
                 // Clean the file path before using it
-                pdfUrl = filePath ? filePath.replace(/^\/+/, '').replace(/^storage\/+/, '') : 
+                pdfUrl = filePath ? filePath.replace(/^\/+/, '').replace(/^storage\/+/, '') :
                         (resources.find((r) => r.type === 'pdf')?.url);
                 authenticatedUrl = getAuthenticatedUrl(pdfUrl);
-                
+
                 console.log('PDF URL:', {
                     original: pdfUrl,
                     authenticated: authenticatedUrl,
@@ -196,7 +191,7 @@ const ContentRenderer = ({ type, textContent, filePath, quizQuestions = [], reso
                                 <CircularProgress />
                             </div>
                         )}
-                        
+
                         {pdfError ? (
                             <div className="absolute inset-0 flex items-center justify-center bg-gray-100">
                                 <div className="text-center">
@@ -229,7 +224,7 @@ const ContentRenderer = ({ type, textContent, filePath, quizQuestions = [], reso
                                 />
                                 <div className="absolute bottom-4 right-4 flex gap-2 bg-black/50 rounded-lg p-2">
                                     <Tooltip title="Zoom In">
-                                        <IconButton 
+                                        <IconButton
                                             onClick={handleZoomIn}
                                             size="small"
                                             sx={{ color: 'white' }}
@@ -238,7 +233,7 @@ const ContentRenderer = ({ type, textContent, filePath, quizQuestions = [], reso
                                         </IconButton>
                                     </Tooltip>
                                     <Tooltip title="Zoom Out">
-                                        <IconButton 
+                                        <IconButton
                                             onClick={handleZoomOut}
                                             size="small"
                                             sx={{ color: 'white' }}
@@ -247,7 +242,7 @@ const ContentRenderer = ({ type, textContent, filePath, quizQuestions = [], reso
                                         </IconButton>
                                     </Tooltip>
                                     <Tooltip title="Rotate">
-                                        <IconButton 
+                                        <IconButton
                                             onClick={handleRotate}
                                             size="small"
                                             sx={{ color: 'white' }}
@@ -256,8 +251,19 @@ const ContentRenderer = ({ type, textContent, filePath, quizQuestions = [], reso
                                         </IconButton>
                                     </Tooltip>
                                     <Tooltip title="Download">
-                                        <IconButton 
-                                            onClick={() => handleDownload(authenticatedUrl)}
+                                        <IconButton
+                                            onClick={async () => {
+                                                try {
+                                                    const pdfResource = resources.find((r) => r.type === 'pdf');
+                                                    if (pdfResource) {
+                                                        await downloadResource(pdfResource.id);
+                                                    } else {
+                                                        toast.error('No PDF resource found for download');
+                                                    }
+                                                } catch (error) {
+                                                    console.error('PDF download failed:', error);
+                                                }
+                                            }}
                                             size="small"
                                             sx={{ color: 'white' }}
                                         >
@@ -329,7 +335,7 @@ const ContentRenderer = ({ type, textContent, filePath, quizQuestions = [], reso
                                     You got {Math.round((quizScore / 100) * quizQuestions.length)} out of {quizQuestions.length} questions correct.
                                 </p>
                             </div>
-                            
+
                             <div className="space-y-4">
                                 {quizQuestions.map((question, index) => (
                                     <div key={index} className="p-4 bg-white rounded-lg shadow">

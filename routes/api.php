@@ -3,6 +3,7 @@
 use App\Http\Controllers\CommentController;
 use App\Http\Controllers\CourseInstructorController;
 use App\Http\Controllers\CourseResourceController;
+use App\Http\Controllers\DownloadController;
 use App\Http\Controllers\ExamController;
 use App\Http\Controllers\PublicController;
 use Illuminate\Support\Facades\Route;
@@ -81,4 +82,8 @@ Route::middleware('auth:sanctum')->group(function () {
     Route::get('/instructor/courses', [CourseInstructorController::class, 'getInstructorCourses'])->name('instructor.getInstructorCourses');
     Route::delete('/instructor/courses/{courseId}', [CourseInstructorController::class, 'deleteCourse'])->name('instructor.deleteCourse');
     Route::get('/instructor/courses/{courseId}', [CourseInstructorController::class, 'getCourseById'])->name('instructor.getCourseById');
+
+
+    // Download file by path
+    Route::get('/download-resource', [DownloadController::class, 'downloadResource']);
 });
