@@ -1,3 +1,4 @@
+import { useNavigate } from 'react-router-dom';
 import React, { useState, useEffect } from 'react';
 import { updateInstructorProfile, updateInstructorSkills, updateInstructorLanguages, updateInstructorCertifications } from '../../services/api_instructor';
 import { Loader2, User, Lock, Star, Globe, Award, Save } from 'lucide-react';
@@ -55,12 +56,15 @@ export default function AccountSettings({ instructorData, backend_url }) {
   const [certificationsBuffer, setCertificationsBuffer] = useState(certifications);
 
   // Add avatar state
-  const [avatarPreview, setAvatarPreview] = useState(instructorData?.user?.avatar || null);
+  const [avatarPreview, setAvatarPreview] = useState(null);
   const [avatar, setAvatar] = useState(null);
 
   // Remove the incorrect avatar_url line and add proper URL construction
   const getAvatarUrl = (avatarPath) => {
     if (!avatarPath) return '/default-avatar.png';
+    if (avatarPath instanceof File) {
+      return URL.createObjectURL(avatarPath);
+    }
     return avatarPath.startsWith('http') ? avatarPath : `${backend_url}${avatarPath}`;
   };
 
@@ -88,8 +92,8 @@ export default function AccountSettings({ instructorData, backend_url }) {
         setError("L'image ne doit pas dépasser 5MB");
         return;
       }
-      setAvatarPreview(URL.createObjectURL(file));
       setAvatar(file);
+      setAvatarPreview(file); // Store the File object directly
     }
   };
 
@@ -104,12 +108,13 @@ export default function AccountSettings({ instructorData, backend_url }) {
       dataToSend.append('name', formData.name);
       dataToSend.append('email', formData.email);
       dataToSend.append('bio', formData.bio);
-      if (avatar) {
+      if (avatar && avatar instanceof File) {
         dataToSend.append('avatar', avatar);
       }
 
       const response = await updateInstructorProfile(dataToSend);
       setSuccess('Profil mis à jour avec succès');
+      
       if (response.instructor) {
         setFormData({
           name: response.instructor.user.name,
@@ -118,6 +123,13 @@ export default function AccountSettings({ instructorData, backend_url }) {
         });
         setAvatarPreview(response.instructor.user.avatar || null);
         setAvatar(null);
+        
+        // If avatar was updated, refresh the page after a short delay
+        if (avatar) {
+          setTimeout(() => {
+            window.location.reload();
+          }, 1000); // 1 second delay to show the success message
+        }
       }
     } catch (err) {
       setError(err.response?.data?.message || 'Une erreur est survenue lors de la mise à jour du profil');
@@ -238,7 +250,7 @@ export default function AccountSettings({ instructorData, backend_url }) {
               <Box sx={{ display: 'flex', flexDirection: { xs: 'column', sm: 'row' }, alignItems: 'center', gap: { xs: 1.5, sm: 3 }, mb: { xs: 2, sm: 4 }, p: { xs: 1, sm: 3 }, bgcolor: 'rgba(25, 118, 210, 0.04)', borderRadius: 2 }}>
                 <Box sx={{ position: 'relative', mb: { xs: 1, sm: 0 } }}>
                   <Avatar
-                    src={avatarPreview ? getAvatarUrl(avatarPreview) : '/default-avatar.png'}
+                    src={getAvatarUrl(avatarPreview)}
                     sx={{ width: { xs: 80, sm: 120 }, height: { xs: 80, sm: 120 }, border: '4px solid', borderColor: 'primary.main' }}
                   />
                   <input

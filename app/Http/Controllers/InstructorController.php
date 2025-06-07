@@ -4,10 +4,13 @@ namespace App\Http\Controllers;
 
 use Illuminate\Http\Request;
 use App\Models\Instructor;
+use App\Models\User;
 use Illuminate\Support\Facades\Auth;
 use Illuminate\Support\Facades\Log;
 use Illuminate\Support\Facades\Hash;
 use Illuminate\Validation\Rule;
+use Illuminate\Support\Facades\Storage;
+
 
 class InstructorController extends Controller
 {
@@ -129,10 +132,15 @@ class InstructorController extends Controller
     {
         try {
             $user = Auth::user();
+            
+            // Check if user is authenticated
+            if (!$user) {
+                return response()->json(['message' => 'Unauthorized - User not authenticated'], 401);
+            }
 
-            // 1) Only allow instructors
+            // Check if user is an instructor
             if ($user->role !== 'instructor') {
-                return response()->json(['message' => 'Unauthorized'], 403);
+                return response()->json(['message' => 'Unauthorized - User is not an instructor'], 403);
             }
 
             // 2) Validate the request
@@ -147,7 +155,7 @@ class InstructorController extends Controller
                 'bio' => 'sometimes|string|max:1000',
                 'current_password' => 'required_with:new_password|string',
                 'new_password' => 'required_with:current_password|string|min:8|confirmed',
-                'avatar' => 'sometimes|image|mimes:jpeg,png,jpg,gif|max:5120', // 5MB max
+                'avatar' => 'sometimes|file|mimes:jpeg,png,jpg,gif|max:5120', // 5MB max
             ]);
 
             // 3) Handle password change if requested
@@ -162,9 +170,9 @@ class InstructorController extends Controller
             if ($request->hasFile('avatar')) {
                 // Delete old avatar if exists
                 if ($user->avatar) {
-                    $oldAvatarPath = public_path('storage/' . str_replace('/storage/', '', $user->avatar));
-                    if (file_exists($oldAvatarPath)) {
-                        unlink($oldAvatarPath);
+                    $oldAvatarPath = str_replace('/storage/', '', $user->avatar);
+                    if (Storage::disk('public')->exists($oldAvatarPath)) {
+                        Storage::disk('public')->delete($oldAvatarPath);
                     }
                 }
 
@@ -192,6 +200,8 @@ class InstructorController extends Controller
             // Only update if there are changes
             if (!empty($updateData)) {
                 \App\Models\User::where('id', $user->id)->update($updateData);
+                // Refresh user data
+                $user = \App\Models\User::find($user->id);
             }
 
             // 6) Return updated user data
@@ -216,42 +226,6 @@ class InstructorController extends Controller
             Log::error('Instructor profile update error: ' . $e->getMessage());
             return response()->json([
                 'message' => 'An error occurred while updating the profile',
-                'error' => $e->getMessage()
-            ], 500);
-        }
-    }
-
-    public function updateAvailability(Request $request)
-    {
-        try {
-            $user = Auth::user();
-
-            // 1) Only allow instructors
-            if ($user->role !== 'instructor') {
-                return response()->json(['message' => 'Unauthorized'], 403);
-            }
-
-            // 2) Validate the request
-            $validated = $request->validate([
-                'availability' => 'required|array',
-                'availability.*' => 'required|string|max:255',
-            ]);
-
-            // 3) Update instructor availability
-            $instructor = Instructor::where('user_id', $user->id)->first();
-            $instructor->availability = $validated['availability'];
-            $instructor->save();
-
-            // 4) Return updated availability
-            return response()->json([
-                'message' => 'Availability updated successfully',
-                'availability' => $instructor->availability,
-            ], 200);
-
-        } catch (\Exception $e) {
-            Log::error('Instructor availability update error: ' . $e->getMessage());
-            return response()->json([
-                'message' => 'An error occurred while updating the availability',
                 'error' => $e->getMessage()
             ], 500);
         }

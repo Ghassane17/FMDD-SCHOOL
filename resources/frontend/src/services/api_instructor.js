@@ -65,10 +65,36 @@ export const getInstructorDashboard = async () => {
  */
 export const updateInstructorProfile = async (profileData) => {
     try {
-        const response = await api.patch('/instructor/profile', profileData);
+        const token = localStorage.getItem('token');
+        if (!token) {
+            throw new Error('Authentication token not found');
+        }
+
+        // Create a new axios instance with multipart/form-data for file uploads
+        const uploadApi = axios.create({
+            baseURL: apiBaseUrl,
+            headers: {
+                'Content-Type': 'multipart/form-data',
+                'X-Requested-With': 'XMLHttpRequest',
+                'Accept': 'application/json',
+                'Authorization': `Bearer ${token}`
+            },
+            withCredentials: true,
+            timeout: 30000,
+        });
+
+        const response = await uploadApi.post('/instructor/profile', profileData);
         return response.data;
     } catch (error) {
         console.error('Error updating instructor profile:', error);
+        if (error.response?.data?.errors) {
+            // Handle validation errors
+            const validationErrors = error.response.data.errors;
+            const errorMessage = Object.entries(validationErrors)
+                .map(([field, messages]) => `${field}: ${messages.join(', ')}`)
+                .join('\n');
+            throw new Error(errorMessage);
+        }
         throw error;
     }
 };

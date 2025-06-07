@@ -18,7 +18,10 @@ export function DropDownInstructor({ currentInstructor }) {
   const backend_url = API_URL;
 
   const avatar = currentInstructor.avatar;
-  const avatar_url = avatar.startsWith('http') ? avatar : `${backend_url}${avatar}`;
+  let avatar_url = '/default-avatar.png';
+  if (avatar) {
+    avatar_url = avatar.startsWith('http') ? avatar : `${backend_url}${avatar}`;
+  }
 
   return (
     <DropdownMenu>
