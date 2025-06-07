@@ -7,7 +7,7 @@ use App\Models\Learner;
 use App\Models\Instructor;
 use App\Models\Course;
 use App\Models\Module;
-use App\Models\Resource;
+use App\Models\CourseResource;
 use App\Models\QuizQuestion;
 use App\Models\Exam;
 use App\Models\ExamQuestion;
@@ -252,7 +252,7 @@ class GhassaneTestSeeder extends Seeder
                 ];
 
                 foreach ($resources as $resource) {
-                    Resource::create($resource);
+                    CourseResource::create($resource);
                 }
             }
         }

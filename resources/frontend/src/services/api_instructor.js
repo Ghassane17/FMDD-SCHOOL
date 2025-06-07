@@ -295,3 +295,18 @@ export const deleteCourse = async (courseId) => {
     }
 };
 
+/**
+ * Get instructor comments
+ * @returns {Promise} Promise object containing instructor comments data
+ */
+
+export const getInstructorComments = async () => {
+    try {
+        const response = await api.get('/instructor/comments');
+        return response.data;
+    } catch (error) {
+        console.error('Error fetching instructor comments:', error);
+        throw error;
+    }
+};
+

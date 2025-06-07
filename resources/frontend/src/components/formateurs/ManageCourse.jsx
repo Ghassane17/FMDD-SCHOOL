@@ -34,6 +34,7 @@ const ManageCourse = () => {
     try {
       await deleteCourse(courseId);
       setShowDeleteConfirm(false);
+      localStorage.removeItem('instructorStats');
       navigate('/instructor');
     } catch (err) {
       setError(err.message || 'Erreur lors de la suppression du cours');

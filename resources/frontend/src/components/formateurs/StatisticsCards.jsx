@@ -8,23 +8,34 @@ const StatisticsCards = () => {
   const [error, setError] = useState(null);
 
   useEffect(() => {
-    const cachedStats = localStorage.getItem('instructorStats');
-    if (cachedStats) {
-      setStats(JSON.parse(cachedStats));
-      setLoading(false);
+    const fetchData = async () => {
+      try {
+        const data = await getInstructorStatistics();
+        setStats(data);
+        localStorage.setItem('instructorStats', JSON.stringify(data));
+      } catch (err) {
+        setError('Erreur lors du chargement des statistiques.');
+      } finally {
+        setLoading(false);
+      }
+    };
+
+    // Check if this is a page refresh (reload)
+    const navigationEntries = performance.getEntriesByType('navigation');
+    const isReload = navigationEntries.length > 0 && navigationEntries[0].type === 'reload';
+
+    if (isReload) {
+      // On page refresh, always fetch new data
+      fetchData();
     } else {
-      const fetchStats = async () => {
-        try {
-          const data = await getInstructorStatistics();
-          setStats(data);
-          localStorage.setItem('instructorStats', JSON.stringify(data));
-        } catch (err) {
-          setError('Erreur lors du chargement des statistiques.');
-        } finally {
-          setLoading(false);
-        }
-      };
-      fetchStats();
+      // On initial load or navigation, use cached data if available
+      const cachedStats = localStorage.getItem('instructorStats');
+      if (cachedStats) {
+        setStats(JSON.parse(cachedStats));
+        setLoading(false);
+      } else {
+        fetchData();
+      }
     }
   }, []);
 

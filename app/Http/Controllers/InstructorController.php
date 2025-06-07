@@ -363,6 +363,58 @@ class InstructorController extends Controller
         $instructor->save();
         return response()->json(['message' => 'Certifications updated successfully'], 200);
     }
+
+    public function getInstructorComments()
+    {
+        $user = Auth::user();
+        if (!$user || $user->role !== 'instructor') {
+            return response()->json(['message' => 'Unauthorized'], 403);
+        }
+
+        try {
+            $instructor = Instructor::where('user_id', $user->id)->first();
+            if (!$instructor) {
+                return response()->json(['message' => 'Instructor profile not found'], 404);
+            }
+
+            // Get all courses for this instructor with their comments
+            $courses = \App\Models\Course::with(['comments' => function($query) {
+                $query->with('user:id,username,avatar')
+                      ->orderBy('created_at', 'desc');
+            }])
+            ->where('instructor_id', $instructor->id)
+            ->get();
+
+            // Format the response
+            $formattedComments = [];
+            foreach ($courses as $course) {
+                foreach ($course->comments as $comment) {
+                    $formattedComments[] = [
+                        'id' => $comment->id,
+                        'user' => $comment->user->username ?? 'Unknown User',
+                        'user_avatar' => $comment->user->avatar,
+                        'course' => $course->title,
+                        'course_id' => $course->id,
+                        'rating' => $comment->rating ?? 0,
+                        'text' => $comment->text ?? '',
+                        'date' => $comment->created_at ? $comment->created_at->format('d M Y | H:i') : 'Unknown Date',
+                        'replies' => $comment->replies ?? []
+                    ];
+                }
+            }
+
+            return response()->json([
+                'comments' => $formattedComments
+            ], 200);
+
+        } catch (\Exception $e) {
+            Log::error('Error fetching instructor comments: ' . $e->getMessage());
+            return response()->json([
+                'message' => 'An error occurred while fetching comments',
+                'error' => $e->getMessage()
+            ], 500);
+        }
+    }
 }
 
         

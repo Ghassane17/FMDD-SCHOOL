@@ -82,6 +82,7 @@ Route::middleware('auth:sanctum')->group(function () {
     Route::get('/instructor/courses', [CourseInstructorController::class, 'getInstructorCourses'])->name('instructor.getInstructorCourses');
     Route::delete('/instructor/courses/{courseId}', [CourseInstructorController::class, 'deleteCourse'])->name('instructor.deleteCourse');
     Route::get('/instructor/courses/{courseId}', [CourseInstructorController::class, 'getCourseById'])->name('instructor.getCourseById');
+    Route::get('/instructor/comments', [InstructorController::class, 'getInstructorComments'])->name('instructor.getInstructorComments');
 
 
     // Download file by path

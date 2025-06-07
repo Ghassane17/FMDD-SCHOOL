@@ -1,14 +1,35 @@
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import { Star, Send, ChevronDown, ChevronUp } from 'lucide-react';
-import { trainerData } from '../../data/trainerData';
+import { getInstructorComments } from '../../services/api_instructor';
+
+const API_URL = import.meta.env.VITE_API_BASE_URL || 'http://localhost:8000';
+
 
 export default function CommentSection() {
-  const [comments] = useState(trainerData.comments);
-  const [loading] = useState(false);
-  const [error] = useState(null);
+  const [comments, setComments] = useState([]);
+  const [loading, setLoading] = useState(true);
+  const [error, setError] = useState(null);
   const [replyText, setReplyText] = useState('');
   const [activeReplyId, setActiveReplyId] = useState(null);
   const [expandedComments, setExpandedComments] = useState({});
+
+  useEffect(() => {
+    fetchComments();
+  }, []);
+
+  const fetchComments = async () => {
+    try {
+      setLoading(true);
+      const response = await getInstructorComments();
+      setComments(response.comments);
+      console.log("comments", response.comments);
+      setError(null);
+    } catch (err) {
+      setError(err.message || 'Failed to fetch comments');
+    } finally {
+      setLoading(false);
+    }
+  };
 
   const toggleReply = (commentId) => {
     setActiveReplyId(activeReplyId === commentId ? null : commentId);
@@ -22,11 +43,18 @@ export default function CommentSection() {
     }));
   };
 
-  const handleReply = (commentId) => {
-    // Here you would typically send the reply to your backend
-    console.log(`Replying to comment ${commentId}:`, replyText);
-    setReplyText('');
-    setActiveReplyId(null);
+  const handleReply = async (commentId) => {
+    try {
+      // Here you would typically send the reply to your backend
+      // await axios.post(`/api/comments/${commentId}/replies`, { content: replyText });
+      console.log(`Replying to comment ${commentId}:`, replyText);
+      setReplyText('');
+      setActiveReplyId(null);
+      // Optionally refresh comments after reply
+      // await fetchComments();
+    } catch (err) {
+      console.error('Failed to send reply:', err);
+    }
   };
 
   // Placeholder comments for loading state
@@ -80,6 +108,13 @@ export default function CommentSection() {
               <div className="flex justify-between items-start mb-3">
                 <div className="flex-1">
                   <div className="flex items-center gap-2">
+                    {comment.user_avatar && (
+                      <img 
+                        src={API_URL + comment.user_avatar} 
+                        alt={comment.user}
+                        className="w-12 h-12 rounded-full"
+                      />
+                    )}
                     <h3 className={`font-semibold text-gray-800 ${loading ? 'bg-gray-200 rounded h-4 w-32' : ''}`}>
                       {comment.user}
                     </h3>
@@ -119,6 +154,27 @@ export default function CommentSection() {
                 <p className={`text-gray-700 mb-4 ${loading ? 'bg-gray-200 rounded h-4 w-full' : ''}`}>
                   {comment.text}
                 </p>
+
+                {comment.replies && comment.replies.length > 0 && (
+                  <div className="ml-6 mt-4 space-y-4">
+                    {comment.replies.map(reply => (
+                      <div key={reply.id} className="border-l-2 border-indigo-200 pl-4">
+                        <div className="flex items-center gap-2 mb-2">
+                          {reply.user_avatar && (
+                            <img 
+                              src={reply.user_avatar} 
+                              alt={reply.user}
+                              className="w-6 h-6 rounded-full"
+                            />
+                          )}
+                          <span className="font-medium text-sm">{reply.user}</span>
+                          <span className="text-xs text-gray-500">{reply.date}</span>
+                        </div>
+                        <p className="text-sm text-gray-600">{reply.text}</p>
+                      </div>
+                    ))}
+                  </div>
+                )}
 
                 {activeReplyId === comment.id ? (
                   <div className="mt-4 space-y-3">
