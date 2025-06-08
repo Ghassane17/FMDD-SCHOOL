@@ -1,7 +1,7 @@
 "use client"
 
 import { useState, useCallback, useRef, useEffect } from "react"
-import { Link } from "react-router-dom"
+import { Link, useNavigate } from "react-router-dom"
 import {
     Card,
     CardMedia,
@@ -24,6 +24,12 @@ const CourseCard = ({ id, title, description, progress, lastAccessed, image, lev
     const [isImageLoading, setIsImageLoading] = useState(true)
     const [imageSrc, setImageSrc] = useState(null)
     const imageRef = useRef(null)
+    const navigate = useNavigate()
+
+    const handleCardClick = () => {
+        // Always navigate to the enrollment page first
+        navigate(`/learner/courses/${id}`)
+    }
 
     // Initialize image source
     useEffect(() => {
@@ -55,220 +61,227 @@ const CourseCard = ({ id, title, description, progress, lastAccessed, image, lev
     }, [])
 
     return (
-        <Card
-            className="w-full transition-all duration-300 hover:-translate-y-1 hover:shadow-md"
-            sx={{
-                height: 280,
-                display: "flex",
-                flexDirection: "row",
-                border: "1px solid",
-                borderColor: "divider",
-                borderRadius: 2,
-                boxShadow: "0 1px 3px rgba(0,0,0,0.05)",
-                overflow: "hidden",
-            }}
+        <div 
+            onClick={handleCardClick} 
+            className="cursor-pointer bg-white rounded-lg shadow-sm hover:shadow-md transition-shadow duration-200 overflow-hidden border border-gray-200"
         >
-            {/* Image Section */}
-            <Link to={`/learner/courses/${id}`} style={{ display: "block", width: "200px", flexShrink: 0 }}>
-                <Box
-                    sx={{
-                        position: "relative",
-                        width: "200px",
-                        height: "100%",
-                        overflow: "hidden",
-                        bgcolor: "grey.100",
-                    }}
-                >
-                    {isImageLoading && (
-                        <Box
+            <Card
+                className="w-full transition-all duration-300 hover:-translate-y-1 hover:shadow-md"
+                sx={{
+                    height: 280,
+                    display: "flex",
+                    flexDirection: "row",
+                    border: "1px solid",
+                    borderColor: "divider",
+                    borderRadius: 2,
+                    boxShadow: "0 1px 3px rgba(0,0,0,0.05)",
+                    overflow: "hidden",
+                }}
+            >
+                {/* Image Section */}
+                <Link to={`/learner/courses/${id}`} style={{ display: "block", width: "200px", flexShrink: 0 }}>
+                    <Box
+                        sx={{
+                            position: "relative",
+                            width: "200px",
+                            height: "100%",
+                            overflow: "hidden",
+                            bgcolor: "grey.100",
+                        }}
+                    >
+                        {isImageLoading && (
+                            <Box
+                                sx={{
+                                    position: "absolute",
+                                    top: 0,
+                                    left: 0,
+                                    right: 0,
+                                    bottom: 0,
+                                    display: "flex",
+                                    alignItems: "center",
+                                    justifyContent: "center",
+                                    bgcolor: "grey.100",
+                                }}
+                            >
+                                <LinearProgress sx={{ width: "60%" }} />
+                            </Box>
+                        )}
+                        <CardMedia
+                            ref={imageRef}
+                            component="img"
+                            image={imageSrc}
+                            alt={title}
                             sx={{
                                 position: "absolute",
                                 top: 0,
                                 left: 0,
-                                right: 0,
-                                bottom: 0,
-                                display: "flex",
-                                alignItems: "center",
-                                justifyContent: "center",
-                                bgcolor: "grey.100",
+                                width: "100%",
+                                height: "100%",
+                                objectFit: "cover",
+                                display: isImageLoading ? "none" : "block",
                             }}
-                        >
-                            <LinearProgress sx={{ width: "60%" }} />
-                        </Box>
-                    )}
-                    <CardMedia
-                        ref={imageRef}
-                        component="img"
-                        image={imageSrc}
-                        alt={title}
-                        sx={{
-                            position: "absolute",
-                            top: 0,
-                            left: 0,
-                            width: "100%",
-                            height: "100%",
-                            objectFit: "cover",
-                            display: isImageLoading ? "none" : "block",
-                        }}
-                        onLoad={handleImageLoad}
-                        onError={handleImageError}
-                    />
-                </Box>
-            </Link>
-
-            {/* Content Section */}
-            <CardContent
-                sx={{
-                    flexGrow: 1,
-                    display: "flex",
-                    flexDirection: "column",
-                    p: 2.5,
-                    "&:last-child": { pb: 2.5 },
-                }}
-            >
-                {/* Top Section - Chips */}
-                <Stack direction="row" spacing={1} sx={{ mb: 1.5 }}>
-                    {level && (
-                        <Chip
-                            label={level}
-                            size="small"
-                            sx={{
-                                bgcolor: level === "débutant" ? "success.50" : level === "intermédiaire" ? "warning.50" : "error.50",
-                                color: level === "débutant" ? "success.700" : level === "intermédiaire" ? "warning.700" : "error.700",
-                                borderColor:
-                                    level === "débutant" ? "success.200" : level === "intermédiaire" ? "warning.200" : "error.200",
-                                border: "1px solid",
-                                fontWeight: 500,
-                                fontSize: "0.75rem",
-                            }}
+                            onLoad={handleImageLoad}
+                            onError={handleImageError}
                         />
-                    )}
-                    <Chip
-                        icon={<PeopleIcon sx={{ fontSize: "0.875rem !important" }} />}
-                        label={`${students || 0} étudiants`}
-                        size="small"
-                        variant="outlined"
-                        sx={{
-                            fontSize: "0.75rem",
-                            color: "text.secondary",
-                            borderColor: "divider",
-                        }}
-                    />
-                </Stack>
+                    </Box>
+                </Link>
 
-                {/* Title */}
-                <Typography
-                    variant="h6"
-                    component="h3"
+                {/* Content Section */}
+                <CardContent
                     sx={{
-                        mb: 1,
-                        fontSize: "1.1rem",
-                        fontWeight: 600,
-                        lineHeight: 1.3,
-                        height: "2.6em",
-                        overflow: "hidden",
-                        display: "-webkit-box",
-                        WebkitLineClamp: 2,
-                        WebkitBoxOrient: "vertical",
-                        color: "text.primary",
+                        flexGrow: 1,
+                        display: "flex",
+                        flexDirection: "column",
+                        p: 2.5,
+                        "&:last-child": { pb: 2.5 },
                     }}
                 >
-                    <Link
-                        to={`/learner/courses/${id}`}
-                        style={{ textDecoration: "none", color: "inherit" }}
-                        className="hover:text-blue-600"
-                    >
-                        {title || "Untitled Course"}
-                    </Link>
-                </Typography>
+                    {/* Top Section - Chips */}
+                    <Stack direction="row" spacing={1} sx={{ mb: 1.5 }}>
+                        {level && (
+                            <Chip
+                                label={level}
+                                size="small"
+                                sx={{
+                                    bgcolor: level === "débutant" ? "success.50" : level === "intermédiaire" ? "warning.50" : "error.50",
+                                    color: level === "débutant" ? "success.700" : level === "intermédiaire" ? "warning.700" : "error.700",
+                                    borderColor:
+                                        level === "débutant" ? "success.200" : level === "intermédiaire" ? "warning.200" : "error.200",
+                                    border: "1px solid",
+                                    fontWeight: 500,
+                                    fontSize: "0.75rem",
+                                }}
+                            />
+                        )}
+                        <Chip
+                            icon={<PeopleIcon sx={{ fontSize: "0.875rem !important" }} />}
+                            label={`${students || 0} étudiants`}
+                            size="small"
+                            variant="outlined"
+                            sx={{
+                                fontSize: "0.75rem",
+                                color: "text.secondary",
+                                borderColor: "divider",
+                            }}
+                        />
+                    </Stack>
 
-                {/* Description */}
-                {description && (
+                    {/* Title */}
                     <Typography
-                        variant="body2"
+                        variant="h6"
+                        component="h3"
                         sx={{
-                            mb: 2,
-                            height: "3em",
+                            mb: 1,
+                            fontSize: "1.1rem",
+                            fontWeight: 600,
+                            lineHeight: 1.3,
+                            height: "2.6em",
                             overflow: "hidden",
                             display: "-webkit-box",
                             WebkitLineClamp: 2,
                             WebkitBoxOrient: "vertical",
-                            textOverflow: "ellipsis",
-                            color: "text.secondary",
-                            fontSize: "0.875rem",
-                            lineHeight: 1.5,
+                            color: "text.primary",
                         }}
                     >
-                        {description}
+                        <Link
+                            to={`/learner/courses/${id}`}
+                            style={{ textDecoration: "none", color: "inherit" }}
+                            className="hover:text-blue-600"
+                        >
+                            {title || "Untitled Course"}
+                        </Link>
                     </Typography>
-                )}
 
-                {/* Progress Section */}
-                {progress !== undefined && (
-                    <Box sx={{ mb: 2 }}>
-                        <Typography variant="body2" color="text.secondary" sx={{ mb: 0.75, fontSize: "0.875rem" }}>
-                            Progression: {progress !== null ? `${progress}%` : "0%"}
-                        </Typography>
-                        <LinearProgress
-                            variant="determinate"
-                            value={progress || 0}
+                    {/* Description */}
+                    {description && (
+                        <Typography
+                            variant="body2"
                             sx={{
-                                height: 6,
-                                borderRadius: 3,
-                                backgroundColor: "rgba(0,0,0,0.05)",
-                                "& .MuiLinearProgress-bar": {
-                                    borderRadius: 3,
-                                    backgroundColor: progress >= 100 ? "success.main" : "primary.main",
-                                },
+                                mb: 2,
+                                height: "3em",
+                                overflow: "hidden",
+                                display: "-webkit-box",
+                                WebkitLineClamp: 2,
+                                WebkitBoxOrient: "vertical",
+                                textOverflow: "ellipsis",
+                                color: "text.secondary",
+                                fontSize: "0.875rem",
+                                lineHeight: 1.5,
                             }}
-                        />
-                    </Box>
-                )}
+                        >
+                            {description}
+                        </Typography>
+                    )}
 
-                {/* Bottom Section - Rating and Last Accessed */}
-                <Stack
-                    direction="row"
-                    spacing={3}
-                    alignItems="center"
-                    sx={{
-                        mt: "auto",
-                        pt: 1.5,
-                        borderTop: "1px solid",
-                        borderColor: "divider",
-                    }}
-                >
-                    <Tooltip title="Note du cours">
-                        <Box sx={{ display: "flex", alignItems: "center" }}>
-                            <Rating
-                                value={rating || 0}
-                                precision={0.5}
-                                size="small"
-                                readOnly
+                    {/* Progress Section */}
+                    {progress !== undefined && (
+                        <Box sx={{ mb: 2 }}>
+                            <Typography variant="body2" color="text.secondary" sx={{ mb: 0.75, fontSize: "0.875rem" }}>
+                                Progression: {progress !== null ? `${progress}%` : "0%"}
+                            </Typography>
+                            <LinearProgress
+                                variant="determinate"
+                                value={progress || 0}
                                 sx={{
-                                    "& .MuiRating-iconFilled": {
-                                        color: "warning.main",
+                                    height: 6,
+                                    borderRadius: 3,
+                                    backgroundColor: "rgba(0,0,0,0.05)",
+                                    "& .MuiLinearProgress-bar": {
+                                        borderRadius: 3,
+                                        backgroundColor: progress >= 100 ? "success.main" : "primary.main",
                                     },
                                 }}
                             />
-                            <Typography variant="body2" color="text.secondary" sx={{ ml: 0.5, fontSize: "0.75rem" }}>
-                                ({rating || 0})
-                            </Typography>
                         </Box>
-                    </Tooltip>
-                    {lastAccessed && (
-                        <Tooltip title="Dernière consultation">
+                    )}
+
+                    {/* Bottom Section - Rating and Last Accessed */}
+                    <Stack
+                        direction="row"
+                        spacing={3}
+                        alignItems="center"
+                        sx={{
+                            mt: "auto",
+                            pt: 1.5,
+                            borderTop: "1px solid",
+                            borderColor: "divider",
+                        }}
+                    >
+                        <Tooltip title="Note du cours">
                             <Box sx={{ display: "flex", alignItems: "center" }}>
-                                <AccessTimeIcon fontSize="small" sx={{ mr: 0.5, color: "text.secondary", fontSize: "0.875rem" }} />
-                                <Typography variant="body2" color="text.secondary" sx={{ fontSize: "0.75rem" }}>
-                                    {lastAccessed ? new Date(lastAccessed).toLocaleDateString() : "Jamais"}
+                                <Rating
+                                    value={rating || 0}
+                                    precision={0.5}
+                                    size="small"
+                                    readOnly
+                                    sx={{
+                                        "& .MuiRating-iconFilled": {
+                                            color: "warning.main",
+                                        },
+                                    }}
+                                />
+                                <Typography variant="body2" color="text.secondary" sx={{ ml: 0.5, fontSize: "0.75rem" }}>
+                                    ({rating || 0})
                                 </Typography>
                             </Box>
                         </Tooltip>
-                    )}
-                </Stack>
-            </CardContent>
-        </Card>
+                        {lastAccessed && (
+                            <Tooltip title="Dernière consultation">
+                                <Box sx={{ display: "flex", alignItems: "center" }}>
+                                    <AccessTimeIcon fontSize="small" sx={{ mr: 0.5, color: "text.secondary", fontSize: "0.875rem" }} />
+                                    <Typography variant="body2" color="text.secondary" sx={{ fontSize: "0.75rem" }}>
+                                        {lastAccessed ? new Date(lastAccessed).toLocaleDateString() : "Jamais"}
+                                    </Typography>
+                                </Box>
+                            </Tooltip>
+                        )}
+                    </Stack>
+                </CardContent>
+            </Card>
+        </div>
     )
 }
 
 export default CourseCard
+
+

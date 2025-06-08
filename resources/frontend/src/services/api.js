@@ -1,14 +1,13 @@
 import axios from 'axios';
+import { toast } from 'react-toastify'; // Added for toast notifications
 
 const API_URL = import.meta.env.VITE_API_BASE_URL || 'http://localhost:8000/api';
 
-// Déterminer l'URL de base et l'afficher explicitement
-const apiBaseUrl = import.meta.env.VITE_API_BASE_URL || 'http://localhost:8000/api';
-console.log('Using API base URL:', apiBaseUrl);
+// Log API base URL for debugging
+console.log('Using API base URL:', API_URL);
 
 const api = axios.create({
-    baseURL: apiBaseUrl,
-
+    baseURL: API_URL,
     headers: {
         'Content-Type': 'application/json',
         'X-Requested-With': 'XMLHttpRequest',
@@ -18,29 +17,23 @@ const api = axios.create({
     timeout: 30000,
 });
 
-// Intercepteur de requête amélioré avec plus de logs
-// In api.js, modify the request interceptor:
+// Request interceptor with enhanced logging
 api.interceptors.request.use(
     config => {
         console.log('-------- AXIOS REQUEST --------');
         console.log('URL:', `${config.baseURL}${config.url}`);
         console.log('Method:', config.method?.toUpperCase());
 
-        // Check if data is FormData and avoid setting Content-Type
-        // Axios will automatically set the correct Content-Type with boundary
         if (config.data instanceof FormData) {
-            console.log('FormData detected - letting Axios set the proper Content-Type');
-            // Remove the Content-Type header to let Axios set it with the boundary
+            console.log('FormData detected - letting Axios set Content-Type');
             delete config.headers['Content-Type'];
         }
 
         console.log('Headers:', config.headers);
 
         const logData = { ...config.data };
-        if (logData && logData.password) {
-            logData.password = '********';
-        }
-        if (logData && logData.current_password) {
+        if (logData?.password) logData.password = '********';
+        if (logData?.current_password) {
             logData.current_password = '********';
             logData.new_password = '********';
             logData.new_password_confirmation = '********';
@@ -63,7 +56,7 @@ api.interceptors.request.use(
     }
 );
 
-// Intercepteur de réponse amélioré avec gestion d'erreur détaillée
+// Response interceptor with detailed error handling
 api.interceptors.response.use(
     response => {
         console.log('-------- AXIOS RESPONSE --------');
@@ -87,7 +80,7 @@ api.interceptors.response.use(
                 method: error.config.method?.toUpperCase(),
                 headers: error.config.headers,
                 data: error.config.data,
-                timeout: error.config.timeout
+                timeout: error.config.timeout,
             };
         }
 
@@ -96,37 +89,37 @@ api.interceptors.response.use(
                 status: error.response.status,
                 statusText: error.response.statusText,
                 headers: error.response.headers,
-                data: error.response.data
+                data: error.response.data,
             };
         }
 
         console.error('Detailed Error Information:', errorInfo);
 
         if (error.code === 'ECONNABORTED') {
-            console.error('⚠️ La requête a expiré - le serveur a mis trop de temps à répondre');
+            console.error('⚠️ Request timed out - server took too long to respond');
         } else if (error.code === 'ERR_NETWORK') {
-            console.error('⚠️ Erreur réseau - vérifiez votre connexion internet');
+            console.error('⚠️ Network error - check your internet connection');
         } else if (error.response?.status === 401) {
-            console.error('⚠️ Non autorisé - problème d\'authentification');
+            console.error('⚠️ Unauthorized - authentication issue');
             localStorage.removeItem('token');
             localStorage.removeItem('user');
         } else if (error.response?.status === 403) {
-            console.error('⚠️ Accès refusé - vous n\'avez pas les permissions nécessaires');
+            console.error('⚠️ Forbidden - insufficient permissions');
         } else if (error.response?.status === 404) {
-            console.error('⚠️ Ressource non trouvée - vérifiez l\'URL de l\'API');
+            console.error('⚠️ Resource not found - check API URL');
         } else if (error.response?.status === 422) {
-            console.error('⚠️ Données de validation incorrectes:', error.response.data.errors);
+            console.error('⚠️ Validation errors:', error.response.data.errors);
         } else if (error.response?.status >= 500) {
-            console.error('⚠️ Erreur serveur - vérifiez les logs du serveur');
+            console.error('⚠️ Server error - check server logs');
         }
 
         return Promise.reject(error);
     }
 );
 
-// Fonctions utilitaires pour la gestion des tokens
+// Token management utilities
 export const getToken = () => localStorage.getItem('token');
-export const setToken = (token) => localStorage.setItem('token', token);
+export const setToken = token => localStorage.setItem('token', token);
 export const removeToken = () => localStorage.removeItem('token');
 
 export const getUser = () => {
@@ -134,12 +127,8 @@ export const getUser = () => {
     return user ? JSON.parse(user) : null;
 };
 
-export const setUser = (user) => {
-    localStorage.setItem('user', JSON.stringify(user));
-};
-
+export const setUser = user => localStorage.setItem('user', JSON.stringify(user));
 export const removeUser = () => localStorage.removeItem('user');
-
 export const isAuthenticated = () => !!getToken();
 
 let enrolledCoursesCache = null;
@@ -154,10 +143,7 @@ export const clearAllCaches = () => {
 
 export const initializeCSRF = async () => {
     try {
-        await axios.get('/sanctum/csrf-cookie', {
-            baseURL: import.meta.env.VITE_APP_URL || 'http://localhost:5731',
-            withCredentials: true
-        });
+        await api.get('/sanctum/csrf-cookie');
         console.log('CSRF cookie initialized successfully');
         return true;
     } catch (error) {
@@ -166,7 +152,7 @@ export const initializeCSRF = async () => {
     }
 };
 
-export const login = async (data) => {
+export const login = async data => {
     clearAllCaches();
     console.log('Preparing login with:', { ...data, password: '********' });
 
@@ -178,7 +164,7 @@ export const login = async (data) => {
             status: response.status,
             message: response.data.message,
             hasToken: !!response.data.token,
-            hasUser: !!response.data.user
+            hasUser: !!response.data.user,
         });
 
         if (response.data.token) {
@@ -205,14 +191,12 @@ export const login = async (data) => {
         } else if (!error.response) {
             console.error('Network error - server might be down or unreachable');
         }
-
         throw error;
     }
 };
 
-export const register = async (data) => {
+export const register = async data => {
     try {
-        // For logging: show keys, but don't try to print file objects
         if (data instanceof FormData) {
             const entries = {};
             data.forEach((value, key) => {
@@ -220,26 +204,23 @@ export const register = async (data) => {
             });
             console.log('Sending registration request with:', entries);
         } else {
-            console.log('Sending registration request with:', { ...data, password: '********', password_confirmation: '********' });
+            console.log('Sending registration request with:', {
+                ...data,
+                password: '********',
+                password_confirmation: '********',
+            });
         }
 
         await initializeCSRF();
-
-        // Set headers only if data is FormData
-        const config = {};
-        if (data instanceof FormData) {
-            config.headers = { 'Content-Type': 'multipart/form-data' };
-        }
-
-        const response = await api.post('/register', data, config);
+        const response = await api.post('/register', data);
 
         if (response.data.token) {
-            localStorage.setItem('token', response.data.token);
+            setToken(response.data.token);
             console.log('Token stored successfully');
         }
 
         if (response.data.user) {
-            localStorage.setItem('user', JSON.stringify(response.data.user));
+            setUser(response.data.user);
             console.log('User data stored successfully');
         }
 
@@ -261,11 +242,8 @@ export const completeProfile = async (role, data) => {
 };
 
 export const logout = () => {
-    // Remove token from localStorage
-    localStorage.removeItem('token');
-    localStorage.removeItem('user');
-    // Remove token from axios defaults
-    delete axios.defaults.headers.common['Authorization'];
+    removeToken();
+    removeUser();
 };
 
 export const getLearnerDashboard = async (forceRefresh = false) => {
@@ -316,6 +294,7 @@ export const getEnrolledCourses = async (forceRefresh = false) => {
 
 export const getLearnerSettings = async (forceRefresh = false) => {
     if (!forceRefresh && settingsCache) {
+        console.log('Returning cached settings');
         return { data: settingsCache };
     }
 
@@ -330,27 +309,26 @@ export const getLearnerSettings = async (forceRefresh = false) => {
     }
 };
 
-export const submitContactForm = async (data) => {
+export const submitContactForm = async data => {
     try {
         return await api.post('/contact', data);
     } catch (error) {
-        throw error; // Let ContactForm handle the error
+        throw error;
     }
 };
 
-export const courseDetails = async (courseId) => {
+export const courseDetails = async courseId => {
     try {
         const response = await api.get(`/courses/${courseId}`);
         return response.data;
     } catch (error) {
-        throw error; // Let the caller (EnrollmentPage) handle errors
+        throw error;
     }
 };
 
-export const getExam = async (courseId) => {
+export const getExam = async courseId => {
     try {
-        const token = localStorage.getItem('token');
-        if (!token) {
+        if (!getToken()) {
             const error = new Error('Vous devez être connecté.');
             error.status = 401;
             throw error;
@@ -358,10 +336,7 @@ export const getExam = async (courseId) => {
 
         const url = `/courses/${courseId}/exam`;
         console.log('Calling getExam API:', url);
-
-        const response = await api.get(url, {
-            headers: { Authorization: `Bearer ${token}` },
-        });
+        const response = await api.get(url);
 
         console.log('🚀 getExam Response:', JSON.stringify(response.data, null, 2));
         if (!response.data?.success) {
@@ -383,11 +358,9 @@ export const getExam = async (courseId) => {
     }
 };
 
-// Submit exam answers for a course
 export const submitExam = async (courseId, answers) => {
     try {
-        const token = localStorage.getItem('token');
-        if (!token) {
+        if (!getToken()) {
             const error = new Error('Vous devez être connecté.');
             error.status = 401;
             throw error;
@@ -395,10 +368,7 @@ export const submitExam = async (courseId, answers) => {
 
         const url = `/courses/${courseId}/exam`;
         console.log('Calling submitExam API:', url, { answers });
-
-        const response = await api.post(url, { answers }, {
-            headers: { Authorization: `Bearer ${token}` },
-        });
+        const response = await api.post(url, { answers });
 
         console.log('🚀 submitExam Response:', JSON.stringify(response.data, null, 2));
         if (!response.data?.success) {
@@ -420,19 +390,16 @@ export const submitExam = async (courseId, answers) => {
     }
 };
 
-// Optional: Check if user is authenticated
 export const moduleDetails = async (courseId, moduleId = null) => {
     try {
-        const token = localStorage.getItem('token');
-        if (!token) {
+        if (!getToken()) {
             throw new Error('No authentication token found');
         }
         const url = moduleId ? `/learner/courses/${courseId}/${moduleId}` : `/learner/courses/${courseId}`;
         console.log('🌐 Fetching module details:', url);
-        const response = await api.get(url, {
-            headers: { Authorization: `Bearer ${token}` },
-        });
+        const response = await api.get(url);
         console.log('🌐 Module Details Response:', response.data);
+
         if (!response.data.success) {
             const error = new Error(response.data.message || 'Failed to fetch module details');
             error.status = response.data.status || 400;
@@ -447,7 +414,7 @@ export const moduleDetails = async (courseId, moduleId = null) => {
         if (status === 404) message = error.message?.includes('module') ? 'Module not found' : 'Course not found';
         if (status === 401) message = 'Authentication required';
         if (status === 403) message = 'You are not enrolled in this course';
-        if (status === 500) message = 'Server error occurred while loading the module. Please try again later.';
+        if (status >= 500) message = 'Server error occurred while loading the module. Please try again later.';
         const err = new Error(message);
         err.status = status;
         throw err;
@@ -464,27 +431,18 @@ export const getAllCourses = async () => {
     }
 };
 
-// Notification functions
 export const getLearnerNotifications = async () => {
     try {
-        return await axios.get('/api/learner/notifications', {
-            headers: {
-                'Authorization': `Bearer ${localStorage.getItem('token')}`
-            }
-        });
+        return await api.get('/learner/notifications');
     } catch (error) {
         console.error('Error fetching notifications:', error);
         throw error;
     }
 };
 
-export const markNotificationAsRead = async (notificationId) => {
+export const markNotificationAsRead = async notificationId => {
     try {
-        const response = await axios.patch(`/api/learner/notifications/${notificationId}/read`, {}, {
-            headers: {
-                'Authorization': `Bearer ${localStorage.getItem('token')}`
-            }
-        });
+        const response = await api.patch(`/learner/notifications/${notificationId}/read`, {});
         return response;
     } catch (error) {
         console.error('Error marking notification as read:', error);
@@ -492,11 +450,11 @@ export const markNotificationAsRead = async (notificationId) => {
     }
 };
 
-export const enrollNow = async (courseId) => {
+export const enrollNow = async courseId => {
     try {
         const response = await api.post(`/courses/${courseId}/enroll`);
-        console.log('🌐 Enroll API Response:', response); // Debug
-        if (!response.data || !response.data.message) {
+        console.log('🌐 Enroll API Response:', response);
+        if (!response.data?.message) {
             throw new Error('Invalid enrollment response');
         }
         return response.data;
@@ -506,11 +464,11 @@ export const enrollNow = async (courseId) => {
     }
 };
 
-export const leaveCourse = async (courseId) => {
+export const leaveCourse = async courseId => {
     try {
         const response = await api.delete(`/courses/${courseId}/leave`);
-        console.log('🌐 Leave API Response:', response); // Debug
-        if (!response.data || !response.data.message) {
+        console.log('🌐 Leave API Response:', response);
+        if (!response.data?.message) {
             throw new Error('Invalid leave response');
         }
         return response.data;
@@ -520,79 +478,51 @@ export const leaveCourse = async (courseId) => {
     }
 };
 
-/**
- * Submit a comment for a course
- * @param {number} courseId - ID of the course
- * @param {Object} commentData - Comment data including text and rating
- * @returns {Promise<Object>} Response data
- */
 export const submitComment = async (courseId, commentData) => {
     try {
         const response = await api.post(`/courses/${courseId}/comments`, {
             text: commentData.text,
-            rating: Math.round(commentData.rating) // Ensure integer for unsignedTinyInteger
+            rating: Math.round(commentData.rating),
         });
         return response.data;
     } catch (error) {
-        if (error.response?.status === 422) {
-            // Validation errors
-            const errors = error.response.data.errors;
-            if (errors.rating) {
-                throw new Error('La note doit être entre 1 et 5 étoiles');
-            }
-            if (errors.text) {
-                throw new Error('Le commentaire doit contenir au moins 3 caractères');
-            }
-        } else if (error.response?.status === 401) {
+        const status = error.response?.status;
+        const errors = error.response?.data?.errors;
+
+        if (status === 422 && errors) {
+            if (errors.rating) throw new Error('La note doit être entre 1 et 5 étoiles');
+            if (errors.text) throw new Error('Le commentaire doit contenir au moins 3 caractères');
+        } else if (status === 401) {
             throw new Error('Vous devez être connecté pour laisser un commentaire');
-        } else if (error.response?.status === 403) {
+        } else if (status === 403) {
             throw new Error('Vous devez être inscrit au cours pour laisser un commentaire');
-        } else if (error.response?.status === 404) {
+        } else if (status === 404) {
             throw new Error('Cours non trouvé');
-        } else if (error.response?.status === 500) {
+        } else if (status >= 500) {
             throw new Error('Erreur serveur - veuillez réessayer plus tard');
-        } else {
-            throw new Error('Une erreur est survenue lors de l\'envoi du commentaire');
         }
+        throw new Error(error.response?.data?.message || 'Une erreur est survenue lors de l\'envoi du commentaire');
     }
 };
 
-/**
- * Get all resources for a course
- * @param {number} courseId - The ID of the course
- * @param moduleId
- * @returns {Promise<Object>} The course resources
- */
 export const getCourseResources = async (courseId, moduleId) => {
     try {
-        const response = await axios.get(`/learner/courses/${courseId}/${moduleId}`);
+        const response = await api.get(`/learner/courses/${courseId}/${moduleId}`);
         return response.data;
     } catch (error) {
         throw handleApiError(error);
     }
 };
 
-/**
- * Get a specific resource
- * @param {number} courseId - The ID of the course
- * @param {number} resourceId - The ID of the resource
- * @returns {Promise<Object>} The resource details
- */
 export const getCourseResource = async (courseId, resourceId) => {
     try {
-        const response = await axios.get(`/api/courses/${courseId}/resources/${resourceId}`);
+        const response = await api.get(`/courses/${courseId}/resources/${resourceId}`);
         return response.data;
     } catch (error) {
         throw handleApiError(error);
     }
 };
 
-/**
- * Mark a module as completed
- * @param {number} courseId - The ID of the course
- * @param {number} moduleId - The ID of the module to mark as completed
- * @returns {Promise} - The API response
- */
 export const markModuleAsCompleted = async (courseId, moduleId) => {
     try {
         console.log('Frontend: Marking module as completed:', { courseId, moduleId });
@@ -602,7 +532,6 @@ export const markModuleAsCompleted = async (courseId, moduleId) => {
         if (!response.data.success) {
             throw new Error(response.data.message || 'Failed to mark module as completed');
         }
-
         return response.data;
     } catch (error) {
         console.error('Frontend: Failed to mark module as completed:', error.response?.data || error);
@@ -610,29 +539,12 @@ export const markModuleAsCompleted = async (courseId, moduleId) => {
     }
 };
 
-const handleApiError = (error) => {
-    if (error.response) {
-        // The request was made and the server responded with a status code
-        // that falls out of the range of 2xx
-        throw new Error(error.response.data.message || 'An error occurred');
-    } else if (error.request) {
-        // The request was made but no response was received
-        throw new Error('No response from server');
-    } else {
-        // Something happened in setting up the request that triggered an Error
-        throw new Error(error.message || 'An error occurred');
-    }
-};
-
-// Personal Information Section
-export const updatePersonalInfo = async (formData) => {
+export const updatePersonalInfo = async formData => {
     try {
         const response = await api.patch('/learner/personal-info', formData, {
-            headers: {
-                'Content-Type': 'multipart/form-data',
-            },
+            headers: { 'Content-Type': 'multipart/form-data' },
         });
-        if (!response.data || !response.data.data) {
+        if (!response.data?.data) {
             throw new Error('Invalid response format');
         }
         return response.data;
@@ -642,36 +554,67 @@ export const updatePersonalInfo = async (formData) => {
     }
 };
 
-// Password Section
-export const updatePassword = async (data) => {
-    const response = await api.patch('/learner/password', data);
-    return response.data;
-};
-
-// Additional Information Section
-export const updateAdditionalInfo = async (data) => {
-    const response = await api.patch('/learner/additional-info', data);
-    return response.data;
-};
-
-// Notifications Section
-export const updateNotifications = async (data) => {
-    const response = await api.patch('/learner/notifications', data);
-    return response.data;
-};
-
-export const downloadResource = async (resourceId) => {
+export const updatePassword = async data => {
     try {
-        const token = localStorage.getItem('token');
-        if (!token) {
+        const response = await api.patch('/learner/password', data);
+        return response.data;
+    } catch (error) {
+        const status = error.response?.status;
+        if (status === 422) {
+            throw new Error(error.response.data.errors?.current_password || 'Validation failed');
+        } else if (status === 401) {
+            throw new Error('Authentication required');
+        } else if (status >= 500) {
+            throw new Error('Server error - please try again later');
+        }
+        throw new Error(error.response?.data?.message || 'Failed to update password');
+    }
+};
+
+export const updateAdditionalInfo = async data => {
+    try {
+        const response = await api.patch('/learner/additional-info', data);
+        return response.data;
+    } catch (error) {
+        const status = error.response?.status;
+        if (status === 422) {
+            throw new Error(error.response.data.errors || 'Validation failed');
+        } else if (status === 401) {
+            throw new Error('Authentication required');
+        } else if (status >= 500) {
+            throw new Error('Server error - please try again later');
+        }
+        throw new Error(error.response?.data?.message || 'Failed to update additional info');
+    }
+};
+
+export const updateNotifications = async data => {
+    try {
+        const response = await api.patch('/learner/notifications', data);
+        return response.data;
+    } catch (error) {
+        const status = error.response?.status;
+        if (status === 422) {
+            throw new Error(error.response.data.errors || 'Validation failed');
+        } else if (status === 401) {
+            throw new Error('Authentication required');
+        } else if (status >= 500) {
+            throw new Error('Server error - please try again later');
+        }
+        throw new Error(error.response?.data?.message || 'Failed to update notifications');
+    }
+};
+
+export const downloadResource = async resourceId => {
+    try {
+        if (!getToken()) {
             throw new Error('No authentication token found');
         }
 
         console.log('🌐 Initiating resource download:', { resourceId });
-        const response = await axios.get(`${API_URL}/download-resource`, {
+        const response = await api.get('/download-resource', {
             params: { resource_id: resourceId },
-            headers: { Authorization: `Bearer ${token}` },
-            responseType: 'blob'
+            responseType: 'blob',
         });
 
         const contentType = response.headers['content-type'];
@@ -688,8 +631,7 @@ export const downloadResource = async (resourceId) => {
         }
 
         const fileName = response.headers['content-disposition']
-            ? response.headers['content-disposition'].match(/filename="(.+)"/)?.[1] || `resource_${resourceId}`
-            : `resource_${resourceId}`;
+            ?.match(/filename="(.+)"/)?.[1] || `resource_${resourceId}`;
         const url = window.URL.createObjectURL(new Blob([response.data]));
         const link = document.createElement('a');
         link.href = url;
@@ -702,7 +644,6 @@ export const downloadResource = async (resourceId) => {
         console.log('🌐 Resource downloaded successfully:', { resourceId, fileName });
         toast.success(`Downloaded ${fileName}`);
         return { success: true, isRedirect: false };
-
     } catch (error) {
         console.error('❌ Resource download error:', error.response || error);
         const message = error.response?.data?.error || error.message || 'Failed to download resource';
@@ -710,4 +651,15 @@ export const downloadResource = async (resourceId) => {
         throw new Error(message);
     }
 };
+
+const handleApiError = error => {
+    if (error.response) {
+        throw new Error(error.response.data.message || 'An error occurred');
+    } else if (error.request) {
+        throw new Error('No response from server');
+    } else {
+        throw new Error(error.message || 'An error occurred');
+    }
+};
+
 export default api;

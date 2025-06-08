@@ -1,460 +1,496 @@
-import React, { useState } from 'react';
-import PropTypes from 'prop-types';
-import { Button, Alert, Chip, Tooltip } from '@mui/material';
+"use client"
+
+import { useState } from "react"
+import PropTypes from "prop-types"
 import {
-    ChevronLeft,
-    ChevronRight,
-    Download,
-    OpenInNew,
-    PictureAsPdf,
-    Image,
-    VideoFile,
-    AudioFile,
-    Description,
-    Code,
-    Archive,
-    DataObject,
-    TableChart,
-    Slideshow,
-    Link,
-    InsertDriveFile,
-    Preview,
-    PlayArrow
-} from '@mui/icons-material';
-import NotesPanel from './NotesPanel';
-import ContentRenderer from './ContentRenderer';
-import { downloadResource } from '../../services/api.js';
+  ChevronLeft,
+  ChevronRight,
+  Download,
+  ExternalLink,
+  FileText,
+  ImageIcon,
+  Video,
+  Music,
+  FileCode,
+  Archive,
+  Database,
+  Presentation,
+  Link,
+  File,
+  Eye,
+  Play,
+  ChevronDown,
+  CheckCircle,
+  Folder,
+  FolderOpen,
+} from "lucide-react"
+import NotesPanel from "./NotesPanel"
+import ContentRenderer from "./ContentRenderer"
+import { downloadResource } from "../../services/api.js"
 
 // File type configuration
 const FILE_TYPES = {
-    // Documents
-    pdf: { icon: PictureAsPdf, color: '#d32f2f', canPreview: true, category: 'document' },
-    doc: { icon: Description, color: '#1976d2', canPreview: false, category: 'document' },
-    docx: { icon: Description, color: '#1976d2', canPreview: false, category: 'document' },
-    txt: { icon: Description, color: '#616161', canPreview: true, category: 'document' },
-    rtf: { icon: Description, color: '#616161', canPreview: false, category: 'document' },
+  // Documents
+  pdf: { icon: FileText, canPreview: true, category: "Documents" },
+  doc: { icon: FileText, canPreview: false, category: "Documents" },
+  docx: { icon: FileText, canPreview: false, category: "Documents" },
+  txt: { icon: FileText, canPreview: true, category: "Documents" },
+  rtf: { icon: FileText, canPreview: false, category: "Documents" },
 
-    // Spreadsheets
-    xls: { icon: TableChart, color: '#388e3c', canPreview: false, category: 'spreadsheet' },
-    xlsx: { icon: TableChart, color: '#388e3c', canPreview: false, category: 'spreadsheet' },
-    csv: { icon: TableChart, color: '#388e3c', canPreview: true, category: 'spreadsheet' },
+  // Spreadsheets
+  xls: { icon: Database, canPreview: false, category: "Spreadsheets" },
+  xlsx: { icon: Database, canPreview: false, category: "Spreadsheets" },
+  csv: { icon: Database, canPreview: true, category: "Spreadsheets" },
 
-    // Presentations
-    ppt: { icon: Slideshow, color: '#f57c00', canPreview: false, category: 'presentation' },
-    pptx: { icon: Slideshow, color: '#f57c00', canPreview: false, category: 'presentation' },
+  // Presentations
+  ppt: { icon: Presentation, canPreview: false, category: "Presentations" },
+  pptx: { icon: Presentation, canPreview: false, category: "Presentations" },
 
-    // Images
-    jpg: { icon: Image, color: '#7b1fa2', canPreview: true, category: 'image' },
-    jpeg: { icon: Image, color: '#7b1fa2', canPreview: true, category: 'image' },
-    png: { icon: Image, color: '#7b1fa2', canPreview: true, category: 'image' },
-    gif: { icon: Image, color: '#7b1fa2', canPreview: true, category: 'image' },
-    bmp: { icon: Image, color: '#7b1fa2', canPreview: true, category: 'image' },
-    svg: { icon: Image, color: '#7b1fa2', canPreview: true, category: 'image' },
-    webp: { icon: Image, color: '#7b1fa2', canPreview: true, category: 'image' },
+  // Images
+  jpg: { icon: ImageIcon, canPreview: true, category: "Images" },
+  jpeg: { icon: ImageIcon, canPreview: true, category: "Images" },
+  png: { icon: ImageIcon, canPreview: true, category: "Images" },
+  gif: { icon: ImageIcon, canPreview: true, category: "Images" },
+  bmp: { icon: ImageIcon, canPreview: true, category: "Images" },
+  svg: { icon: ImageIcon, canPreview: true, category: "Images" },
+  webp: { icon: ImageIcon, canPreview: true, category: "Images" },
 
-    // Videos
-    mp4: { icon: VideoFile, color: '#e91e63', canPreview: true, category: 'video' },
-    avi: { icon: VideoFile, color: '#e91e63', canPreview: true, category: 'video' },
-    mov: { icon: VideoFile, color: '#e91e63', canPreview: true, category: 'video' },
-    wmv: { icon: VideoFile, color: '#e91e63', canPreview: true, category: 'video' },
-    flv: { icon: VideoFile, color: '#e91e63', canPreview: true, category: 'video' },
-    webm: { icon: VideoFile, color: '#e91e63', canPreview: true, category: 'video' },
-    mkv: { icon: VideoFile, color: '#e91e63', canPreview: true, category: 'video' },
+  // Videos
+  mp4: { icon: Video, canPreview: true, category: "Videos" },
+  avi: { icon: Video, canPreview: true, category: "Videos" },
+  mov: { icon: Video, canPreview: true, category: "Videos" },
+  wmv: { icon: Video, canPreview: true, category: "Videos" },
+  flv: { icon: Video, canPreview: true, category: "Videos" },
+  webm: { icon: Video, canPreview: true, category: "Videos" },
+  mkv: { icon: Video, canPreview: true, category: "Videos" },
 
-    // Audio
-    mp3: { icon: AudioFile, color: '#00796b', canPreview: true, category: 'audio' },
-    wav: { icon: AudioFile, color: '#00796b', canPreview: true, category: 'audio' },
-    flac: { icon: AudioFile, color: '#00796b', canPreview: true, category: 'audio' },
-    aac: { icon: AudioFile, color: '#00796b', canPreview: true, category: 'audio' },
-    ogg: { icon: AudioFile, color: '#00796b', canPreview: true, category: 'audio' },
+  // Audio
+  mp3: { icon: Music, canPreview: true, category: "Audio" },
+  wav: { icon: Music, canPreview: true, category: "Audio" },
+  flac: { icon: Music, canPreview: true, category: "Audio" },
+  aac: { icon: Music, canPreview: true, category: "Audio" },
+  ogg: { icon: Music, canPreview: true, category: "Audio" },
 
-    // Code files
-    js: { icon: Code, color: '#ff9800', canPreview: true, category: 'code' },
-    jsx: { icon: Code, color: '#ff9800', canPreview: true, category: 'code' },
-    ts: { icon: Code, color: '#ff9800', canPreview: true, category: 'code' },
-    tsx: { icon: Code, color: '#ff9800', canPreview: true, category: 'code' },
-    html: { icon: Code, color: '#ff9800', canPreview: true, category: 'code' },
-    css: { icon: Code, color: '#ff9800', canPreview: true, category: 'code' },
-    scss: { icon: Code, color: '#ff9800', canPreview: true, category: 'code' },
-    py: { icon: Code, color: '#ff9800', canPreview: true, category: 'code' },
-    java: { icon: Code, color: '#ff9800', canPreview: true, category: 'code' },
-    cpp: { icon: Code, color: '#ff9800', canPreview: true, category: 'code' },
-    c: { icon: Code, color: '#ff9800', canPreview: true, category: 'code' },
-    php: { icon: Code, color: '#ff9800', canPreview: true, category: 'code' },
-    rb: { icon: Code, color: '#ff9800', canPreview: true, category: 'code' },
-    go: { icon: Code, color: '#ff9800', canPreview: true, category: 'code' },
-    rs: { icon: Code, color: '#ff9800', canPreview: true, category: 'code' },
+  // Code files
+  js: { icon: FileCode, canPreview: true, category: "Code" },
+  jsx: { icon: FileCode, canPreview: true, category: "Code" },
+  ts: { icon: FileCode, canPreview: true, category: "Code" },
+  tsx: { icon: FileCode, canPreview: true, category: "Code" },
+  html: { icon: FileCode, canPreview: true, category: "Code" },
+  css: { icon: FileCode, canPreview: true, category: "Code" },
+  scss: { icon: FileCode, canPreview: true, category: "Code" },
+  py: { icon: FileCode, canPreview: true, category: "Code" },
+  java: { icon: FileCode, canPreview: true, category: "Code" },
+  cpp: { icon: FileCode, canPreview: true, category: "Code" },
+  c: { icon: FileCode, canPreview: true, category: "Code" },
+  php: { icon: FileCode, canPreview: true, category: "Code" },
+  rb: { icon: FileCode, canPreview: true, category: "Code" },
+  go: { icon: FileCode, canPreview: true, category: "Code" },
+  rs: { icon: FileCode, canPreview: true, category: "Code" },
 
-    // Data files
-    json: { icon: DataObject, color: '#607d8b', canPreview: true, category: 'data' },
-    xml: { icon: DataObject, color: '#607d8b', canPreview: true, category: 'data' },
-    yaml: { icon: DataObject, color: '#607d8b', canPreview: true, category: 'data' },
-    yml: { icon: DataObject, color: '#607d8b', canPreview: true, category: 'data' },
+  // Data files
+  json: { icon: Database, canPreview: true, category: "Data" },
+  xml: { icon: Database, canPreview: true, category: "Data" },
+  yaml: { icon: Database, canPreview: true, category: "Data" },
+  yml: { icon: Database, canPreview: true, category: "Data" },
 
-    // Archives
-    zip: { icon: Archive, color: '#795548', canPreview: false, category: 'archive' },
-    rar: { icon: Archive, color: '#795548', canPreview: false, category: 'archive' },
-    '7z': { icon: Archive, color: '#795548', canPreview: false, category: 'archive' },
-    tar: { icon: Archive, color: '#795548', canPreview: false, category: 'archive' },
-    gz: { icon: Archive, color: '#795548', canPreview: false, category: 'archive' },
+  // Archives
+  zip: { icon: Archive, canPreview: false, category: "Archives" },
+  rar: { icon: Archive, canPreview: false, category: "Archives" },
+  "7z": { icon: Archive, canPreview: false, category: "Archives" },
+  tar: { icon: Archive, canPreview: false, category: "Archives" },
+  gz: { icon: Archive, canPreview: false, category: "Archives" },
 
-    // URLs/Links
-    url: { icon: Link, color: '#2196f3', canPreview: false, category: 'link' },
-    link: { icon: Link, color: '#2196f3', canPreview: false, category: 'link' },
+  // URLs/Links
+  url: { icon: Link, canPreview: false, category: "Links" },
+  link: { icon: Link, canPreview: false, category: "Links" },
 
-    // Default
-    default: { icon: InsertDriveFile, color: '#9e9e9e', canPreview: false, category: 'unknown' }
-};
+  // Default
+  default: { icon: File, canPreview: false, category: "Other" },
+}
 
 // Mapping of resource.type to file extensions
 const TYPE_TO_EXTENSION = {
-    pdf: '.pdf',
-    image: '.png', // Default to PNG for images
-    video: '.mp4', // Default to MP4 for videos
-    audio: '.mp3', // Default to MP3 for audio
-    link: null, // Links don't trigger file dialogs
-    other: '.bin' // Generic binary for unknown types
-};
+  pdf: ".pdf",
+  image: ".png",
+  video: ".mp4",
+  audio: ".mp3",
+  link: null,
+  other: ".bin",
+}
 
 // Helper function to get file extension
 const getFileExtension = (filename) => {
-    if (!filename) return 'default';
-    const ext = filename.split('.').pop()?.toLowerCase();
-    return ext || 'default';
-};
+  if (!filename) return "default"
+  const ext = filename.split(".").pop()?.toLowerCase()
+  return ext || "default"
+}
 
 // Helper function to get file type info
 const getFileTypeInfo = (filename, resourceType) => {
-    // If it's explicitly a URL/link type
-    if (resourceType === 'url' || resourceType === 'link') {
-        return FILE_TYPES.url;
-    }
+  if (resourceType === "url" || resourceType === "link") {
+    return FILE_TYPES.url
+  }
 
-    const extension = getFileExtension(filename);
-    return FILE_TYPES[extension] || FILE_TYPES.default;
-};
+  const extension = getFileExtension(filename)
+  return FILE_TYPES[extension] || FILE_TYPES.default
+}
 
 // Helper function to format file size
 const formatFileSize = (bytes) => {
-    if (!bytes) return '';
-    const sizes = ['B', 'KB', 'MB', 'GB'];
-    const i = Math.floor(Math.log(bytes) / Math.log(1024));
-    return `${(bytes / Math.pow(1024, i)).toFixed(1)} ${sizes[i]}`;
-};
+  if (!bytes) return ""
+  const sizes = ["B", "KB", "MB", "GB"]
+  const i = Math.floor(Math.log(bytes) / Math.log(1024))
+  return `${(bytes / Math.pow(1024, i)).toFixed(1)} ${sizes[i]}`
+}
 
 // Resource action buttons component
 const ResourceActions = ({ resource, onDownload, onPreview, onOpen, isDownloading }) => {
-    const fileInfo = getFileTypeInfo(resource.name, resource.type);
-    const actions = [];
+  const fileInfo = getFileTypeInfo(resource.name, resource.type)
+  const actions = []
 
-    // Preview action (for previewable files)
-    if (fileInfo.canPreview && resource.url) {
-        actions.push(
-            <Tooltip key="preview" title="Preview">
-                <Button
-                    variant="outlined"
-                    size="small"
-                    startIcon={fileInfo.category === 'video' ? <PlayArrow /> : <Preview />}
-                    onClick={() => onPreview(resource)}
-                    className="normal-case"
-                >
-                    {fileInfo.category === 'video' || fileInfo.category === 'audio' ? 'Play' : 'Preview'}
-                </Button>
-            </Tooltip>
-        );
-    }
+  // Preview action (for previewable files)
+  if (fileInfo.canPreview && resource.url) {
+    actions.push(
+      <button
+        key="preview"
+        onClick={() => onPreview(resource)}
+        className="flex items-center gap-2 px-3 py-1.5 text-sm border border-gray-300 rounded-lg hover:bg-gray-50 transition-colors"
+        title="Preview"
+      >
+        {fileInfo.category === "Videos" || fileInfo.category === "Audio" ? (
+          <Play className="w-4 h-4" />
+        ) : (
+          <Eye className="w-4 h-4" />
+        )}
+        {fileInfo.category === "Videos" || fileInfo.category === "Audio" ? "Play" : "Preview"}
+      </button>,
+    )
+  }
 
-    // Download action (always available, except for links)
-    if (fileInfo.category !== 'link') {
-        actions.push(
-            <Tooltip key="download" title="Download file">
-                <Button
-                    variant="contained"
-                    size="small"
-                    startIcon={<Download />}
-                    onClick={() => onDownload(resource.id, resource)} // Pass resource object
-                    disabled={isDownloading}
-                    className="normal-case"
-                >
-                    {isDownloading ? 'Downloading...' : 'Download'}
-                </Button>
-            </Tooltip>
-        );
-    }
+  // Download action (always available, except for links)
+  if (fileInfo.category !== "Links") {
+    actions.push(
+      <button
+        key="download"
+        onClick={() => onDownload(resource.id, resource)}
+        disabled={isDownloading}
+        className="flex items-center gap-2 px-3 py-1.5 text-sm bg-black text-white rounded-lg hover:bg-gray-800 transition-colors disabled:opacity-50"
+        title="Download file"
+      >
+        <Download className="w-4 h-4" />
+        {isDownloading ? "Downloading..." : "Download"}
+      </button>,
+    )
+  }
 
-    // Open in new tab action (for URLs and web-viewable files)
-    if (resource.url && (fileInfo.category === 'link' || fileInfo.canPreview)) {
-        actions.push(
-            <Tooltip key="open" title="Open in new tab">
-                <Button
-                    variant="text"
-                    size="small"
-                    startIcon={<OpenInNew />}
-                    onClick={() => onOpen(resource.url)}
-                    className="normal-case text-indigo-600 hover:text-indigo-800"
-                >
-                    Open
-                </Button>
-            </Tooltip>
-        );
-    }
+  // Open in new tab action (for URLs and web-viewable files)
+  if (resource.url && (fileInfo.category === "Links" || fileInfo.canPreview)) {
+    actions.push(
+      <button
+        key="open"
+        onClick={() => onOpen(resource.url)}
+        className="flex items-center gap-2 px-3 py-1.5 text-sm text-gray-600 hover:text-black transition-colors"
+        title="Open in new tab"
+      >
+        <ExternalLink className="w-4 h-4" />
+        Open
+      </button>,
+    )
+  }
 
-    return <div className="flex items-center gap-2">{actions}</div>;
-};
+  return <div className="flex items-center gap-2">{actions}</div>
+}
 
-const CourseContent = ({ currentModule, hasPrevious, hasNext, onPreviousClick, onNextClick, onQuizComplete, courseId, onSaveNotes, notes, onModuleComplete }) => {
-    const [downloadingResources, setDownloadingResources] = useState(new Set());
-    const [previewResource, setPreviewResource] = useState(null);
+const CourseContent = ({
+  currentModule,
+  hasPrevious,
+  hasNext,
+  onPreviousClick,
+  onNextClick,
+  onQuizComplete,
+  courseId,
+  onSaveNotes,
+  notes,
+  onModuleComplete,
+}) => {
+  const [downloadingResources, setDownloadingResources] = useState(new Set())
+  const [previewResource, setPreviewResource] = useState(null)
+  const [expandedCategories, setExpandedCategories] = useState(new Set())
 
-    if (!currentModule) {
-        return (
-            <div className="flex-1 p-6 bg-white">
-                <Alert severity="error">No module selected.</Alert>
-            </div>
-        );
-    }
-
-    console.log('Module Resources:', JSON.stringify(currentModule.resources, null, 2));
-
-    const handleDownloadResource = async (resourceId, resource) => {
-        if (downloadingResources.has(resourceId)) return;
-
-        setDownloadingResources(prev => new Set(prev).add(resourceId));
-
-        try {
-            // Strip existing extension from resource.name
-            const baseName = resource.name.replace(/\.[^/.]+$/, '');
-            // Get extension based on resource.type
-            const extension = TYPE_TO_EXTENSION[resource.type.toLowerCase()] || '.bin';
-            const fileName = extension ? `${baseName}${extension}` : baseName;
-
-            console.log('Downloading resource:', { resourceId, resourceType: resource.type, fileName });
-
-            await downloadResource(resourceId, fileName);
-        } catch (error) {
-            console.error('Download failed:', error);
-        } finally {
-            setDownloadingResources(prev => {
-                const newSet = new Set(prev);
-                newSet.delete(resourceId);
-                return newSet;
-            });
-        }
-    };
-
-    const handlePreviewResource = (resource) => {
-        const fileInfo = getFileTypeInfo(resource.name, resource.type);
-
-        if (fileInfo.category === 'image') {
-            window.open(resource.url, '_blank', 'noopener,noreferrer');
-        } else if (fileInfo.category === 'video' || fileInfo.category === 'audio') {
-            setPreviewResource(resource);
-        } else if (fileInfo.canPreview) {
-            window.open(resource.url, '_blank', 'noopener,noreferrer');
-        }
-    };
-
-    const handleOpenResource = (url) => {
-        window.open(url, '_blank', 'noopener,noreferrer');
-    };
-
-    const groupResourcesByCategory = (resources) => {
-        const grouped = {};
-        resources.forEach(resource => {
-            const fileInfo = getFileTypeInfo(resource.name, resource.type);
-            const category = fileInfo.category;
-            if (!grouped[category]) {
-                grouped[category] = [];
-            }
-            grouped[category].push(resource);
-        });
-        return grouped;
-    };
-
-    const categoryLabels = {
-        document: 'Documents',
-        spreadsheet: 'Spreadsheets',
-        presentation: 'Presentations',
-        image: 'Images',
-        video: 'Videos',
-        audio: 'Audio Files',
-        code: 'Code Files',
-        data: 'Data Files',
-        archive: 'Archives',
-        link: 'Links',
-        unknown: 'Other Files'
-    };
-
+  if (!currentModule) {
     return (
-        <div className="flex-1 p-6 bg-white overflow-auto">
-            <div className="flex justify-between items-center mb-6">
-                <h2 className="text-2xl font-bold text-gray-800">{currentModule.title}</h2>
-                {!currentModule.is_completed && (
-                    <button
-                        onClick={() => {
-                            if (typeof onModuleComplete === 'function') {
-                                onModuleComplete(currentModule.id);
-                            } else {
-                                console.error('onModuleComplete is not a function:', onModuleComplete);
-                            }
-                        }}
-                        className="px-4 py-2 bg-green-600 text-white rounded-lg hover:bg-green-700 transition-colors flex items-center gap-2"
-                    >
-                        <svg xmlns="http://www.w3.org/2000/svg" className="h-5 w-5" viewBox="0 0 20 20" fill="currentColor">
-                            <path fillRule="evenodd" d="M16.707 5.293a1 1 0 010 1.414l-8 8a1 1 0 01-1.414 0l-4-4a1 1 0 011.414-1.414L8 12.586l7.293-7.293a1 1 0 011.414 0z" clipRule="evenodd" />
-                        </svg>
-                        Mark as Completed
-                    </button>
-                )}
-            </div>
-
-            <ContentRenderer
-                type={currentModule.type}
-                textContent={currentModule.text_content}
-                filePath={currentModule.file_path}
-                quizQuestions={currentModule.quiz_questions}
-                resources={currentModule.resources}
-                onQuizComplete={onQuizComplete}
-            />
-
-            <div className="mt-6 space-y-6">
-                {currentModule.resources?.length > 0 && (
-                    <div>
-                        <h3 className="text-lg font-semibold text-gray-800 mb-4">
-                            Resources ({currentModule.resources.length})
-                        </h3>
-
-                        {(() => {
-                            const groupedResources = groupResourcesByCategory(currentModule.resources);
-
-                            return Object.entries(groupedResources).map(([category, resources]) => (
-                                <div key={category} className="mb-6">
-                                    <h4 className="text-md font-medium text-gray-700 mb-3 flex items-center gap-2">
-                                        {categoryLabels[category]}
-                                        <Chip size="small" label={resources.length} />
-                                    </h4>
-                                    <div className="space-y-3">
-                                        {resources.map((resource) => {
-                                            const fileInfo = getFileTypeInfo(resource.name, resource.type);
-                                            const IconComponent = fileInfo.icon;
-
-                                            return (
-                                                <div key={resource.id} className="flex items-center justify-between p-4 bg-gray-50 rounded-lg border hover:bg-gray-100 transition-colors">
-                                                    <div className="flex items-center gap-3 flex-1">
-                                                        <IconComponent
-                                                            style={{ color: fileInfo.color, fontSize: '2rem' }}
-                                                        />
-                                                        <div className="flex-1 min-w-0">
-                                                            <h4 className="font-medium text-gray-900 truncate">
-                                                                {resource.name}
-                                                            </h4>
-                                                            <div className="flex items-center gap-2 text-sm text-gray-600">
-                                                                <span className="capitalize">{resource.type}</span>
-                                                                {resource.size && (
-                                                                    <>
-                                                                        <span>•</span>
-                                                                        <span>{formatFileSize(resource.size)}</span>
-                                                                    </>
-                                                                )}
-                                                                {resource.description && (
-                                                                    <>
-                                                                        <span>•</span>
-                                                                        <span className="truncate">{resource.description}</span>
-                                                                    </>
-                                                                )}
-                                                            </div>
-                                                        </div>
-                                                    </div>
-
-                                                    <ResourceActions
-                                                        resource={resource}
-                                                        onDownload={handleDownloadResource}
-                                                        onPreview={handlePreviewResource}
-                                                        onOpen={handleOpenResource}
-                                                        isDownloading={downloadingResources.has(resource.id)}
-                                                    />
-                                                </div>
-                                            );
-                                        })}
-                                    </div>
-                                </div>
-                            ));
-                        })()}
-                    </div>
-                )}
-
-                <NotesPanel
-                    courseId={courseId}
-                    notes={notes}
-                    onSaveNotes={onSaveNotes}
-                />
-            </div>
-
-            <div className="flex justify-between mt-8">
-                <Button
-                    variant="outlined"
-                    startIcon={<ChevronLeft />}
-                    onClick={onPreviousClick}
-                    disabled={!hasPrevious}
-                    className="normal-case"
-                >
-                    Previous
-                </Button>
-                <Button
-                    variant="contained"
-                    endIcon={<ChevronRight />}
-                    onClick={onNextClick}
-                    disabled={!hasNext}
-                    className="normal-case"
-                >
-                    Next
-                </Button>
-            </div>
+      <div className="flex-1 p-8 bg-white">
+        <div className="bg-red-50 border border-red-200 rounded-lg p-4">
+          <p className="text-red-800">No module selected.</p>
         </div>
-    );
-};
+      </div>
+    )
+  }
+
+  const handleDownloadResource = async (resourceId, resource) => {
+    if (downloadingResources.has(resourceId)) return
+
+    setDownloadingResources((prev) => new Set(prev).add(resourceId))
+
+    try {
+      const baseName = resource.name.replace(/\.[^/.]+$/, "")
+      const extension = TYPE_TO_EXTENSION[resource.type.toLowerCase()] || ".bin"
+      const fileName = extension ? `${baseName}${extension}` : baseName
+
+      await downloadResource(resourceId, fileName)
+    } catch (error) {
+      console.error("Download failed:", error)
+    } finally {
+      setDownloadingResources((prev) => {
+        const newSet = new Set(prev)
+        newSet.delete(resourceId)
+        return newSet
+      })
+    }
+  }
+
+  const handlePreviewResource = (resource) => {
+    const fileInfo = getFileTypeInfo(resource.name, resource.type)
+
+    if (fileInfo.category === "Images") {
+      window.open(resource.url, "_blank", "noopener,noreferrer")
+    } else if (fileInfo.category === "Videos" || fileInfo.category === "Audio") {
+      setPreviewResource(resource)
+    } else if (fileInfo.canPreview) {
+      window.open(resource.url, "_blank", "noopener,noreferrer")
+    }
+  }
+
+  const handleOpenResource = (url) => {
+    window.open(url, "_blank", "noopener,noreferrer")
+  }
+
+  const groupResourcesByCategory = (resources) => {
+    const grouped = {}
+    resources.forEach((resource) => {
+      const fileInfo = getFileTypeInfo(resource.name, resource.type)
+      const category = fileInfo.category
+      if (!grouped[category]) {
+        grouped[category] = []
+      }
+      grouped[category].push(resource)
+    })
+    return grouped
+  }
+
+  const toggleCategory = (category) => {
+    setExpandedCategories((prev) => {
+      const newSet = new Set(prev)
+      if (newSet.has(category)) {
+        newSet.delete(category)
+      } else {
+        newSet.add(category)
+      }
+      return newSet
+    })
+  }
+
+  return (
+    <div className="flex-1 bg-white overflow-auto">
+      <div className="max-w-4xl mx-auto p-8">
+        {/* Module Header */}
+        <div className="flex justify-between items-start mb-8">
+          <div className="flex-1">
+            <h1 className="text-3xl font-bold text-black mb-2">{currentModule.title}</h1>
+            <div className="flex items-center gap-4 text-sm text-gray-600">
+              <span>Module Content</span>
+              {currentModule.is_completed && (
+                <div className="flex items-center gap-1 text-green-600">
+                  <CheckCircle className="w-4 h-4" />
+                  <span>Completed</span>
+                </div>
+              )}
+            </div>
+          </div>
+
+          {!currentModule.is_completed && (
+            <button
+              onClick={() => {
+                if (typeof onModuleComplete === "function") {
+                  onModuleComplete(currentModule.id)
+                } else {
+                  console.error("onModuleComplete is not a function:", onModuleComplete)
+                }
+              }}
+              className="flex items-center gap-2 px-4 py-2 bg-green-600 text-white rounded-lg hover:bg-green-700 transition-colors"
+            >
+              <CheckCircle className="w-4 h-4" />
+              Mark Complete
+            </button>
+          )}
+        </div>
+
+        {/* Content Renderer */}
+        <div className="mb-12">
+          <ContentRenderer
+            type={currentModule.type}
+            textContent={currentModule.text_content}
+            filePath={currentModule.file_path}
+            quizQuestions={currentModule.quiz_questions}
+            resources={currentModule.resources}
+            onQuizComplete={onQuizComplete}
+          />
+        </div>
+
+        {/* Resources Section */}
+        {currentModule.resources?.length > 0 && (
+          <div className="mb-12">
+            <h2 className="text-2xl font-bold text-black mb-6">Resources ({currentModule.resources.length})</h2>
+
+            {(() => {
+              const groupedResources = groupResourcesByCategory(currentModule.resources)
+
+              return Object.entries(groupedResources).map(([category, resources]) => {
+                const isExpanded = expandedCategories.has(category)
+                const IconComponent = isExpanded ? FolderOpen : Folder
+
+                return (
+                  <div key={category} className="mb-6 border border-gray-200 rounded-lg overflow-hidden">
+                    <button
+                      onClick={() => toggleCategory(category)}
+                      className="w-full flex items-center justify-between p-4 bg-gray-50 hover:bg-gray-100 transition-colors"
+                    >
+                      <div className="flex items-center gap-3">
+                        <IconComponent className="w-5 h-5 text-gray-600" />
+                        <h3 className="text-lg font-semibold text-black">{category}</h3>
+                        <span className="px-2 py-1 bg-white text-gray-600 text-sm rounded-full">
+                          {resources.length}
+                        </span>
+                      </div>
+                      <ChevronDown
+                        className={`w-5 h-5 text-gray-600 transition-transform ${isExpanded ? "rotate-180" : ""}`}
+                      />
+                    </button>
+
+                    {isExpanded && (
+                      <div className="p-4 space-y-3 bg-white">
+                        {resources.map((resource) => {
+                          const fileInfo = getFileTypeInfo(resource.name, resource.type)
+                          const IconComponent = fileInfo.icon
+
+                          return (
+                            <div
+                              key={resource.id}
+                              className="flex items-center justify-between p-4 border border-gray-200 rounded-lg hover:bg-gray-50 transition-colors"
+                            >
+                              <div className="flex items-center gap-3 flex-1 min-w-0">
+                                <IconComponent className="w-6 h-6 text-gray-600 flex-shrink-0" />
+                                <div className="flex-1 min-w-0">
+                                  <h4 className="font-medium text-black truncate">{resource.name}</h4>
+                                  <div className="flex items-center gap-2 text-sm text-gray-600">
+                                    <span className="capitalize">{resource.type}</span>
+                                    {resource.size && (
+                                      <>
+                                        <span>•</span>
+                                        <span>{formatFileSize(resource.size)}</span>
+                                      </>
+                                    )}
+                                    {resource.description && (
+                                      <>
+                                        <span>•</span>
+                                        <span className="truncate">{resource.description}</span>
+                                      </>
+                                    )}
+                                  </div>
+                                </div>
+                              </div>
+
+                              <ResourceActions
+                                resource={resource}
+                                onDownload={handleDownloadResource}
+                                onPreview={handlePreviewResource}
+                                onOpen={handleOpenResource}
+                                isDownloading={downloadingResources.has(resource.id)}
+                              />
+                            </div>
+                          )
+                        })}
+                      </div>
+                    )}
+                  </div>
+                )
+              })
+            })()}
+          </div>
+        )}
+
+        {/* Notes Panel */}
+        <div className="mb-12">
+          <NotesPanel courseId={courseId} notes={notes} onSaveNotes={onSaveNotes} />
+        </div>
+
+        {/* Navigation */}
+        <div className="flex justify-between items-center pt-8 border-t border-gray-200">
+          <button
+            onClick={onPreviousClick}
+            disabled={!hasPrevious}
+            className="flex items-center gap-2 px-6 py-3 border border-gray-300 rounded-lg hover:bg-gray-50 transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
+          >
+            <ChevronLeft className="w-4 h-4" />
+            Previous
+          </button>
+
+          <button
+            onClick={onNextClick}
+            disabled={!hasNext}
+            className="flex items-center gap-2 px-6 py-3 bg-black text-white rounded-lg hover:bg-gray-800 transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
+          >
+            Next
+            <ChevronRight className="w-4 h-4" />
+          </button>
+        </div>
+      </div>
+    </div>
+  )
+}
 
 CourseContent.propTypes = {
-    currentModule: PropTypes.shape({
+  currentModule: PropTypes.shape({
+    id: PropTypes.number,
+    title: PropTypes.string,
+    type: PropTypes.oneOf(["text", "pdf", "image", "video", "quiz"]),
+    text_content: PropTypes.string,
+    file_path: PropTypes.string,
+    is_completed: PropTypes.bool,
+    quiz_questions: PropTypes.arrayOf(
+      PropTypes.shape({
         id: PropTypes.number,
-        title: PropTypes.string,
-        type: PropTypes.oneOf(['text', 'pdf', 'image', 'video', 'quiz']),
-        text_content: PropTypes.string,
-        file_path: PropTypes.string,
-        is_completed: PropTypes.bool,
-        quiz_questions: PropTypes.arrayOf(
-            PropTypes.shape({
-                id: PropTypes.number,
-                question: PropTypes.string,
-                options: PropTypes.arrayOf(
-                    PropTypes.shape({
-                        id: PropTypes.number,
-                        text: PropTypes.string,
-                    })
-                ),
-                correct_option: PropTypes.number,
-            })
+        question: PropTypes.string,
+        options: PropTypes.arrayOf(
+          PropTypes.shape({
+            id: PropTypes.number,
+            text: PropTypes.string,
+          }),
         ),
-        resources: PropTypes.arrayOf(
-            PropTypes.shape({
-                id: PropTypes.number,
-                name: PropTypes.string,
-                type: PropTypes.string,
-                url: PropTypes.string,
-                size: PropTypes.number,
-                description: PropTypes.string,
-            })
-        ),
-    }),
-    hasPrevious: PropTypes.bool.isRequired,
-    hasNext: PropTypes.bool.isRequired,
-    onPreviousClick: PropTypes.func.isRequired,
-    onNextClick: PropTypes.func.isRequired,
-    onQuizComplete: PropTypes.func,
-    courseId: PropTypes.number.isRequired,
-    onSaveNotes: PropTypes.func.isRequired,
-    notes: PropTypes.string,
-    onModuleComplete: PropTypes.func.isRequired,
-};
+        correct_option: PropTypes.number,
+      }),
+    ),
+    resources: PropTypes.arrayOf(
+      PropTypes.shape({
+        id: PropTypes.number,
+        name: PropTypes.string,
+        type: PropTypes.string,
+        url: PropTypes.string,
+        size: PropTypes.number,
+        description: PropTypes.string,
+      }),
+    ),
+  }),
+  hasPrevious: PropTypes.bool.isRequired,
+  hasNext: PropTypes.bool.isRequired,
+  onPreviousClick: PropTypes.func.isRequired,
+  onNextClick: PropTypes.func.isRequired,
+  onQuizComplete: PropTypes.func,
+  courseId: PropTypes.number.isRequired,
+  onSaveNotes: PropTypes.func.isRequired,
+  notes: PropTypes.string,
+  onModuleComplete: PropTypes.func.isRequired,
+}
 
-export default CourseContent;
+export default CourseContent

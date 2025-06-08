@@ -307,7 +307,8 @@ class CourseResourceController extends Controller
                 'correct_option' => $question->correct_option ?? -1, // Fallback if null
             ];
         })->toArray();
-    }    /**
+    }
+    /**
      * Get all resources for a course
      */
     private function getCourseResources(int $courseId): array
@@ -399,7 +400,12 @@ class CourseResourceController extends Controller
      */
     private function getStorageUrl(string $path): string
     {
-        // Handle absolute paths (your current issue)
+        // If path already starts with /storage, return it as is
+        if (str_starts_with($path, '/storage/')) {
+            return $path;
+        }
+
+        // Handle absolute paths
         if (str_contains($path, 'C:\\') || str_contains($path, '/storage/app/')) {
             // Extract relative path from absolute path
             if (preg_match('/storage\/app\/public\/(.+)/', $path, $matches)) {
@@ -410,6 +416,7 @@ class CourseResourceController extends Controller
             }
         }
 
+        // For paths that don't start with /storage/ and aren't absolute paths
         return Storage::url($path);
     }
 
