@@ -375,10 +375,121 @@ class CourseInstructorController extends Controller
                 return response()->json(['message' => 'Unauthorized'], 403);
             }
 
-            return response()->json(['course' => $course , 'students' => $course->learners->count()], 200);
+            return response()->json([
+                'course' => $course , 
+                'students' => $course->learners->count(),
+            ], 200);
 
         } catch (\Exception $e) {
             Log::error('Error in getCourseById', [
+                'error' => $e->getMessage(),
+                'trace' => $e->getTraceAsString()
+            ]);
+            return response()->json(['message' => 'Internal server error'], 500);
+        }
+    }
+
+    // ─── get all content course ──────────────────────────────────────────
+
+    public function getAllContentCourse(Request $request, $courseId)
+    {
+        // 1️⃣ Authorization
+        $user = Auth::user();
+        if (!$user || $user->role !== 'instructor') {
+            return response()->json(['message' => 'Unauthorized'], 403);
+        }
+
+        $instructor = Instructor::where('user_id', $user->id)->first();
+        if (!$instructor) {
+            return response()->json(['message' => 'Instructor profile not found'], 404);
+        }
+        
+        try {
+            // Load course with all necessary relationships
+            $course = Course::with([
+                'modules' => function($query) {
+                    $query->orderBy('order', 'asc');
+                },
+                'modules.quizQuestions',
+                'exam',
+                'exam.questions',
+                'resources',
+                'learners'
+            ])->find($courseId);
+
+            if (!$course) {
+                return response()->json(['message' => 'Course not found'], 404);
+            }
+
+            if ($course->instructor_id !== $instructor->id) {
+                return response()->json(['message' => 'Unauthorized'], 403);
+            }
+
+            // Format the response
+            $formattedCourse = [
+                'id' => $course->id,
+                'title' => $course->title,
+                'description' => $course->description,
+                'course_thumbnail' => $course->course_thumbnail,
+                'level' => $course->level,
+                'category' => $course->category,
+                'rating' => $course->rating,
+                'is_published' => $course->is_published,
+                'duration_min' => $course->duration_min,
+                'created_at' => $course->created_at,
+                'updated_at' => $course->updated_at,
+                'students_count' => $course->learners->count(),
+                'modules' => $course->modules->map(function($module) {
+                    return [
+                        'id' => $module->id,
+                        'title' => $module->title,
+                        'type' => $module->type,
+                        'text_content' => $module->text_content,
+                        'file_path' => $module->file_path,
+                        'order' => $module->order,
+                        'duration' => $module->duration,
+                        'quiz_questions' => $module->quizQuestions->map(function($question) {
+                            return [
+                                'id' => $question->id,
+                                'question' => $question->question,
+                                'options' => $question->options,
+                                'correct_option' => $question->correct_option
+                            ];
+                        })
+                    ];
+                }),
+                'exam' => $course->exam ? [
+                    'id' => $course->exam->id,
+                    'title' => $course->exam->title,
+                    'instructions' => $course->exam->instructions,
+                    'duration_min' => $course->exam->duration_min,
+                    'passing_score' => $course->exam->passing_score,
+                    'questions' => $course->exam->questions->map(function($question) {
+                        return [
+                            'id' => $question->id,
+                            'question_text' => $question->question_text,
+                            'options' => $question->options,
+                            'correct_index' => $question->correct_index
+                        ];
+                    })
+                ] : null,
+                'resources' => $course->resources->map(function($resource) {
+                    return [
+                        'id' => $resource->id,
+                        'name' => $resource->name,
+                        'type' => $resource->type,
+                        'url' => $resource->url
+                    ];
+                })
+            ];
+
+            return response()->json([
+                'course' => $formattedCourse
+            ], 200);
+
+        } catch (\Exception $e) {
+            Log::error('Error in getAllContentCourse', [
+                'course_id' => $courseId,
                 'error' => $e->getMessage(),
                 'trace' => $e->getTraceAsString()
             ]);

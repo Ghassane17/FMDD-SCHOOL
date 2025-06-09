@@ -299,6 +299,22 @@ export const getCourseById = async (courseId) => {
 
 
 /**
+ * Get all content course
+ * 
+ * @param {string} courseId - The ID of the course to fetch
+ * @returns {Promise} Promise object containing the course data
+ */
+
+export const getAllContentCourse = async (courseId) => {
+    try {
+        const response = await api.get(`/instructor/courses/${courseId}/content`);
+        return response.data;
+    } catch (error) {
+        console.error('Error fetching all content course:', error);
+        throw error;
+    }
+};
+/**
  * Delete a course
  * @param {string} courseId - The ID of the course to delete
  * @returns {Promise} Promise object containing the deletion result

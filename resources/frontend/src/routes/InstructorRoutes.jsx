@@ -1,4 +1,4 @@
-import MainLayout from '../layouts/MainLayout.jsx';
+
 import FormateursPage from '../pages/FormateursPage.jsx';
 import CreateCourse from '../pages/CreateCourse.jsx';
 import NotFoundPage from '../pages/404.jsx';
@@ -28,7 +28,7 @@ const InstructorRoutes = {
         },
         {
           path: '*',
-          element: <h1>ERRORS</h1>,
+          element: <NotFoundPage />,
         },
     ],
 }
