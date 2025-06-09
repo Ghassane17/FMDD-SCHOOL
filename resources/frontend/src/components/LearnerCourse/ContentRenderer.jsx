@@ -61,11 +61,30 @@ const ContentRenderer = ({ type, textContent, filePath, quizQuestions = [], reso
                 return;
             }
 
+            // If it's already a full URL, use it as is
             if (imageUrl.startsWith('http')) {
                 setImageSrc(imageUrl);
-            } else {
-                setImageSrc(`${API_URL}${imageUrl}`);
+                setIsImageLoading(false);
+                return;
             }
+
+            // Fix double /storage/ prefix issue
+            let cleanUrl = imageUrl;
+            
+            // Replace any occurrence of /storage//storage/ with just /storage/
+            cleanUrl = cleanUrl.replace(/\/storage\/+\/storage\/+/g, '/storage/');
+            
+            // Also handle case where it might be /storage/storage/
+            cleanUrl = cleanUrl.replace(/\/storage\/+storage\/+/g, '/storage/');
+            
+            // Set the final URL
+            setImageSrc(`${API_URL}${cleanUrl}`);
+            
+            console.log('Image URL:', {
+                original: imageUrl,
+                cleaned: cleanUrl,
+                final: `${API_URL}${cleanUrl}`
+            });
         }
     }, [type, filePath, resources]);
 
@@ -493,3 +512,5 @@ const ContentRenderer = ({ type, textContent, filePath, quizQuestions = [], reso
 };
 
 export default ContentRenderer;
+
+

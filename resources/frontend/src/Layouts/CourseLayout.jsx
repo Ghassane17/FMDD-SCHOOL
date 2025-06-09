@@ -13,7 +13,7 @@ const CourseLayout = () => {
     const navigate = useNavigate();
 
     // Utilisation de la variable d'environnement Vite
-    const apiBaseUrl = import.meta.env.VITE_API_URL || '';
+    const apiBaseUrl = import.meta.env.VITE_API_BASE_URL || 'http://localhost:8000/api';
 
     useEffect(() => {
         const user = JSON.parse(localStorage.getItem('user'));
