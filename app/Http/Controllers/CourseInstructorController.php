@@ -139,7 +139,7 @@ class CourseInstructorController extends Controller
                     'description'     => $validated['description'],
                     'level'           => $validated['level'],
                     'category'        => $validated['category'],
-                    'duration_min'    => $validated['duration_min'] ?? 0,
+                    'duration_min'    => $validated['duration_min'] + $request->exam['duration_min'] ?? 0,
                     'is_published'    => false,
                 ]);
 
@@ -160,7 +160,7 @@ class CourseInstructorController extends Controller
                             'type'      => $module['type'],
                             'text_content' => $module['type'] === 'text' ? $module['content'] : null,
                             'order'     => $module['order'],
-                            'duration'  => $module['duration'] ?? null,
+                            'duration'  => $module['duration_min'] ?? 0,
                         ];
 
                         // Create the module first
