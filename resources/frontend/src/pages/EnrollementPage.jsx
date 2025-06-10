@@ -2,7 +2,7 @@
 
 import { useState, useEffect } from "react"
 import { useParams, useNavigate } from "react-router-dom"
-import { courseDetails, enrollNow, leaveCourse } from "@/services/api"
+import { courseDetails, enrollNow, leaveCourse, ShowCourseComments } from "@/services/api"
 import {
   CheckCircle,
   PlayArrow,
@@ -16,17 +16,11 @@ import {
   ExpandMore,
   ChevronRight,
 } from "@mui/icons-material"
+import NotesPanel from "../components/LearnerCourse/NotesPanel"
 
-// Rename component to match file name
-const EnrollementPage = () => {
+const EnrollmentPage = () => {
   const { courseId } = useParams()
   const navigate = useNavigate()
-  
-  // Add console log to verify component mounting
-  useEffect(() => {
-    console.log("EnrollementPage mounted with courseId:", courseId)
-  }, [courseId])
-  
   const [course, setCourse] = useState(null)
   const [loading, setLoading] = useState(true)
   const [error, setError] = useState("")
@@ -36,26 +30,31 @@ const EnrollementPage = () => {
   const [avatarLoading, setAvatarLoading] = useState(true)
   const [thumbnailError, setThumbnailError] = useState(false)
   const [avatarError, setAvatarError] = useState(false)
+  const [comments, setComments] = useState([])
 
   // Toggle states for collapsible sections
   const [showLearningOutcomes, setShowLearningOutcomes] = useState(false)
   const [showModules, setShowModules] = useState(false)
 
-  const API_URL = import.meta.env.VITE_API_BASE_URL || "http://localhost:8000"
-  const FALLBACK_IMAGE = "/images/placeholder-thumbnail.jpg"
-  const FALLBACK_AVATAR = "/storage/default-avatar.png"
+  const API_URL = import.meta.env.VITE_BACKEND_URL
+
 
   useEffect(() => {
     const fetchData = async () => {
+      setLoading(true)
       setError("")
       try {
-        const data = await courseDetails(courseId)
-        console.log("🚀 Course Details Response:", data)
-        if (!data.course || typeof data.is_enrolled === "undefined") {
+        const [courseData, commentsData] = await Promise.all([courseDetails(courseId), ShowCourseComments(courseId)])
+
+        console.log("🚀 Course Details Response:", courseData)
+        console.log("🚀 Comments Response:", commentsData)
+
+        if (!courseData.course || typeof courseData.is_enrolled === "undefined") {
           throw new Error("Invalid response format")
         }
-        setCourse(data.course)
-        setIsEnrolled(data.is_enrolled)
+        setCourse(courseData.course)
+        setIsEnrolled(courseData.is_enrolled)
+        setComments(commentsData || [])
       } catch (err) {
         console.error("❌ Course Details Error:", err)
         if (err.response?.status === 404) {
@@ -137,9 +136,9 @@ const EnrollementPage = () => {
 
   if (loading) {
     return (
-      <div className="min-h-screen bg-gray-50 flex items-center justify-center">
+      <div className="min-h-screen bg-white flex items-center justify-center">
         <div className="text-center">
-          <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-gray-900 mx-auto mb-4"></div>
+          <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-black mx-auto mb-4"></div>
           <p className="text-lg text-gray-600">Loading course details...</p>
         </div>
       </div>
@@ -168,17 +167,11 @@ const EnrollementPage = () => {
     <div className="min-h-screen bg-gray-50">
       {/* Hero Thumbnail Section - Full Width */}
       <div className="relative h-80 bg-gray-900 overflow-hidden">
-        {thumbnailLoading && (
-          <div className="absolute inset-0 bg-gray-800 flex items-center justify-center">
-            <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-white"></div>
-          </div>
-        )}
+     
         <img
-          src={thumbnailError ? `${API_URL}${FALLBACK_IMAGE}` : `${API_URL}${course.course_thumbnail}`}
+          src={`${API_URL}${course.course_thumbnail}`}
           alt={course.title}
-          className={`w-full h-full object-cover ${thumbnailLoading ? "hidden" : "block"}`}
-          onLoad={handleThumbnailLoad}
-          onError={handleThumbnailError}
+         
         />
         <div className="absolute inset-0 bg-black bg-opacity-40"></div>
 
@@ -306,7 +299,7 @@ const EnrollementPage = () => {
               <div className="flex flex-col sm:flex-row space-y-4 sm:space-y-0 sm:space-x-6">
                 <div className="flex-shrink-0">
                   <img
-                    src={avatarError ? `${API_URL}${FALLBACK_AVATAR}` : `${API_URL}${course.instructor.avatar}`}
+                    src={ `${API_URL}${course.instructor.avatar}`}
                     alt={course.instructor.name}
                     className="w-20 h-20 rounded-full object-cover"
                     onLoad={handleAvatarLoad}
@@ -350,6 +343,62 @@ const EnrollementPage = () => {
                   )}
                 </div>
               </div>
+            </div>
+
+            <div className="bg-white rounded-lg border border-gray-200 p-8 mt-6">
+  <h2 className="text-2xl font-bold text-gray-900 mb-6">Course Reviews</h2>
+  
+  {comments.length === 0 ? (
+    <div className="text-center py-8">
+      <p className="text-gray-500">No reviews yet for this course.</p>
+    </div>
+  ) : (
+    <div className="space-y-6">
+      {comments.map((comment) => (
+        <div key={comment.id} className="border-b border-gray-100 pb-6 last:border-b-0 last:pb-0">
+          <div className="flex items-start space-x-4">
+            <img 
+              src={`${API_URL}${comment.user.avatar}`}
+              alt={comment.user.username}
+              className="w-10 h-10 rounded-full object-cover"
+              onError={(e) => {
+                e.target.src = `${API_URL}${comment.user.avatar}`
+              }}
+            />
+            <div className="flex-1">
+              <div className="flex items-center justify-between">
+                <h4 className="font-medium text-gray-900">{comment.user.username}</h4>
+                <div className="flex items-center space-x-1">
+                  <Star className="text-yellow-400 w-4 h-4" />
+                  <span className="text-sm text-gray-600">{comment.rating}</span>
+                </div>
+              </div>
+              <p className="text-gray-600 mt-1">{comment.comment}</p>
+              <p className="text-sm text-gray-400 mt-2">
+                {new Date(comment.created_at).toLocaleDateString('en-US', {
+                  year: 'numeric',
+                  month: 'long',
+                  day: 'numeric'
+                })}
+              </p>
+            </div>
+          </div>
+        </div>
+      ))}
+    </div>
+  )}
+</div>
+
+            {/* Notes Panel */}
+            <div className="bg-white rounded-lg border border-gray-200 p-8">
+              <NotesPanel
+                courseId={courseId}
+                notes={course.userNotes || ""}
+                onSaveNotes={(notes, rating) => {
+                  console.log("Notes saved:", notes, "Rating:", rating)
+                  // You can update the course state here if needed
+                }}
+              />
             </div>
           </div>
 
@@ -444,8 +493,4 @@ const EnrollementPage = () => {
   )
 }
 
-// Export with the corrected name
-export default EnrollementPage
-
-
-
+export default EnrollmentPage

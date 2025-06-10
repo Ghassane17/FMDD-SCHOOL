@@ -132,14 +132,14 @@ class InstructorController extends Controller
     {
         try {
             $user = Auth::user();
-            
+
             // Check if user is authenticated
             if (!$user) {
                 return response()->json(['message' => 'Unauthorized - User not authenticated'], 401);
             }
 
             // Check if user is an instructor
-            if ($user->role !== 'instructor') {
+            if ($user->role !== 'instructor' && $user->role !== 'learner') {
                 return response()->json(['message' => 'Unauthorized - User is not an instructor'], 403);
             }
 
@@ -183,7 +183,7 @@ class InstructorController extends Controller
 
             // 5) Update user profile
             $updateData = [];
-            
+
             if (isset($validated['name'])) {
                 $updateData['username'] = $validated['name'];
             }
@@ -237,7 +237,7 @@ class InstructorController extends Controller
             $user = Auth::user();
 
             // 1) Only allow instructors
-            if ($user->role !== 'instructor') {
+            if ($user->role !== 'instructor' && $user->role !== 'learner') {
                 return response()->json(['message' => 'Unauthorized'], 403);
             }
 
@@ -296,7 +296,7 @@ class InstructorController extends Controller
     public function updateInstructorSkills(Request $request)
     {
         $user = Auth::user();
-        if (!$user || $user->role !== 'instructor') {
+        if (!$user || $user->role !== 'instructor' && $user->role !== 'learner') {
             return response()->json(['message' => 'Unauthorized'], 403);
         }
         $instructor = Instructor::where('user_id', $user->id)->first();
@@ -311,7 +311,7 @@ class InstructorController extends Controller
     public function updateInstructorLanguages(Request $request)
     {
         $user = Auth::user();
-        if (!$user || $user->role !== 'instructor') {
+        if (!$user || $user->role !== 'instructor' && $user->role !== 'learner') {
             return response()->json(['message' => 'Unauthorized'], 403);
         }
         $instructor = Instructor::where('user_id', $user->id)->first();
@@ -391,4 +391,4 @@ class InstructorController extends Controller
     }
 }
 
-        
+

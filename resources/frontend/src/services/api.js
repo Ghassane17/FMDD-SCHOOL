@@ -1,7 +1,7 @@
 import axios from 'axios';
 import { toast } from 'react-toastify'; // Added for toast notifications
 
-const API_URL = import.meta.env.VITE_API_BASE_URL || 'http://localhost:8000/api';
+const API_URL = import.meta.env.VITE_BACKEND_URL_API;
 
 // Log API base URL for debugging
 console.log('Using API base URL:', API_URL);
@@ -157,7 +157,7 @@ export const login = async data => {
     console.log('Preparing login with:', { ...data, password: '********' });
 
     try {
-        console.log('Sending login request to:', `${api.defaults.baseURL}/login`);
+        console.log('Sending login request to:', `${api.defaults.baseURL}/api/login`);
         const response = await api.post('/login', data);
 
         console.log('Login response received:', {
@@ -233,12 +233,8 @@ export const register = async data => {
 
 export const completeProfile = async (role, data) => {
     const endpoint = role === 'learner' ? '/learner/profile' : '/instructor/completeRegister';
-    try {
-        const response = await api.patch(endpoint, data);
-        return response.data;
-    } catch (error) {
-        throw error;
-    }
+    const response = await api.patch(endpoint, data);
+    return response.data;
 };
 
 export const logout = () => {
@@ -310,20 +306,12 @@ export const getLearnerSettings = async (forceRefresh = false) => {
 };
 
 export const submitContactForm = async data => {
-    try {
-        return await api.post('/contact', data);
-    } catch (error) {
-        throw error;
-    }
+    return await api.post('/contact', data);
 };
 
 export const courseDetails = async courseId => {
-    try {
-        const response = await api.get(`/courses/${courseId}`);
-        return response.data;
-    } catch (error) {
-        throw error;
-    }
+    const response = await api.get(`/courses/${courseId}`);
+    return response.data;
 };
 
 export const getExam = async courseId => {
@@ -503,6 +491,11 @@ export const submitComment = async (courseId, commentData) => {
         }
         throw new Error(error.response?.data?.message || 'Une erreur est survenue lors de l\'envoi du commentaire');
     }
+};
+
+export const ShowCourseComments = async (courseId) => {
+    const response = await api.get(`/courses/${courseId}/comments`); 
+    return response.data; 
 };
 
 export const getCourseResources = async (courseId, moduleId) => {

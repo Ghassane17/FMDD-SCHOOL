@@ -10,10 +10,13 @@ import { moduleDetails, markModuleAsCompleted } from '../services/api.js';
  * Now focuses only on course content display and interaction
  * Layout structure is handled by CourseLearnerLayout
  */
+
+
 const LearnerCourse = () => {
     const navigate = useNavigate();
     const {
         courseId,
+        moduleId,
         courseData,
         modules,
         currentModule,
@@ -142,3 +145,5 @@ const LearnerCourse = () => {
 };
 
 export default LearnerCourse;
+
+

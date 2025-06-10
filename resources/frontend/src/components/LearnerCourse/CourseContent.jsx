@@ -24,7 +24,6 @@ import {
   Folder,
   FolderOpen,
 } from "lucide-react"
-import NotesPanel from "./NotesPanel"
 import ContentRenderer from "./ContentRenderer"
 import { downloadResource } from "../../services/api.js"
 
@@ -210,6 +209,7 @@ const CourseContent = ({
   onNextClick,
   onQuizComplete,
   courseId,
+  moduleId,
   onSaveNotes,
   notes,
   onModuleComplete,
@@ -334,6 +334,8 @@ const CourseContent = ({
             filePath={currentModule.file_path}
             quizQuestions={currentModule.quiz_questions}
             resources={currentModule.resources}
+            courseId={courseId}
+            moduleId={currentModule.id}
             onQuizComplete={onQuizComplete}
           />
         </div>
@@ -341,7 +343,11 @@ const CourseContent = ({
         {/* Resources Section */}
         {currentModule.resources?.length > 0 && (
           <div className="mb-12">
-            <h2 className="text-2xl font-bold text-black mb-6">Resources ({currentModule.resources.length})</h2>
+            <h2
+              onClick={() => {
+                console.log("🚀 Current Module:", currentModule)
+              }}
+              className="text-2xl font-bold text-black mb-6">Resources ({currentModule.resources.length})</h2>
 
             {(() => {
               const groupedResources = groupResourcesByCategory(currentModule.resources)
@@ -420,10 +426,7 @@ const CourseContent = ({
           </div>
         )}
 
-        {/* Notes Panel */}
-        <div className="mb-12">
-          <NotesPanel courseId={courseId} notes={notes} onSaveNotes={onSaveNotes} />
-        </div>
+      
 
         {/* Navigation */}
         <div className="flex justify-between items-center pt-8 border-t border-gray-200">

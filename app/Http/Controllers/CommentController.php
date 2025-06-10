@@ -15,7 +15,7 @@ class CommentController extends Controller
     public function store(Request $request, Course $course)
     {
         $validated = $request->validate([
-            'text' => 'required|min:3',
+            'text' => 'required|min:5',
             'rating' => 'required|integer|min:1|max:5',
         ]);
 
@@ -33,7 +33,6 @@ class CommentController extends Controller
             'message' => 'Commentaire ajouté avec succès',
             'comment' => $comment
         ], 201);
-
     }
 
     /**
@@ -46,6 +45,16 @@ class CommentController extends Controller
             ->latest()
             ->get();
 
+        return response()->json($comments);
+    }
+
+    public function showCourseComments($courseId)
+    {
+        $comments = Comment::where('course_id', $courseId)
+            ->with('user:id,username,avatar')
+            ->latest()
+            ->take(5)
+            ->get();
         return response()->json($comments);
     }
 }

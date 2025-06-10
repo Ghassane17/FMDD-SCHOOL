@@ -32,7 +32,6 @@ const CourseLearnerLayout = () => {
   const [currentModule, setCurrentModule] = useState(null)
   const [currentModuleIndex, setCurrentModuleIndex] = useState(0)
   const [isSidebarOpen, setIsSidebarOpen] = useState(false)
-  const [loading, setLoading] = useState(true)
   const [error, setError] = useState(null)
   const [hasExam, setHasExam] = useState(false)
   const [progress, setProgress] = useState(0)
@@ -48,7 +47,6 @@ const CourseLearnerLayout = () => {
   useEffect(() => {
     const fetchModuleData = async () => {
       try {
-        setLoading(true)
         setError(null)
 
         // Check authentication
@@ -95,11 +93,10 @@ const CourseLearnerLayout = () => {
           setProgress(moduleData.course.progress)
         }
 
-        setLoading(false)
+        
       } catch (err) {
         console.error("Error fetching module data:", err)
         setError(err.message || "Failed to load module data")
-        setLoading(false)
       }
     }
 
@@ -135,7 +132,7 @@ const CourseLearnerLayout = () => {
     modules,
     currentModule,
     currentModuleIndex,
-    loading,
+    
     error,
     hasExam,
     progress,
@@ -147,24 +144,13 @@ const CourseLearnerLayout = () => {
     setProgress,
   }
 
-  // Loading state
-  if (loading) {
-    return (
-      <div className="min-h-screen flex items-center justify-center bg-white">
-        <div className="text-center">
-          <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-black mx-auto mb-4"></div>
-          <p className="text-lg text-gray-600">Loading course content...</p>
-        </div>
-      </div>
-    )
-  }
 
   // Error state
-  if (error || !courseData || !currentModule) {
+  if (error) {
     return (
       <div className="min-h-screen flex items-center justify-center bg-white">
         <div className="text-center max-w-md p-8 bg-white border border-gray-200 rounded-lg">
-          <p className="text-red-600 mb-6">{error || "Course or module not found."}</p>
+          <p className="text-red-600 mb-6">{error}</p>
           <div className="space-y-3">
             <button
               onClick={() => window.location.reload()}
@@ -182,7 +168,7 @@ const CourseLearnerLayout = () => {
         </div>
       </div>
     )
-  }
+  } 
 
   return (
     <CourseContext.Provider value={courseContextValue}>
@@ -190,10 +176,10 @@ const CourseLearnerLayout = () => {
         {/* Course Header - Full width at top */}
         <div className="bg-white border-b border-gray-200 px-6 py-4">
           <div className="flex justify-between items-center mb-4">
-            <h1 className="text-2xl font-bold text-black">{courseData.title}</h1>
+            <h1 className="text-2xl font-bold text-black">{courseData?.title || 'Loading...'}</h1>
             <div className="text-sm text-gray-600">Progress: {progress}%</div>
           </div>
-          <CourseHeader courseTitle={courseData.title} toggleSidebar={toggleSidebar} progress={calculateProgress()} />
+          <CourseHeader courseTitle={courseData?.title || 'Loading...'} toggleSidebar={toggleSidebar} progress={calculateProgress()} />
         </div>
 
         {/* Main Layout Container - Full height and width */}
@@ -201,7 +187,7 @@ const CourseLearnerLayout = () => {
           {/* Course Sidebar - Fixed position */}
           <CourseSidebar
             modules={modules}
-            currentModuleId={currentModule.id}
+            currentModuleId={currentModule?.id}
             onModuleSelect={selectModule}
             isOpen={isSidebarOpen}
             courseId={Number.parseInt(courseId, 10)}
@@ -211,7 +197,16 @@ const CourseLearnerLayout = () => {
 
           {/* Main Content Area - Takes remaining space */}
           <div className="flex-1 overflow-auto bg-white">
-            <Outlet />
+            {!courseData || !currentModule ? (
+              <div className="flex items-center justify-center h-full">
+                <div className="text-center">
+                  <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-gray-900 mx-auto mb-4"></div>
+                  <p className="text-gray-600">Loading course content...</p>
+                </div>
+              </div>
+            ) : (
+              <Outlet />
+            )}
           </div>
         </div>
       </div>

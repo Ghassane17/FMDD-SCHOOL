@@ -1,7 +1,7 @@
 import axios from 'axios';
 
 // Déterminer l'URL de base et l'afficher explicitement
-const apiBaseUrl = import.meta.env.VITE_API_BASE_URL || 'http://localhost:8000/api';
+const apiBaseUrl = import.meta.env.VITE_BACKEND_URL_API ;
 console.log('Using API base URL:', apiBaseUrl);
 
 // Create axios instance with default config
@@ -82,7 +82,7 @@ export const updateInstructorProfile = async (profileData) => {
             withCredentials: true,
             timeout: 30000,
         });
-
+        console.log(profileData.get('email')) ;
         const response = await uploadApi.post('/instructor/profile', profileData);
         return response.data;
     } catch (error) {
@@ -163,23 +163,23 @@ export const createCourse = async (courseData) => {
         return response.data;
     } catch (error) {
         console.error('Error creating course:', error);
-        
+
         // Log the full error response for debugging
         if (error.response) {
             console.error('Error response data:', error.response.data);
             console.error('Error response status:', error.response.status);
             console.error('Error response headers:', error.response.headers);
         }
-        
+
         // Handle specific error cases
         if (error.code === 'ECONNABORTED') {
             throw new Error('The request took too long to complete. Please try again with smaller files or check your internet connection.');
         }
-        
+
         if (error.response?.status === 413) {
             throw new Error('The files you are trying to upload are too large. Please reduce the file sizes and try again.');
         }
-        
+
         if (error.response?.status === 403) {
             throw new Error('You are not authorized to create courses. Please check your instructor status.');
         }
@@ -194,7 +194,7 @@ export const createCourse = async (courseData) => {
                 throw new Error(`Validation failed:\n${errorMessages}`);
             }
         }
-        
+
         throw error;
     }
 };
@@ -300,7 +300,7 @@ export const getCourseById = async (courseId) => {
 
 /**
  * Get all content course
- * 
+ *
  * @param {string} courseId - The ID of the course to fetch
  * @returns {Promise} Promise object containing the course data
  */

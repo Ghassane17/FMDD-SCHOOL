@@ -1,12 +1,11 @@
-import React, { useState, useCallback, useRef } from 'react';
+import React, { useState, useCallback, useRef, useEffect } from 'react';
 import VideoPlayer from './VideoPlayer';
 import { FileText, Image, FileQuestion, Video, Download, ZoomIn, ZoomOut, RotateCw } from 'lucide-react';
 import { Box, IconButton, CircularProgress, Tooltip } from '@mui/material';
 import { toast } from 'react-hot-toast';
-import { downloadResource } from '../../services/api'; // Adjust path as needed
+import { downloadResource, markModuleAsCompleted } from '../../services/api'; // Adjust path as needed
 
-const API_URL = import.meta.env.VITE_API_BASE_URL || 'http://localhost:8000';
-const FALLBACK_IMAGE = '/storage/Test.png';
+const API_URL = import.meta.env.VITE_BACKEND_URL;
 
 /**
  * ContentRenderer Component
@@ -19,7 +18,7 @@ const FALLBACK_IMAGE = '/storage/Test.png';
  * @param {Array} props.quizQuestions - Array of quiz questions (for quiz type)
  * @param {Array} props.resources - Array of module-specific resources from CourseResource
  */
-const ContentRenderer = ({ type, textContent, filePath, quizQuestions = [], resources = [], onQuizComplete }) => {
+const ContentRenderer = ({ type, textContent, filePath, quizQuestions = [], resources = [], onQuizComplete, courseId, moduleId }) => {
     // State for quiz functionality
     const [currentQuestionIndex, setCurrentQuestionIndex] = useState(0);
     const [selectedAnswer, setSelectedAnswer] = useState(null);
@@ -27,6 +26,8 @@ const ContentRenderer = ({ type, textContent, filePath, quizQuestions = [], reso
     const [quizScore, setQuizScore] = useState(0);
     const [quizCompleted, setQuizCompleted] = useState(false);
     const [answers, setAnswers] = useState({});
+    const [randomizedOptions, setRandomizedOptions] = useState([]);
+    const [correctAnswerMap, setCorrectAnswerMap] = useState({});
 
     // State for media loading
     const [isImageLoading, setIsImageLoading] = useState(true);
@@ -51,12 +52,40 @@ const ContentRenderer = ({ type, textContent, filePath, quizQuestions = [], reso
         video: <Video className="w-8 h-8 text-orange-500" />
     };
 
+    // Utility function to shuffle an array
+    const shuffleArray = (array) => {
+        const shuffled = [...array];
+        for (let i = shuffled.length - 1; i > 0; i--) {
+            const j = Math.floor(Math.random() * (i + 1));
+            [shuffled[i], shuffled[j]] = [shuffled[j], shuffled[i]];
+        }
+        return shuffled;
+    };
+
+    // Initialize randomized options when quiz module is loaded or current question changes
+    useEffect(() => {
+        if (type === 'quiz' && quizQuestions.length > 0) {
+            const currentQuestion = quizQuestions[currentQuestionIndex];
+            const shuffledOptions = shuffleArray([...currentQuestion.options]);
+            setRandomizedOptions(shuffledOptions);
+            
+            // Store the correct answer text for later comparison
+            const correctAnswerText = currentQuestion.options[currentQuestion.correct_option].text;
+            setCorrectAnswerMap(prev => ({
+                ...prev,
+                [currentQuestionIndex]: correctAnswerText
+            }));
+            
+            setSelectedAnswer(null);
+        }
+    }, [type, quizQuestions, currentQuestionIndex]);
+
     // Initialize image source
     React.useEffect(() => {
         if (type === 'image') {
             const imageUrl = filePath || (resources.find((r) => r.type === 'image')?.url);
             if (!imageUrl) {
-                setImageSrc(`${API_URL}${FALLBACK_IMAGE}`);
+                setImageSrc(`${API_URL}`);
                 setIsImageLoading(false);
                 return;
             }
@@ -68,22 +97,24 @@ const ContentRenderer = ({ type, textContent, filePath, quizQuestions = [], reso
                 return;
             }
 
-            // Fix double /storage/ prefix issue
+            // Clean the URL path
             let cleanUrl = imageUrl;
             
-            // Replace any occurrence of /storage//storage/ with just /storage/
-            cleanUrl = cleanUrl.replace(/\/storage\/+\/storage\/+/g, '/storage/');
+            // Remove any leading slashes
+            cleanUrl = cleanUrl.replace(/^\/+/, '');
             
-            // Also handle case where it might be /storage/storage/
-            cleanUrl = cleanUrl.replace(/\/storage\/+storage\/+/g, '/storage/');
+            // Ensure we have the correct storage path format
+            if (!cleanUrl.startsWith('storage/')) {
+                cleanUrl = `storage/${cleanUrl}`;
+            }
             
             // Set the final URL
-            setImageSrc(`${API_URL}${cleanUrl}`);
+            setImageSrc(`${API_URL}/${cleanUrl}`);
             
             console.log('Image URL:', {
                 original: imageUrl,
                 cleaned: cleanUrl,
-                final: `${API_URL}${cleanUrl}`
+                final: `${API_URL}/${cleanUrl}`
             });
         }
     }, [type, filePath, resources]);
@@ -95,7 +126,7 @@ const ContentRenderer = ({ type, textContent, filePath, quizQuestions = [], reso
 
     const handleImageError = useCallback(() => {
         console.log('Image load error, using fallback');
-        setImageSrc(`${API_URL}${FALLBACK_IMAGE}`);
+        setImageSrc(`${API_URL}`);
         setIsImageLoading(false);
     }, []);
 
@@ -119,8 +150,6 @@ const ContentRenderer = ({ type, textContent, filePath, quizQuestions = [], reso
         }
     }, []);
 
-
-
     // Get authentication token
     const getAuthToken = useCallback(() => {
         return localStorage.getItem('token');
@@ -130,43 +159,40 @@ const ContentRenderer = ({ type, textContent, filePath, quizQuestions = [], reso
     const getAuthenticatedUrl = useCallback((url) => {
         if (!url) return null;
         const token = getAuthToken();
-
-        // Clean the URL path - remove all leading slashes and storage/ prefixes
         let cleanUrl = url.replace(/^\/+/, '').replace(/^storage\/+/, '');
-
-        // If it's already a full URL, use it as is
         if (url.startsWith('http')) {
             return `${url}${url.includes('?') ? '&' : '?'}token=${token}`;
         }
-
-        // Otherwise construct the full URL
         const fullUrl = `${API_URL}/storage/${cleanUrl}`;
         return `${fullUrl}${fullUrl.includes('?') ? '&' : '?'}token=${token}`;
     }, [getAuthToken]);
 
     // Handle quiz answer selection
-    const handleAnswerSelect = (index) => {
-        setSelectedAnswer(index);
+    const handleAnswerSelect = (text) => {
+        setSelectedAnswer(text);
         setAnswers(prev => ({
             ...prev,
-            [currentQuestionIndex]: index
+            [currentQuestionIndex]: text
         }));
     };
 
     // Handle quiz completion
-    const handleQuizComplete = () => {
-        const correctAnswers = Object.entries(answers).reduce((acc, [questionIndex, answerIndex]) => {
-            return acc + (answerIndex === quizQuestions[questionIndex].correct_option ? 1 : 0);
+    const handleQuizComplete = async () => {
+        const correctAnswers = Object.entries(answers).reduce((acc, [questionIndex, selectedText]) => {
+            const correctText = correctAnswerMap[questionIndex];
+            return acc + (selectedText === correctText ? 1 : 0);
         }, 0);
 
         const finalScore = (correctAnswers / quizQuestions.length) * 100;
         setQuizScore(finalScore);
         setQuizCompleted(true);
 
-        // Call the onQuizComplete prop if provided
         if (onQuizComplete) {
             onQuizComplete(finalScore / 100);
         }
+
+        const response = await markModuleAsCompleted(parseInt(courseId, 10), moduleId);
+        console.log("🚀 Response:", response);
     };
 
     // Reset quiz
@@ -177,6 +203,8 @@ const ContentRenderer = ({ type, textContent, filePath, quizQuestions = [], reso
         setQuizScore(0);
         setQuizCompleted(false);
         setAnswers({});
+        setRandomizedOptions([]);
+        setCorrectAnswerMap({});
     };
 
     // Render content based on type
@@ -192,7 +220,6 @@ const ContentRenderer = ({ type, textContent, filePath, quizQuestions = [], reso
                 );
 
             case 'pdf':
-                // Clean the file path before using it
                 pdfUrl = filePath ? filePath.replace(/^\/+/, '').replace(/^storage\/+/, '') :
                         (resources.find((r) => r.type === 'pdf')?.url);
                 authenticatedUrl = getAuthenticatedUrl(pdfUrl);
@@ -364,14 +391,14 @@ const ContentRenderer = ({ type, textContent, filePath, quizQuestions = [], reso
                                                 <div
                                                     key={optIndex}
                                                     className={`p-2 rounded ${
-                                                        optIndex === question.correct_option
+                                                        option.text === correctAnswerMap[index]
                                                             ? 'bg-green-100 text-green-800'
-                                                            : answers[index] === optIndex
+                                                            : answers[index] === option.text
                                                                 ? 'bg-red-100 text-red-800'
                                                                 : 'bg-gray-50'
                                                     }`}
                                                 >
-                                                    {typeof option === 'object' ? option.text : option}
+                                                    {option.text}
                                                 </div>
                                             ))}
                                         </div>
@@ -395,18 +422,14 @@ const ContentRenderer = ({ type, textContent, filePath, quizQuestions = [], reso
                     return (
                         <div className="space-y-4">
                             <div className={`p-4 rounded-lg ${
-                                selectedAnswer === currentQuestion.correct_option
+                                selectedAnswer === correctAnswerMap[currentQuestionIndex]
                                     ? 'bg-green-100 text-green-800'
                                     : 'bg-red-100 text-red-800'
                             }`}>
                                 <p className="font-medium">
-                                    {selectedAnswer === currentQuestion.correct_option
+                                    {selectedAnswer === correctAnswerMap[currentQuestionIndex]
                                         ? 'Correct!'
-                                        : `Incorrect. The correct answer is: ${
-                                            typeof currentQuestion.options[currentQuestion.correct_option] === 'object'
-                                                ? currentQuestion.options[currentQuestion.correct_option].text
-                                                : currentQuestion.options[currentQuestion.correct_option]
-                                          }`}
+                                        : `Incorrect. The correct answer is: ${correctAnswerMap[currentQuestionIndex]}`}
                                 </p>
                             </div>
 
@@ -458,19 +481,18 @@ const ContentRenderer = ({ type, textContent, filePath, quizQuestions = [], reso
 
                         <div className="p-6 bg-white rounded-lg shadow">
                             <p className="text-lg font-medium mb-4">{currentQuestion.question}</p>
-
                             <div className="space-y-3">
-                                {currentQuestion.options.map((option, index) => (
+                                {randomizedOptions.map((option, index) => (
                                     <button
                                         key={index}
-                                        onClick={() => handleAnswerSelect(index)}
+                                        onClick={() => handleAnswerSelect(option.text)}
                                         className={`w-full p-4 text-left rounded-lg border transition-all ${
-                                            selectedAnswer === index
+                                            selectedAnswer === option.text
                                                 ? 'border-blue-500 bg-blue-50'
                                                 : 'border-gray-200 hover:border-blue-300 hover:bg-blue-50/50'
                                         }`}
                                     >
-                                        {typeof option === 'object' ? option.text : option}
+                                        {option.text}
                                     </button>
                                 ))}
                             </div>
@@ -505,12 +527,9 @@ const ContentRenderer = ({ type, textContent, filePath, quizQuestions = [], reso
                 {contentTypeIcons[type]}
                 <h3 className="text-lg font-medium capitalize">{type} Content</h3>
             </div>
-
             {renderContent()}
         </div>
     );
 };
 
 export default ContentRenderer;
-
-

@@ -9,17 +9,15 @@ const CourseLayout = () => {
     const [dashboardData, setDashboardData] = useState(null);
     const [currentLearner, setCurrentLearner] = useState(null);
     const [error, setError] = useState('');
-    const [loading, setLoading] = useState(true);
     const navigate = useNavigate();
 
     // Utilisation de la variable d'environnement Vite
-    const apiBaseUrl = import.meta.env.VITE_API_BASE_URL || 'http://localhost:8000/api';
+    const apiBaseUrl = import.meta.env.VITE_BACKEND_URL;
 
     useEffect(() => {
         const user = JSON.parse(localStorage.getItem('user'));
         if (!user || user.role !== 'learner') {
             setError('Please log in as a learner.');
-            setLoading(false);
             setTimeout(() => navigate('/login'), 2000);
             return;
         }
@@ -32,14 +30,11 @@ const CourseLayout = () => {
                 setDashboardData(response.data);
             } catch (err) {
                 setError('Failed to load data.');
-            } finally {
-                setLoading(false);
-            }
+            } 
         };
         fetchDashboard();
     }, [navigate, apiBaseUrl]);
 
-    if (loading) return <Box>Loading...</Box>;
     if (error) return <Box color="error.main">{error}</Box>;
 
     return (
@@ -48,7 +43,7 @@ const CourseLayout = () => {
             <Header
                 school='FMDD SCHOOL'
                 userName={currentLearner?.username || 'Learner'}
-                avatar={currentLearner?.avatar || 'https://via.placeholder.com/50'}
+                avatar={currentLearner?.avatar }
                 notifications={currentLearner?.notifications || []}
             />
             <Box component="main" sx={{ mt: '10px', minHeight: 'calc(100vh - 64px)' }}>

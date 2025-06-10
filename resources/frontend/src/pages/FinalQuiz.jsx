@@ -1,4 +1,3 @@
-// App.js
 "use client"
 
 import { useState, useEffect, useRef } from "react"
@@ -16,11 +15,22 @@ const FinalQuiz = () => {
     const [results, setResults] = useState(null)
     const [loading, setLoading] = useState(true)
     const [error, setError] = useState(null)
+    const [randomizedOptions, setRandomizedOptions] = useState({}) // Stores randomized options for each question
 
     // New state variables for enhanced experience
-    const [examStatus, setExamStatus] = useState("not-started") // 'not-started', 'in-progress', 'completed'
+    const [examStatus, setExamStatus] = useState("not-started")
     const [timeRemaining, setTimeRemaining] = useState(0)
     const timerRef = useRef(null)
+
+    // Utility function to shuffle an array
+    const shuffleArray = (array) => {
+        const shuffled = [...array];
+        for (let i = shuffled.length - 1; i > 0; i--) {
+            const j = Math.floor(Math.random() * (i + 1));
+            [shuffled[i], shuffled[j]] = [shuffled[j], shuffled[i]];
+        }
+        return shuffled;
+    }
 
     useEffect(() => {
         if (!isAuthenticated()) {
@@ -48,15 +58,13 @@ const FinalQuiz = () => {
                     throw new Error(response?.message || "Failed to load exam.")
                 }
                 
-                // Ensure exam data is properly structured
                 const examData = response.data.exam;
                 if (!examData.questions || !Array.isArray(examData.questions)) {
                     throw new Error("Invalid exam data structure: questions array is missing or invalid");
                 }
 
-                // Validate each question has the required fields
-                examData.questions = examData.questions.map(question => {
-                    // Check for required fields
+                // Validate and normalize questions, and initialize randomized options
+                const normalizedQuestions = examData.questions.map(question => {
                     if (!question.question && !question.question_text) {
                         console.error("Invalid question structure:", question);
                         throw new Error("Question is missing text content");
@@ -66,17 +74,20 @@ const FinalQuiz = () => {
                         throw new Error("Question is missing options array");
                     }
 
-                    // Normalize the question structure
                     return {
                         ...question,
-                        question_text: question.question_text || question.question, // Use either field
-                        // Don't set a default for correct_index during the exam
-                        // It will be provided in the results after submission
+                        question_text: question.question_text || question.question,
                     };
                 });
 
-                setExam(examData);
-                // Set initial time in seconds
+                // Randomize options for each question on every fetch (page reload)
+                const shuffledOptions = normalizedQuestions.reduce((acc, question) => {
+                    acc[question.id] = shuffleArray([...question.options]);
+                    return acc;
+                }, {});
+
+                setExam({ ...examData, questions: normalizedQuestions });
+                setRandomizedOptions(shuffledOptions);
                 setTimeRemaining(examData.duration_min * 60)
             } catch (err) {
                 console.error("❌ Fetch Exam Error:", {
@@ -92,7 +103,6 @@ const FinalQuiz = () => {
 
         fetchExam()
 
-        // Cleanup timer on component unmount
         return () => {
             if (timerRef.current) {
                 clearInterval(timerRef.current)
@@ -107,7 +117,6 @@ const FinalQuiz = () => {
                 setTimeRemaining((prev) => {
                     if (prev <= 1) {
                         clearInterval(timerRef.current)
-                        // Auto-submit when time runs out
                         handleSubmit()
                         return 0
                     }
@@ -137,14 +146,11 @@ const FinalQuiz = () => {
     const handleSubmit = async () => {
         console.log("Submitting answers:", selectedAnswers)
 
-        // Clear timer
         if (timerRef.current) {
             clearInterval(timerRef.current)
         }
 
-        // Check if all questions are answered
         if (Object.keys(selectedAnswers).length < (exam?.questions?.length || 0)) {
-            // For auto-submission due to time expiry, we'll continue anyway
             if (timeRemaining > 0) {
                 setError("Please answer all questions.")
                 return
@@ -158,7 +164,6 @@ const FinalQuiz = () => {
             const response = await submitExam(Number.parseInt(courseId, 10), selectedAnswers)
             console.log("🚀 Submit Exam Response:", JSON.stringify(response, null, 2))
             
-            // Update exam questions with correct answers from the response
             if (response.data?.questions) {
                 const updatedExam = {
                     ...exam,
@@ -188,14 +193,12 @@ const FinalQuiz = () => {
         }
     }
 
-    // Format time remaining as MM:SS
     const formatTime = (seconds) => {
         const mins = Math.floor(seconds / 60)
         const secs = seconds % 60
         return `${mins.toString().padStart(2, "0")}:${secs.toString().padStart(2, "0")}`
     }
 
-    // Calculate progress percentage for circular progress
     const calculateTimeProgress = () => {
         if (!exam) return 100
         const totalSeconds = exam.duration_min * 60
@@ -219,13 +222,11 @@ const FinalQuiz = () => {
         return <Alert severity="error">No exam questions available.</Alert>
     }
 
-    // Render start screen
     if (examStatus === "not-started") {
         return (
             <div className="min-h-screen bg-gray-50 p-6 flex flex-col items-center justify-center">
                 <div className="max-w-2xl w-full bg-white rounded-lg shadow-lg p-8">
                     <h2 className="text-2xl font-bold mb-6 text-center">{exam.title}</h2>
-
                     <div className="mb-6 p-4 bg-blue-50 border border-blue-200 rounded-lg">
                         <h3 className="text-lg font-semibold mb-2">Exam Information</h3>
                         <ul className="space-y-2">
@@ -240,7 +241,6 @@ const FinalQuiz = () => {
                             </li>
                         </ul>
                     </div>
-
                     <div className="mb-6">
                         <h3 className="text-lg font-semibold mb-2">Instructions:</h3>
                         <div className="p-4 bg-gray-50 rounded-lg">
@@ -256,7 +256,6 @@ const FinalQuiz = () => {
                             </ul>
                         </div>
                     </div>
-
                     <div className="flex justify-center">
                         <Button variant="contained" color="primary" size="large" onClick={startExam} className="px-8 py-2">
                             Start Exam
@@ -267,7 +266,6 @@ const FinalQuiz = () => {
         )
     }
 
-    // Render results screen
     if (examStatus === "completed" && results) {
         const passedExam = results.passed
         const percentageScore = results.percentage || 0
@@ -276,7 +274,6 @@ const FinalQuiz = () => {
             <div className="min-h-screen bg-gray-50 p-6">
                 <div className="max-w-2xl mx-auto bg-white rounded-lg shadow-lg p-8">
                     <h2 className="text-2xl font-bold mb-6 text-center">Exam Results</h2>
-
                     <div className={`p-6 mb-6 rounded-lg text-center ${passedExam ? "bg-green-50" : "bg-red-50"}`}>
                         <div className="flex justify-center mb-4">
                             {passedExam ? (
@@ -297,8 +294,6 @@ const FinalQuiz = () => {
                             Your Score: {percentageScore}%
                         </p>
                     </div>
-
-                    {/* Questions Review Section */}
                     <div className="mt-8">
                         <h3 className="text-xl font-semibold mb-4">Question Review</h3>
                         {exam.questions.map((question, index) => {
@@ -315,7 +310,6 @@ const FinalQuiz = () => {
                             
                             return (
                                 <div key={question.id} className="mb-6 p-4 border rounded-lg relative">
-                                    {/* Question Status Badge */}
                                     <div className={`absolute -top-3 right-4 px-4 py-1 rounded-full flex items-center gap-2 ${
                                         isCorrect ? 'bg-green-100 text-green-700' : 'bg-red-100 text-red-700'
                                     }`}>
@@ -331,12 +325,10 @@ const FinalQuiz = () => {
                                             </>
                                         )}
                                     </div>
-
                                     <div className="flex items-start mb-2">
                                         <span className="font-semibold mr-2">{index + 1}.</span>
                                         <p className="flex-1">{question.question_text}</p>
                                     </div>
-                                    
                                     <div className="ml-6 space-y-2">
                                         {question.options.map((option) => {
                                             const isSelected = userAnswer === option.id;
@@ -382,11 +374,9 @@ const FinalQuiz = () => {
         )
     }
 
-    // Render exam in progress
     console.log("Rendering exam:", exam)
     return (
         <div className="min-h-screen bg-gray-50 p-6">
-            {/* Timer and progress bar */}
             <div className="sticky top-0 z-10 bg-white shadow-md p-4 mb-6 rounded-lg flex items-center justify-between">
                 <h2 className="text-xl font-bold">Final Exam: {exam.title}</h2>
                 <div className="flex items-center">
@@ -422,13 +412,11 @@ const FinalQuiz = () => {
                     </div>
                 </div>
             </div>
-
-            {/* Progress indicator */}
             <div className="mb-6 bg-white p-4 rounded-lg shadow-sm">
                 <div className="flex justify-between items-center">
-          <span className="text-sm font-medium">
-            Questions answered: {Object.keys(selectedAnswers).length}/{exam.questions.length}
-          </span>
+                    <span className="text-sm font-medium">
+                        Questions answered: {Object.keys(selectedAnswers).length}/{exam.questions.length}
+                    </span>
                     <span className="text-sm font-medium">Passing score: {exam.passing_score}%</span>
                 </div>
                 <div className="w-full bg-gray-200 rounded-full h-2.5 mt-2">
@@ -438,13 +426,11 @@ const FinalQuiz = () => {
                     ></div>
                 </div>
             </div>
-
             {error && (
                 <Alert severity="error" className="mb-4" icon={<AlertTriangle className="h-5 w-5" />}>
                     {error}
                 </Alert>
             )}
-
             <div className="space-y-6">
                 {exam.questions.map((question, index) => (
                     <div key={question.id} className="p-4 bg-white rounded-lg shadow">
@@ -452,8 +438,8 @@ const FinalQuiz = () => {
                             Question {index + 1}: {question.question_text}
                         </p>
                         <div className="space-y-2">
-                            {Array.isArray(question.options) && question.options.length > 0 ? (
-                                question.options.map((option) => (
+                            {Array.isArray(randomizedOptions[question.id]) && randomizedOptions[question.id].length > 0 ? (
+                                randomizedOptions[question.id].map((option) => (
                                     <button
                                         key={option.id}
                                         onClick={() => handleSelectAnswer(question.id, option.id)}
@@ -474,7 +460,6 @@ const FinalQuiz = () => {
                     </div>
                 ))}
             </div>
-
             <div className="sticky bottom-0 bg-white p-4 border-t shadow-lg mt-6 flex justify-between items-center">
                 <div className="text-sm">
                     <span className="font-medium">Time remaining:</span> {formatTime(timeRemaining)}

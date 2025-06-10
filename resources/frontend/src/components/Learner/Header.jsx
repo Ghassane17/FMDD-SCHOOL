@@ -6,8 +6,7 @@ import { Bell, LogOut, Menu, Settings, ExpandIcon as ExpandMore, ChevronRight } 
 import { getLearnerNotifications, markNotificationAsRead, updateNotifications, logout } from "@/services/api.js"
 import { FaUserCircle } from "react-icons/fa"
 
-const API_URL = import.meta.env.VITE_API_BASE_URL || "http://localhost:8000"
-const FALLBACK_AVATAR = "/storage/WsuhBYEJy9VT5lSb3yV2IlyugJvzt7OEEtmsFeXH.jpg"
+const API_URL = import.meta.env.VITE_BACKEND_URL 
 
 const FallbackAvatarIcon = () => <FaUserCircle size={32} color="#ccc" />
 
@@ -31,40 +30,50 @@ const Header = ({ school, avatar, notifications: initialNotifications = [] }) =>
 
   // Initialize avatar source
   useEffect(() => {
+    let isMounted = true;
+
     if (!avatar) {
-      // Use FallbackAvatarIcon component instead of string path
-      setIsAvatarLoading(false)
-      return <FallbackAvatarIcon />
+      setIsAvatarLoading(false);
+      return;
     }
 
     // If avatar is a full URL, use it directly
     if (avatar.startsWith("http")) {
-      setAvatarSrc(avatar)
-      return
+      if (isMounted) {
+        setAvatarSrc(avatar);
+      }
+      return;
     }
 
     // If avatar is a storage path that starts with /storage
     if (avatar.startsWith("/storage")) {
-      setAvatarSrc(`${API_URL}${avatar}`)
-      return
+      if (isMounted) {
+        setAvatarSrc(`${API_URL}${avatar}`);
+      }
+      return;
     }
 
     // If avatar is just a filename or other relative path
-    setAvatarSrc(`${API_URL}/storage/${avatar}`)
-  }, [avatar])
+    if (isMounted) {
+      setAvatarSrc(`${API_URL}/storage/${avatar}`);
+    }
+
+    return () => {
+      isMounted = false;
+    };
+  }, [avatar]);
 
   // Handle avatar loading
   const handleAvatarLoad = useCallback(() => {
-    setIsAvatarLoading(false)
-  }, [])
+    setIsAvatarLoading(false);
+  }, []);
 
   // Handle avatar error more gracefully
   const handleAvatarError = useCallback(() => {
-    console.log("Avatar load error, using fallback")
-    // Render the FallbackAvatarIcon component instead of trying to use it as a path
-    setIsAvatarLoading(false)
-    setAvatarSrc(null) // Clear the src to show the fallback
-  }, [])
+    console.log("Avatar load error, using fallback");
+    setIsAvatarLoading(false);
+    setAvatarSrc(null);
+  }, []);
 
   // Close menus when clicking outside
   useEffect(() => {
@@ -74,25 +83,30 @@ const Header = ({ school, avatar, notifications: initialNotifications = [] }) =>
           ...prev,
           menu: false,
           notifications: false,
-        }))
+        }));
       }
-    }
+    };
 
-    document.addEventListener("mousedown", handleClickOutside)
-    return () => document.removeEventListener("mousedown", handleClickOutside)
-  }, [])
+    document.addEventListener("mousedown", handleClickOutside);
+    return () => {
+      document.removeEventListener("mousedown", handleClickOutside);
+    };
+  }, []);
 
   // Close mobile menu when route changes
   useEffect(() => {
-    setOpen((prev) => ({ ...prev, mobileMenu: false }))
-  }, [navigate])
+    const cleanup = () => {
+      setOpen((prev) => ({ ...prev, mobileMenu: false }));
+    };
+    return cleanup;
+  }, [navigate]);
 
   useEffect(() => {
-    const user = JSON.parse(localStorage.getItem("user"))
+    const user = JSON.parse(localStorage.getItem("user"));
     if (user?.notifications) {
-      setNotificationPreferences(user.notifications)
+      setNotificationPreferences(user.notifications);
     }
-  }, [])
+  }, []);
 
   const toggle = useCallback(async (key) => {
     if (key === "notifications") {
@@ -383,28 +397,28 @@ const Header = ({ school, avatar, notifications: initialNotifications = [] }) =>
         <div className="md:hidden border-t border-gray-200 bg-white">
           <div className="px-4 py-2 space-y-1">
             <Link
-              to="/course/all-enrolled-courses"
+              to="/learner/all-enrolled-courses"
               onClick={() => toggle("mobileMenu")}
               className="block px-3 py-2 text-sm text-gray-700 hover:bg-gray-50 hover:text-black rounded-lg transition-colors"
             >
               My Courses
             </Link>
             <Link
-              to="/course/suggested-courses"
+              to="/learner/suggested-courses"
               onClick={() => toggle("mobileMenu")}
               className="block px-3 py-2 text-sm text-gray-700 hover:bg-gray-50 hover:text-black rounded-lg transition-colors"
             >
               Browse Courses
             </Link>
             <Link
-              to="/course/contact"
+              to="/learner/contact"
               onClick={() => toggle("mobileMenu")}
               className="block px-3 py-2 text-sm text-gray-700 hover:bg-gray-50 hover:text-black rounded-lg transition-colors"
             >
               Contact
             </Link>
             <Link
-              to="/course/settings"
+              to="/learner/settings"
               onClick={() => toggle("mobileMenu")}
               className="block px-3 py-2 text-sm text-gray-700 hover:bg-gray-50 hover:text-black rounded-lg transition-colors"
             >
@@ -425,5 +439,6 @@ const Header = ({ school, avatar, notifications: initialNotifications = [] }) =>
 }
 
 export default Header
+
 
 

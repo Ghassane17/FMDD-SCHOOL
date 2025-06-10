@@ -2,7 +2,6 @@ import CourseLayout from '../Layouts/CourseLayout.jsx';
 import QuizPage from '../pages/QuizPage.jsx';
 import NotFoundPage from '../pages/404.jsx';
 import LearnerDashboardPage from '../pages/LearnerDashboardPage.jsx';
-import LearnerSettingsPage from '../components/Learner/LearnerSettingsPage.jsx';
 import Contact from '../pages/Contact.jsx';
 import MyCourses from '../components/Learner/MyCourses.jsx';
 import SuggestedCourses from '../components/Learner/SuggestedCourses.jsx';
@@ -12,6 +11,8 @@ import EnrollementPage from "@/pages/EnrollementPage.jsx";
 import FinalQuiz from "@/pages/FinalQuiz.jsx";
 import LearnerCourseLayout from "@/Layouts/LearnerCourseLayout.jsx";
 import CourseLearnerLayout from "@/Layouts/LearnerCourseLayout.jsx";
+import AccountSettings from '../components/formateurs/AccountSettings.jsx';
+import LearnerSettingsPage from '../components/Learner/LearnerSettingsPage.jsx';
 
 // Make sure the routes are in the correct order
 const LearnerRoutes = {
@@ -39,10 +40,7 @@ const LearnerRoutes = {
             element: <Contact />,
         },
         // Specific routes first
-        {
-            path: 'courses/:courseId/finalQuiz',
-            element: <FinalQuiz/>,
-        },
+
         // Then the enrollment page (no module ID)
         {
             path: 'courses/:courseId',
@@ -58,6 +56,10 @@ const LearnerRoutes = {
                     element: <LearnerCourse />,
                 }
             ]
+        },
+        {
+            path: 'courses/:courseId/finalQuiz',
+            element: <FinalQuiz/>,
         },
         {
             path: '*',

@@ -17,7 +17,7 @@ import {
 import PeopleIcon from "@mui/icons-material/People"
 import AccessTimeIcon from "@mui/icons-material/AccessTime"
 
-const API_URL = import.meta.env.VITE_API_BASE_URL || "http://localhost:8000"
+const API_URL = import.meta.env.VITE_BACKEND_URL 
 const FALLBACK_IMAGE = "/storage/Test.png"
 
 const CourseCard = ({ id, title, description, progress, lastAccessed, image, level, students, rating }) => {
@@ -34,7 +34,7 @@ const CourseCard = ({ id, title, description, progress, lastAccessed, image, lev
     // Initialize image source
     useEffect(() => {
         if (!image) {
-            setImageSrc(`${API_URL}${FALLBACK_IMAGE}`)
+            setImageSrc(`${API_URL}`)
             setIsImageLoading(false)
             return
         }
@@ -56,7 +56,7 @@ const CourseCard = ({ id, title, description, progress, lastAccessed, image, lev
 
     const handleImageError = useCallback(() => {
         console.log("Image load error, using fallback")
-        setImageSrc(`${API_URL}${FALLBACK_IMAGE}`)
+        setImageSrc(`${API_URL}`)
         setIsImageLoading(false)
     }, [])
 

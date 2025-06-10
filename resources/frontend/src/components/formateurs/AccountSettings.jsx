@@ -1,6 +1,6 @@
 import { useNavigate } from 'react-router-dom';
 import React, { useState, useEffect } from 'react';
-import { updateInstructorProfile, updateInstructorSkills, updateInstructorLanguages, updateInstructorCertifications } from '../../services/api_instructor';
+import { updateInstructorProfile, updateInstructorSkills, updateInstructorLanguages, updateInstructorCertifications } from '@/services/api_instructor.js';
 import { Loader2, User, Lock, Star, Globe, Award, Save } from 'lucide-react';
 import SkillsForm from "./profile-completion-formateur/SkillsForm";
 import LanguagesForm from "./profile-completion-formateur/LanguagesForm";
@@ -114,7 +114,7 @@ export default function AccountSettings({ instructorData, backend_url }) {
 
       const response = await updateInstructorProfile(dataToSend);
       setSuccess('Profil mis à jour avec succès');
-      
+
       if (response.instructor) {
         setFormData({
           name: response.instructor.user.name,
@@ -123,7 +123,7 @@ export default function AccountSettings({ instructorData, backend_url }) {
         });
         setAvatarPreview(response.instructor.user.avatar || null);
         setAvatar(null);
-        
+
         // If avatar was updated, refresh the page after a short delay
         if (avatar) {
           setTimeout(() => {
@@ -196,17 +196,17 @@ export default function AccountSettings({ instructorData, backend_url }) {
         <Box sx={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', mb: 2 }}>
           <Box sx={{ display: 'flex', alignItems: 'center', gap: 2 }}>
             <PersonIcon sx={{ fontSize: 40, color: 'primary.main' }} />
-            <Typography variant="h3" sx={{ 
-              color: 'primary.main', 
-              fontWeight: 700, 
+            <Typography variant="h3" sx={{
+              color: 'primary.main',
+              fontWeight: 700,
               letterSpacing: '-0.5px',
               fontSize: { xs: '2rem', md: '2.5rem' }
             }}>
-              Mon Profil Formateur
+              Mon Profil 
             </Typography>
           </Box>
         </Box>
-        
+
         {/* Alerts */}
         {error && (
           <Alert severity="error" sx={{ mb: 2, borderRadius: 2 }}>
@@ -224,11 +224,11 @@ export default function AccountSettings({ instructorData, backend_url }) {
         {/* Left Column - Profile Information */}
         <Grid item xs={12} lg={9}>
           <Box sx={{ display: 'flex', flexDirection: 'column', gap: 4 }}>
-            
+
             {/* Personal Information Section */}
-            <Paper elevation={2} sx={{ 
-              p: { xs: 2, sm: 4, md: 8 }, 
-              borderRadius: 3, 
+            <Paper elevation={2} sx={{
+              p: { xs: 2, sm: 4, md: 8 },
+              borderRadius: 3,
               border: '1px solid',
               borderColor: 'divider',
               boxShadow: '0 2px 12px rgba(0,0,0,0.08)',
@@ -243,9 +243,9 @@ export default function AccountSettings({ instructorData, backend_url }) {
                   </Typography>
                 </Box>
               </Box>
-              
+
               <Divider sx={{ mb: { xs: 2, sm: 3 } }} />
-              
+
               {/* Avatar Section */}
               <Box sx={{ display: 'flex', flexDirection: { xs: 'column', sm: 'row' }, alignItems: 'center', gap: { xs: 1.5, sm: 3 }, mb: { xs: 2, sm: 4 }, p: { xs: 1, sm: 3 }, bgcolor: 'rgba(25, 118, 210, 0.04)', borderRadius: 2 }}>
                 <Box sx={{ position: 'relative', mb: { xs: 1, sm: 0 } }}>
@@ -283,7 +283,7 @@ export default function AccountSettings({ instructorData, backend_url }) {
                   Cliquez sur l'icône pour changer votre photo de profil
                 </Typography>
               </Box>
-              
+
               {/* Personal Info Fields */}
               <Box sx={{ display: 'flex', flexDirection: { xs: 'column', sm: 'row' }, gap: 3, mb: 3 }}>
                 <TextField
@@ -366,9 +366,9 @@ export default function AccountSettings({ instructorData, backend_url }) {
             </Paper>
 
             {/* Skills, Languages, Certifications Section */}
-            <Paper elevation={2} sx={{ 
-              p: { xs: 2, sm: 6, md: 12 }, 
-              borderRadius: 3, 
+            <Paper elevation={2} sx={{
+              p: { xs: 2, sm: 6, md: 12 },
+              borderRadius: 3,
               border: '1px solid',
               borderColor: 'divider',
               boxShadow: '0 2px 12px rgba(0,0,0,0.08)',
@@ -387,10 +387,10 @@ export default function AccountSettings({ instructorData, backend_url }) {
               <Grid container spacing={3} direction={{ xs: 'column', md: 'row' }} alignItems="stretch">
                 {/* Skills */}
                 <Grid item xs={12} md={4}>
-                  <Box sx={{ 
-                    p: { xs: 2, sm: 3 }, 
-                    bgcolor: 'rgba(25, 118, 210, 0.04)', 
-                    borderRadius: 2, 
+                  <Box sx={{
+                    p: { xs: 2, sm: 3 },
+                    bgcolor: 'rgba(25, 118, 210, 0.04)',
+                    borderRadius: 2,
                     height: '100%',
                     display: 'flex',
                     flexDirection: 'column',
@@ -406,14 +406,14 @@ export default function AccountSettings({ instructorData, backend_url }) {
                     <Box sx={{ display: 'flex', flexWrap: 'wrap', gap: 1, mb: 3, flex: 1, justifyContent: 'center' }}>
                       {skills.length > 0 ? (
                         skills.slice(0, 3).map((skill, index) => (
-                          <Box key={index} sx={{ 
-                            px: 2, 
-                            py: 0.5, 
-                            bgcolor: 'primary.main', 
-                            color: 'white', 
-                            borderRadius: 1.5, 
-                            fontSize: 13, 
-                            fontWeight: 500 
+                          <Box key={index} sx={{
+                            px: 2,
+                            py: 0.5,
+                            bgcolor: 'primary.main',
+                            color: 'white',
+                            borderRadius: 1.5,
+                            fontSize: 13,
+                            fontWeight: 500
                           }}>
                             {skill}
                           </Box>
@@ -424,14 +424,14 @@ export default function AccountSettings({ instructorData, backend_url }) {
                         </Typography>
                       )}
                       {skills.length > 3 && (
-                        <Box sx={{ 
-                          px: 2, 
-                          py: 0.5, 
-                          bgcolor: 'grey.200', 
-                          color: 'text.secondary', 
-                          borderRadius: 1.5, 
-                          fontSize: 13, 
-                          fontWeight: 500 
+                        <Box sx={{
+                          px: 2,
+                          py: 0.5,
+                          bgcolor: 'grey.200',
+                          color: 'text.secondary',
+                          borderRadius: 1.5,
+                          fontSize: 13,
+                          fontWeight: 500
                         }}>
                           +{skills.length - 3} autres
                         </Box>
@@ -452,10 +452,10 @@ export default function AccountSettings({ instructorData, backend_url }) {
 
                 {/* Languages */}
                 <Grid item xs={12} md={4}>
-                  <Box sx={{ 
-                    p: { xs: 2, sm: 3 }, 
-                    bgcolor: 'rgba(46, 125, 50, 0.04)', 
-                    borderRadius: 2, 
+                  <Box sx={{
+                    p: { xs: 2, sm: 3 },
+                    bgcolor: 'rgba(46, 125, 50, 0.04)',
+                    borderRadius: 2,
                     height: '100%',
                     display: 'flex',
                     flexDirection: 'column',
@@ -471,14 +471,14 @@ export default function AccountSettings({ instructorData, backend_url }) {
                     <Box sx={{ display: 'flex', flexWrap: 'wrap', gap: 1, mb: 3, flex: 1, justifyContent: 'center' }}>
                       {languages.length > 0 ? (
                         languages.slice(0, 3).map((lang, index) => (
-                          <Box key={index} sx={{ 
-                            px: 2, 
-                            py: 0.5, 
-                            bgcolor: 'success.main', 
-                            color: 'white', 
-                            borderRadius: 1.5, 
-                            fontSize: 13, 
-                            fontWeight: 500 
+                          <Box key={index} sx={{
+                            px: 2,
+                            py: 0.5,
+                            bgcolor: 'success.main',
+                            color: 'white',
+                            borderRadius: 1.5,
+                            fontSize: 13,
+                            fontWeight: 500
                           }}>
                             {lang.name}
                           </Box>
@@ -489,14 +489,14 @@ export default function AccountSettings({ instructorData, backend_url }) {
                         </Typography>
                       )}
                       {languages.length > 3 && (
-                        <Box sx={{ 
-                          px: 2, 
-                          py: 0.5, 
-                          bgcolor: 'grey.200', 
-                          color: 'text.secondary', 
-                          borderRadius: 1.5, 
-                          fontSize: 13, 
-                          fontWeight: 500 
+                        <Box sx={{
+                          px: 2,
+                          py: 0.5,
+                          bgcolor: 'grey.200',
+                          color: 'text.secondary',
+                          borderRadius: 1.5,
+                          fontSize: 13,
+                          fontWeight: 500
                         }}>
                           +{languages.length - 3} autres
                         </Box>
@@ -517,10 +517,10 @@ export default function AccountSettings({ instructorData, backend_url }) {
 
                 {/* Certifications */}
                 <Grid item xs={12} md={4}>
-                  <Box sx={{ 
-                    p: { xs: 2, sm: 3 }, 
-                    bgcolor: 'rgba(237, 108, 2, 0.04)', 
-                    borderRadius: 2, 
+                  <Box sx={{
+                    p: { xs: 2, sm: 3 },
+                    bgcolor: 'rgba(237, 108, 2, 0.04)',
+                    borderRadius: 2,
                     height: '100%',
                     display: 'flex',
                     flexDirection: 'column',
@@ -535,14 +535,14 @@ export default function AccountSettings({ instructorData, backend_url }) {
                     <Box sx={{ display: 'flex', flexWrap: 'wrap', gap: 1, mb: 3, flex: 1, justifyContent: 'center' }}>
                       {certifications.length > 0 ? (
                         certifications.slice(0, 3).map((cert, index) => (
-                          <Box key={index} sx={{ 
-                            px: 2, 
-                            py: 0.5, 
-                            bgcolor: 'warning.main', 
-                            color: 'white', 
-                            borderRadius: 1.5, 
-                            fontSize: 13, 
-                            fontWeight: 500 
+                          <Box key={index} sx={{
+                            px: 2,
+                            py: 0.5,
+                            bgcolor: 'warning.main',
+                            color: 'white',
+                            borderRadius: 1.5,
+                            fontSize: 13,
+                            fontWeight: 500
                           }}>
                             {cert.name}
                           </Box>
@@ -553,14 +553,14 @@ export default function AccountSettings({ instructorData, backend_url }) {
                         </Typography>
                       )}
                       {certifications.length > 3 && (
-                        <Box sx={{ 
-                          px: 2, 
-                          py: 0.5, 
-                          bgcolor: 'grey.200', 
-                          color: 'text.secondary', 
-                          borderRadius: 1.5, 
-                          fontSize: 13, 
-                          fontWeight: 500 
+                        <Box sx={{
+                          px: 2,
+                          py: 0.5,
+                          bgcolor: 'grey.200',
+                          color: 'text.secondary',
+                          borderRadius: 1.5,
+                          fontSize: 13,
+                          fontWeight: 500
                         }}>
                           +{certifications.length - 3} autres
                         </Box>
@@ -585,9 +585,9 @@ export default function AccountSettings({ instructorData, backend_url }) {
 
         {/* Right Column - Password & Security */}
         <Grid item xs={12} lg={4}>
-          <Paper elevation={2} sx={{ 
-            p: { xs: 2, sm: 4, md: 14 }, 
-            borderRadius: 3, 
+          <Paper elevation={2} sx={{
+            p: { xs: 2, sm: 4, md: 14 },
+            borderRadius: 3,
             border: '1px solid',
             borderColor: 'divider',
             boxShadow: '0 2px 12px rgba(0,0,0,0.08)',
@@ -602,9 +602,9 @@ export default function AccountSettings({ instructorData, backend_url }) {
                 Sécurité
               </Typography>
             </Box>
-            
+
             <Divider sx={{ mb: 3 }} />
-            
+
             <form onSubmit={handleChangePassword}>
               <Box sx={{ display: 'flex', flexDirection: 'column', gap: 3 }}>
                 <TextField

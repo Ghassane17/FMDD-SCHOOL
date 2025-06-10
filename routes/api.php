@@ -88,4 +88,5 @@ Route::middleware('auth:sanctum')->group(function () {
 
     // Download file by path
     Route::get('/download-resource', [DownloadController::class, 'downloadResource']);
+    Route::get('/courses/{courseId}/comments', [CommentController::class, 'showCourseComments']);
 });

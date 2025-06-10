@@ -2,7 +2,7 @@ import React, { useState, useCallback, useRef, useEffect } from 'react';
 import { Box, CircularProgress, Typography, IconButton, Slider, Popper, Paper } from '@mui/material';
 import { Play, Pause, Volume2, VolumeX, Maximize, Minimize } from 'lucide-react';
 
-const API_URL = 'http://localhost:8000';
+const API_URL = import.meta.env.VITE_BACKEND_URL ;
 const FALLBACK_POSTER = 'https://placehold.co/600x400?text=Video+Not+Available';
 
 /**
@@ -20,11 +20,24 @@ const VideoPlayer = ({ url, title }) => {
     const [isFullscreen, setIsFullscreen] = useState(false);
     const [currentTime, setCurrentTime] = useState(0);
     const [duration, setDuration] = useState(0);
+    const [videoPoster, setVideoPoster] = useState(null);
     const videoRef = useRef(null);
     const containerRef = useRef(null);
     const volumeButtonRef = useRef(null);
     const [showVolumeSlider, setShowVolumeSlider] = useState(false);
     const [volume, setVolume] = useState(0.5);
+
+    // Capture a frame from the video to use as poster
+    const captureVideoFrame = useCallback(() => {
+        if (videoRef.current) {
+            const canvas = document.createElement('canvas');
+            canvas.width = videoRef.current.videoWidth;
+            canvas.height = videoRef.current.videoHeight;
+            const ctx = canvas.getContext('2d');
+            ctx.drawImage(videoRef.current, 0, 0, canvas.width, canvas.height);
+            setVideoPoster(canvas.toDataURL('image/jpeg'));
+        }
+    }, []);
 
     // Construct video URL properly
     const videoSrc = useCallback(() => {
@@ -55,8 +68,10 @@ const VideoPlayer = ({ url, title }) => {
         setError(null);
         if (videoRef.current) {
             setDuration(videoRef.current.duration);
+            // Capture a frame after the video is loaded
+            captureVideoFrame();
         }
-    }, []);
+    }, [captureVideoFrame]);
 
     const handleVideoError = useCallback((e) => {
         console.error('Video load error:', e);
@@ -228,7 +243,7 @@ const VideoPlayer = ({ url, title }) => {
                     <video
                         ref={videoRef}
                         className="w-full h-full"
-                        poster={FALLBACK_POSTER}
+                        poster={videoPoster}
                         onTimeUpdate={handleTimeUpdate}
                         onLoadedMetadata={handleVideoLoad}
                         onError={handleVideoError}
