@@ -3,7 +3,7 @@ import VideoPlayer from './VideoPlayer';
 import { FileText, Image, FileQuestion, Video, Download, ZoomIn, ZoomOut, RotateCw } from 'lucide-react';
 import { Box, IconButton, CircularProgress, Tooltip } from '@mui/material';
 import { toast } from 'react-hot-toast';
-import { downloadResource, markModuleAsCompleted } from '../../services/api'; // Adjust path as needed
+import {  markModuleAsCompleted } from '../../services/api'; // Adjust path as needed
 
 const API_URL = import.meta.env.VITE_BACKEND_URL;
 
@@ -16,7 +16,7 @@ const API_URL = import.meta.env.VITE_BACKEND_URL;
  * @param {string} props.textContent - Text content for text type modules
  * @param {string} props.filePath - File path for pdf, image, or video type modules (fallback)
  * @param {Array} props.quizQuestions - Array of quiz questions (for quiz type)
- * @param {Array} props.resources - Array of module-specific resources from CourseResource
+ * @param {Array} props.resources - Array of module-specific resources from Resource
  */
 const ContentRenderer = ({ type, textContent, filePath, quizQuestions = [], resources = [], onQuizComplete, courseId, moduleId }) => {
     // State for quiz functionality
@@ -133,22 +133,7 @@ const ContentRenderer = ({ type, textContent, filePath, quizQuestions = [], reso
     // Find video resource from resources array
     const videoResource = resources.find((resource) => resource.type === 'video');
 
-    // PDF controls
-    const handleZoomIn = useCallback(() => {
-        setPdfScale(prev => Math.min(prev + 0.25, 2));
-    }, []);
 
-    const handleZoomOut = useCallback(() => {
-        setPdfScale(prev => Math.max(prev - 0.25, 0.5));
-    }, []);
-
-    const handleRotate = useCallback(() => {
-        if (iframeRef.current) {
-            const iframe = iframeRef.current;
-            const currentRotation = parseInt(iframe.style.transform.replace(/[^\d-]/g, '') || '0');
-            iframe.style.transform = `rotate(${currentRotation + 90}deg)`;
-        }
-    }, []);
 
     // Get authentication token
     const getAuthToken = useCallback(() => {
@@ -177,23 +162,38 @@ const ContentRenderer = ({ type, textContent, filePath, quizQuestions = [], reso
     };
 
     // Handle quiz completion
-    const handleQuizComplete = async () => {
-        const correctAnswers = Object.entries(answers).reduce((acc, [questionIndex, selectedText]) => {
-            const correctText = correctAnswerMap[questionIndex];
-            return acc + (selectedText === correctText ? 1 : 0);
-        }, 0);
+const handleQuizComplete = async () => {
+    const correctAnswers = Object.entries(answers).reduce((acc, [questionIndex, selectedText]) => {
+        const correctText = correctAnswerMap[questionIndex];
+        return acc + (selectedText === correctText ? 1 : 0);
+    }, 0);
 
-        const finalScore = (correctAnswers / quizQuestions.length) * 100;
-        setQuizScore(finalScore);
-        setQuizCompleted(true);
+    const finalScore = (correctAnswers / quizQuestions.length) * 100;
+    setQuizScore(finalScore);
+    setQuizCompleted(true);
 
-        if (onQuizComplete) {
-            onQuizComplete(finalScore / 100);
-        }
+    if (onQuizComplete) {
+        onQuizComplete(finalScore / 100);
+    }
 
+    try {
         const response = await markModuleAsCompleted(parseInt(courseId, 10), moduleId);
         console.log("🚀 Response:", response);
-    };
+
+        // Optional: show a toast
+        toast.success(`Quiz completed with ${Math.round(finalScore)}% score!`);
+
+        // Wait 2 seconds then reload the page
+        setTimeout(() => {
+            window.location.reload();
+        }, 2000);
+
+    } catch (error) {
+        console.error("❌ Error marking module as completed:", error);
+        toast.error("Failed to update progress. Please try again.");
+    }
+};
+
 
     // Reset quiz
     const resetQuiz = () => {
@@ -268,55 +268,7 @@ const ContentRenderer = ({ type, textContent, filePath, quizQuestions = [], reso
                                         transition: 'transform 0.2s ease-in-out'
                                     }}
                                 />
-                                <div className="absolute bottom-4 right-4 flex gap-2 bg-black/50 rounded-lg p-2">
-                                    <Tooltip title="Zoom In">
-                                        <IconButton
-                                            onClick={handleZoomIn}
-                                            size="small"
-                                            sx={{ color: 'white' }}
-                                        >
-                                            <ZoomIn size={20} />
-                                        </IconButton>
-                                    </Tooltip>
-                                    <Tooltip title="Zoom Out">
-                                        <IconButton
-                                            onClick={handleZoomOut}
-                                            size="small"
-                                            sx={{ color: 'white' }}
-                                        >
-                                            <ZoomOut size={20} />
-                                        </IconButton>
-                                    </Tooltip>
-                                    <Tooltip title="Rotate">
-                                        <IconButton
-                                            onClick={handleRotate}
-                                            size="small"
-                                            sx={{ color: 'white' }}
-                                        >
-                                            <RotateCw size={20} />
-                                        </IconButton>
-                                    </Tooltip>
-                                    <Tooltip title="Download">
-                                        <IconButton
-                                            onClick={async () => {
-                                                try {
-                                                    const pdfResource = resources.find((r) => r.type === 'pdf');
-                                                    if (pdfResource) {
-                                                        await downloadResource(pdfResource.id);
-                                                    } else {
-                                                        toast.error('No PDF resource found for download');
-                                                    }
-                                                } catch (error) {
-                                                    console.error('PDF download failed:', error);
-                                                }
-                                            }}
-                                            size="small"
-                                            sx={{ color: 'white' }}
-                                        >
-                                            <Download size={20} />
-                                        </IconButton>
-                                    </Tooltip>
-                                </div>
+                               
                             </>
                         ) : (
                             <div className="absolute inset-0 flex items-center justify-center">

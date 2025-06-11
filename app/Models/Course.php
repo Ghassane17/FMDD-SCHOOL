@@ -2,7 +2,7 @@
 
 namespace App\Models;
 
-use App\Models\CourseResource;
+use App\Models\Resource;
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Support\Facades\DB;
 use Reliese\Coders\Model\Relations\HasMany;
@@ -43,7 +43,7 @@ class Course extends Model
     public function learners()
     {
         return $this->belongsToMany(Learner::class, 'course_learner', 'course_id', 'learner_id')
-            ->withPivot('progress','exam_success', 'certificate_generated', 'last_accessed')
+            ->withPivot('progress', 'exam_success', 'certificate_generated', 'last_accessed')
             ->withTimestamps()
             ->using(CourseLearner::class);
     }
@@ -78,7 +78,7 @@ class Course extends Model
      */
     public function resources(): \Illuminate\Database\Eloquent\Relations\HasMany|Course
     {
-        return $this->hasMany(CourseResource::class);
+        return $this->hasMany(Resource::class);
     }
 
     public function exam(): Course|\Illuminate\Database\Eloquent\Relations\HasOne

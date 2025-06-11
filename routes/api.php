@@ -2,7 +2,7 @@
 
 use App\Http\Controllers\CommentController;
 use App\Http\Controllers\CourseInstructorController;
-use App\Http\Controllers\CourseResourceController;
+use App\Http\Controllers\ResourceController;
 use App\Http\Controllers\DownloadController;
 use App\Http\Controllers\ExamController;
 use App\Http\Controllers\PublicController;
@@ -40,15 +40,15 @@ Route::middleware('auth:sanctum')->group(function () {
     Route::get('/courses/{id}', [CourseController::class, 'getCourseDetails']);
 
     // Course module routes - single endpoint for all course/module data
-    Route::get('/learner/courses/{course}/{module?}', [CourseResourceController::class, 'getModule'])
+    Route::get('/learner/courses/{course}/{module?}', [ResourceController::class, 'getModule'])
         ->where('course', '[0-9]+');
 
     // Mark module as completed
-    Route::post('/learner/courses/{course}/modules/{module}/complete', [CourseResourceController::class, 'markModuleAsCompleted'])
+    Route::post('/learner/courses/{course}/modules/{module}/complete', [ResourceController::class, 'markModuleAsCompleted'])
         ->where(['course' => '[0-9]+', 'module' => '[0-9]+']);
 
     Route::post('/courses/{course}/comments', [CommentController::class, 'store']);
-    Route::put('/courses/{course}', [CourseResourceController::class, 'updateCourseRating']);
+    Route::put('/courses/{course}', [ResourceController::class, 'updateCourseRating']);
     Route::post('/courses/{id}/enroll', [CourseController::class, 'enrollNow']);
     Route::delete('/courses/{course}/leave', [CourseController::class, 'leave']);
 

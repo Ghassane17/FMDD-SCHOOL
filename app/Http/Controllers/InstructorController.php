@@ -29,8 +29,8 @@ class InstructorController extends Controller
                 'courses:id,title,description,rating,course_thumbnail,level,instructor_id',
                 'payments:id,instructor_id,date,amount,description'
             ])
-            ->with(['courses.learners'])
-            ->where('user_id', $user->id)->first();
+                ->with(['courses.learners'])
+                ->where('user_id', $user->id)->first();
 
             if (!$instructor) {
                 return response()->json(['message' => 'Instructor profile not found'], 404);
@@ -74,7 +74,6 @@ class InstructorController extends Controller
                     'description' => $p->description,
                 ]),
             ], 200);
-
         } catch (\Exception $e) {
             Log::error('Instructor dashboard error: ' . $e->getMessage());
             return response()->json([
@@ -216,7 +215,6 @@ class InstructorController extends Controller
                     ]
                 ]
             ]);
-
         } catch (\Illuminate\Validation\ValidationException $e) {
             return response()->json([
                 'message' => 'Validation failed',
@@ -257,7 +255,6 @@ class InstructorController extends Controller
                 'message' => 'Bank information updated successfully',
                 'bank_info' => $instructor->bank_info,
             ], 200);
-
         } catch (\Exception $e) {
             Log::error('Instructor bank info update error: ' . $e->getMessage());
             return response()->json([
@@ -290,7 +287,6 @@ class InstructorController extends Controller
             'totalStudents' => $totalStudents,
             'averageRating' => $averageRating
         ], 200);
-
     }
 
     public function updateInstructorSkills(Request $request)
@@ -352,12 +348,12 @@ class InstructorController extends Controller
             }
 
             // Get all courses for this instructor with their comments
-            $courses = \App\Models\Course::with(['comments' => function($query) {
+            $courses = \App\Models\Course::with(['comments' => function ($query) {
                 $query->with('user:id,username,avatar')
-                      ->orderBy('created_at', 'desc');
+                    ->orderBy('created_at', 'desc');
             }])
-            ->where('instructor_id', $instructor->id)
-            ->get();
+                ->where('instructor_id', $instructor->id)
+                ->get();
 
             // Format the response
             $formattedComments = [];
@@ -380,7 +376,6 @@ class InstructorController extends Controller
             return response()->json([
                 'comments' => $formattedComments
             ], 200);
-
         } catch (\Exception $e) {
             Log::error('Error fetching instructor comments: ' . $e->getMessage());
             return response()->json([
@@ -390,5 +385,3 @@ class InstructorController extends Controller
         }
     }
 }
-
-

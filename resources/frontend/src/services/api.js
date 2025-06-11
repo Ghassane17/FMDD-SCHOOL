@@ -291,6 +291,7 @@ export const getEnrolledCourses = async (forceRefresh = false) => {
 export const getLearnerSettings = async (forceRefresh = false) => {
     if (!forceRefresh && settingsCache) {
         console.log('Returning cached settings');
+      console.log(settingsCache)
         return { data: settingsCache };
     }
 
@@ -311,8 +312,14 @@ export const submitContactForm = async data => {
 
 export const courseDetails = async courseId => {
     const response = await api.get(`/courses/${courseId}`);
+    
+    for (const key in response.data) {
+        console.log(`${key}: ${typeof response.data[key]}`);
+    }
+
     return response.data;
 };
+
 
 export const getExam = async courseId => {
     try {
@@ -547,9 +554,17 @@ export const updatePersonalInfo = async formData => {
     }
 };
 
-export const updatePassword = async data => {
+export const updatePassword = async formData => {
     try {
-        const response = await api.patch('/learner/password', data);
+const response = await api.patch('/learner/password', {
+    current_password: formData.currentPassword,
+    new_password: formData.newPassword,
+    new_password_confirmation: formData.confirmPassword
+}, {
+    headers: {
+        'Content-Type': 'application/json'
+    }
+});
         return response.data;
     } catch (error) {
         const status = error.response?.status;
@@ -581,6 +596,70 @@ export const updateAdditionalInfo = async data => {
     }
 };
 
+
+
+export const downloadResource = async (resourceId, customFileName = null) => {
+    try {
+        if (!getToken()) {
+            throw new Error('No authentication token found');
+        }
+
+        console.log('🌐 Initiating resource download:', { resourceId });
+        const response = await api.get('/download-resource', {
+            params: { resource_id: resourceId },
+            responseType: 'blob',
+        });
+
+        const contentType = response.headers['content-type'];
+        
+        // Check if response is JSON (redirect case)
+        if (contentType && contentType.includes('application/json')) {
+            const text = await response.data.text();
+            const json = JSON.parse(text);
+            if (json.redirect_url) {
+                console.log('🌐 Redirecting to external link:', json.redirect_url);
+                window.open(json.redirect_url, '_blank');
+                toast.success('Opening external resource');
+                return { success: true, isRedirect: true };
+            }
+            throw new Error(json.error || 'Download failed');
+        }
+
+        // Handle blob download
+        const fileName = customFileName || 
+            response.headers['content-disposition']?.match(/filename="(.+)"/)?.[1] || 
+            `resource_${resourceId}`;
+            
+        const url = window.URL.createObjectURL(new Blob([response.data]));
+        const link = document.createElement('a');
+        link.href = url;
+        link.setAttribute('download', fileName);
+        document.body.appendChild(link);
+        link.click();
+        document.body.removeChild(link);
+        window.URL.revokeObjectURL(url);
+
+        console.log('🌐 Resource downloaded successfully:', { resourceId, fileName });
+        toast.success(`Downloaded ${fileName}`);
+        return { success: true, isRedirect: false };
+        
+    } catch (error) {
+        console.error('❌ Resource download error:', error.response || error);
+        const message = error.response?.data?.error || error.message || 'Failed to download resource';
+        toast.error(message);
+        throw new Error(message);
+    }
+};
+const handleApiError = error => {
+    if (error.response) {
+        throw new Error(error.response.data.message || 'An error occurred');
+    } else if (error.request) {
+        throw new Error('No response from server');
+    } else {
+        throw new Error(error.message || 'An error occurred');
+    }
+};
+
 export const updateNotifications = async data => {
     try {
         const response = await api.patch('/learner/notifications', data);
@@ -595,63 +674,6 @@ export const updateNotifications = async data => {
             throw new Error('Server error - please try again later');
         }
         throw new Error(error.response?.data?.message || 'Failed to update notifications');
-    }
-};
-
-export const downloadResource = async resourceId => {
-    try {
-        if (!getToken()) {
-            throw new Error('No authentication token found');
-        }
-
-        console.log('🌐 Initiating resource download:', { resourceId });
-        const response = await api.get('/download-resource', {
-            params: { resource_id: resourceId },
-            responseType: 'blob',
-        });
-
-        const contentType = response.headers['content-type'];
-        if (contentType.includes('application/json')) {
-            const text = await response.data.text();
-            const json = JSON.parse(text);
-            if (json.redirect_url) {
-                console.log('🌐 Redirecting to external link:', json.redirect_url);
-                window.open(json.redirect_url, '_blank');
-                toast.success('Opening external resource');
-                return { success: true, isRedirect: true };
-            }
-            throw new Error(json.error || 'Download failed');
-        }
-
-        const fileName = response.headers['content-disposition']
-            ?.match(/filename="(.+)"/)?.[1] || `resource_${resourceId}`;
-        const url = window.URL.createObjectURL(new Blob([response.data]));
-        const link = document.createElement('a');
-        link.href = url;
-        link.setAttribute('download', fileName);
-        document.body.appendChild(link);
-        link.click();
-        document.body.removeChild(link);
-        window.URL.revokeObjectURL(url);
-
-        console.log('🌐 Resource downloaded successfully:', { resourceId, fileName });
-        toast.success(`Downloaded ${fileName}`);
-        return { success: true, isRedirect: false };
-    } catch (error) {
-        console.error('❌ Resource download error:', error.response || error);
-        const message = error.response?.data?.error || error.message || 'Failed to download resource';
-        toast.error(message);
-        throw new Error(message);
-    }
-};
-
-const handleApiError = error => {
-    if (error.response) {
-        throw new Error(error.response.data.message || 'An error occurred');
-    } else if (error.request) {
-        throw new Error('No response from server');
-    } else {
-        throw new Error(error.message || 'An error occurred');
     }
 };
 

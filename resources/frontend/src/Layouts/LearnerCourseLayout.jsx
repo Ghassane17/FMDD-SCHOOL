@@ -1,6 +1,6 @@
 "use client"
 
-import { useState, useEffect, createContext, useContext } from "react"
+import { useState, useEffect, createContext, useContext, useRef } from "react"
 import { Outlet, useParams, useNavigate } from "react-router-dom"
 import CourseHeader from "../components/LearnerCourse/CourseHeader"
 import CourseSidebar from "../components/LearnerCourse/CourseSidebar"
@@ -25,6 +25,7 @@ export const useCourseContext = () => {
 const CourseLearnerLayout = () => {
   const { courseId, moduleId } = useParams()
   const navigate = useNavigate()
+  const sidebarRef = useRef(null)
 
   // Course data state
   const [courseData, setCourseData] = useState(null)
@@ -102,6 +103,27 @@ const CourseLearnerLayout = () => {
 
     fetchModuleData()
   }, [courseId, moduleId, navigate])
+
+  // Handle click outside sidebar
+  useEffect(() => {
+    const handleClickOutside = (event) => {
+      // Only handle clicks when sidebar is open and on mobile screens
+      if (isSidebarOpen && window.innerWidth < 1024) {
+        // Check if click is outside the sidebar
+        if (sidebarRef.current && !sidebarRef.current.contains(event.target)) {
+          setIsSidebarOpen(false)
+        }
+      }
+    }
+
+    // Add event listener
+    document.addEventListener('mousedown', handleClickOutside)
+
+    // Cleanup
+    return () => {
+      document.removeEventListener('mousedown', handleClickOutside)
+    }
+  }, [isSidebarOpen])
 
   // Toggle sidebar
   const toggleSidebar = () => {
@@ -185,15 +207,17 @@ const CourseLearnerLayout = () => {
         {/* Main Layout Container - Full height and width */}
         <div className="flex flex-1 overflow-hidden">
           {/* Course Sidebar - Fixed position */}
-          <CourseSidebar
-            modules={modules}
-            currentModuleId={currentModule?.id}
-            onModuleSelect={selectModule}
-            isOpen={isSidebarOpen}
-            courseId={Number.parseInt(courseId, 10)}
-            hasExam={hasExam}
-            progress={calculateProgress()}
-          />
+          <div ref={sidebarRef}>
+            <CourseSidebar
+              modules={modules}
+              currentModuleId={currentModule?.id}
+              onModuleSelect={selectModule}
+              isOpen={isSidebarOpen}
+              courseId={Number.parseInt(courseId, 10)}
+              hasExam={hasExam}
+              progress={calculateProgress()}
+            />
+          </div>
 
           {/* Main Content Area - Takes remaining space */}
           <div className="flex-1 overflow-auto bg-white">
@@ -201,7 +225,7 @@ const CourseLearnerLayout = () => {
               <div className="flex items-center justify-center h-full">
                 <div className="text-center">
                   <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-gray-900 mx-auto mb-4"></div>
-                  <p className="text-gray-600">Loading course content...</p>
+                  <p className="text-gray-600">Chargement...</p>
                 </div>
               </div>
             ) : (

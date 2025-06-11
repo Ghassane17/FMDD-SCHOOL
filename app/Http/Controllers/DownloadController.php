@@ -8,6 +8,7 @@ use Illuminate\Support\Facades\Auth;
 use App\Models\Resource;
 use App\Models\Course;
 use App\Models\Learner;
+use Illuminate\Support\Facades\Log;
 
 class DownloadController extends Controller
 {
@@ -30,20 +31,20 @@ class DownloadController extends Controller
             // Find the resource
             $resource = Resource::find($resourceId);
             if (!$resource) {
-                \Log::error('Resource not found', ['resource_id' => $resourceId]);
+                Log::error('Resource not found', ['resource_id' => $resourceId]);
                 return response()->json(['error' => 'Resource not found'], 404);
             }
 
             // Check if user is enrolled in the course
             $learner = Learner::where('user_id', Auth::id())->first();
             if (!$learner) {
-                \Log::warning('User is not a learner', ['user_id' => Auth::id()]);
+                Log::warning('User is not a learner', ['user_id' => Auth::id()]);
                 return response()->json(['error' => 'User must be registered as a learner'], 403);
             }
 
             $isEnrolled = $learner->courses()->where('course_id', $resource->course_id)->exists();
             if (!$isEnrolled) {
-                \Log::warning('User not enrolled in course', [
+                Log::warning('User not enrolled in course', [
                     'user_id' => Auth::id(),
                     'course_id' => $resource->course_id,
                     'resource_id' => $resourceId
@@ -53,7 +54,7 @@ class DownloadController extends Controller
 
             // Handle external URLs (e.g., links)
             if ($resource->type === 'link' && filter_var($resource->url, FILTER_VALIDATE_URL)) {
-                \Log::info('Redirecting to external resource link', [
+                Log::info('Redirecting to external resource link', [
                     'resource_id' => $resourceId,
                     'url' => $resource->url
                 ]);
@@ -62,7 +63,7 @@ class DownloadController extends Controller
 
             // Handle local files
             if (!$resource->url) {
-                \Log::error('Resource has no valid URL', ['resource_id' => $resourceId]);
+                Log::error('Resource has no valid URL', ['resource_id' => $resourceId]);
                 return response()->json(['error' => 'Invalid resource URL'], 400);
             }
 
@@ -79,7 +80,7 @@ class DownloadController extends Controller
                 return response()->json(['error' => 'Access denied'], 403);
             }
 
-            \Log::info('Resource download attempt', [
+            Log::info('Resource download attempt', [
                 'resource_id' => $resourceId,
                 'storage_path' => $storagePath,
                 'user_id' => Auth::id()
@@ -87,7 +88,7 @@ class DownloadController extends Controller
 
             // Check if file exists
             if (!Storage::disk('public')->exists($storagePath)) {
-                \Log::error('Resource file not found', [
+                Log::error('Resource file not found', [
                     'resource_id' => $resourceId,
                     'path' => $storagePath
                 ]);
@@ -109,9 +110,8 @@ class DownloadController extends Controller
                 'Pragma' => 'no-cache',
                 'Expires' => '0'
             ]);
-
         } catch (\Exception $e) {
-            \Log::error('Resource download error', [
+            Log::error('Resource download error', [
                 'resource_id' => $request->query('resource_id'),
                 'message' => $e->getMessage(),
                 'trace' => $e->getTraceAsString()
@@ -143,13 +143,21 @@ class DownloadController extends Controller
         if (strlen($fileName) > 40 && strpos($fileName, '.') !== false) {
             $extension = pathinfo($fileName, PATHINFO_EXTENSION);
             switch ($extension) {
-                case 'pdf': return 'document.pdf';
-                case 'jpg': case 'jpeg': return 'image.jpg';
-                case 'png': return 'image.png';
-                case 'mp4': return 'video.mp4';
-                case 'docx': return 'document.docx';
-                case 'xlsx': return 'spreadsheet.xlsx';
-                default: return 'file.' . $extension;
+                case 'pdf':
+                    return 'document.pdf';
+                case 'jpg':
+                case 'jpeg':
+                    return 'image.jpg';
+                case 'png':
+                    return 'image.png';
+                case 'mp4':
+                    return 'video.mp4';
+                case 'docx':
+                    return 'document.docx';
+                case 'xlsx':
+                    return 'spreadsheet.xlsx';
+                default:
+                    return 'file.' . $extension;
             }
         }
         return $fileName;

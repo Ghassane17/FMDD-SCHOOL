@@ -13,18 +13,21 @@ import {
     Stack,
     Rating,
     Tooltip,
+    useTheme,
+    useMediaQuery,
 } from "@mui/material"
 import PeopleIcon from "@mui/icons-material/People"
 import AccessTimeIcon from "@mui/icons-material/AccessTime"
 
 const API_URL = import.meta.env.VITE_BACKEND_URL 
-const FALLBACK_IMAGE = "/storage/Test.png"
 
 const CourseCard = ({ id, title, description, progress, lastAccessed, image, level, students, rating }) => {
     const [isImageLoading, setIsImageLoading] = useState(true)
     const [imageSrc, setImageSrc] = useState(null)
     const imageRef = useRef(null)
     const navigate = useNavigate()
+    const theme = useTheme()
+    const isMobile = useMediaQuery(theme.breakpoints.down('md'))
 
     const handleCardClick = () => {
         // Always navigate to the enrollment page first
@@ -68,9 +71,9 @@ const CourseCard = ({ id, title, description, progress, lastAccessed, image, lev
             <Card
                 className="w-full transition-all duration-300 hover:-translate-y-1 hover:shadow-md"
                 sx={{
-                    height: 280,
+                    height: isMobile ? 'auto' : 280,
                     display: "flex",
-                    flexDirection: "row",
+                    flexDirection: isMobile ? "column" : "row",
                     border: "1px solid",
                     borderColor: "divider",
                     borderRadius: 2,
@@ -79,11 +82,19 @@ const CourseCard = ({ id, title, description, progress, lastAccessed, image, lev
                 }}
             >
                 {/* Image Section */}
-                <Link to={`/learner/courses/${id}`} style={{ display: "block", width: "200px", flexShrink: 0 }}>
+                <Link 
+                    to={`/learner/courses/${id}`} 
+                    style={{ 
+                        display: "block", 
+                        width: isMobile ? "100%" : "200px", 
+                        height: isMobile ? "200px" : "100%",
+                        flexShrink: 0 
+                    }}
+                >
                     <Box
                         sx={{
                             position: "relative",
-                            width: "200px",
+                            width: "100%",
                             height: "100%",
                             overflow: "hidden",
                             bgcolor: "grey.100",
@@ -132,12 +143,20 @@ const CourseCard = ({ id, title, description, progress, lastAccessed, image, lev
                         flexGrow: 1,
                         display: "flex",
                         flexDirection: "column",
-                        p: 2.5,
-                        "&:last-child": { pb: 2.5 },
+                        p: isMobile ? 2 : 2.5,
+                        "&:last-child": { pb: isMobile ? 2 : 2.5 },
                     }}
                 >
                     {/* Top Section - Chips */}
-                    <Stack direction="row" spacing={1} sx={{ mb: 1.5 }}>
+                    <Stack 
+                        direction="row" 
+                        spacing={1} 
+                        sx={{ 
+                            mb: 1.5,
+                            flexWrap: isMobile ? "wrap" : "nowrap",
+                            gap: isMobile ? 1 : undefined
+                        }}
+                    >
                         {level && (
                             <Chip
                                 label={level}
@@ -172,13 +191,13 @@ const CourseCard = ({ id, title, description, progress, lastAccessed, image, lev
                         component="h3"
                         sx={{
                             mb: 1,
-                            fontSize: "1.1rem",
+                            fontSize: isMobile ? "1rem" : "1.1rem",
                             fontWeight: 600,
                             lineHeight: 1.3,
-                            height: "2.6em",
+                            height: isMobile ? "auto" : "2.6em",
                             overflow: "hidden",
                             display: "-webkit-box",
-                            WebkitLineClamp: 2,
+                            WebkitLineClamp: isMobile ? 3 : 2,
                             WebkitBoxOrient: "vertical",
                             color: "text.primary",
                         }}
@@ -198,10 +217,11 @@ const CourseCard = ({ id, title, description, progress, lastAccessed, image, lev
                             variant="body2"
                             sx={{
                                 mb: 2,
-                                height: "3em",
+                                height: isMobile ? "auto" : "3em",
+                                maxHeight: isMobile ? "4.5em" : "3em",
                                 overflow: "hidden",
                                 display: "-webkit-box",
-                                WebkitLineClamp: 2,
+                                WebkitLineClamp: isMobile ? 3 : 2,
                                 WebkitBoxOrient: "vertical",
                                 textOverflow: "ellipsis",
                                 color: "text.secondary",
@@ -237,9 +257,9 @@ const CourseCard = ({ id, title, description, progress, lastAccessed, image, lev
 
                     {/* Bottom Section - Rating and Last Accessed */}
                     <Stack
-                        direction="row"
-                        spacing={3}
-                        alignItems="center"
+                        direction={isMobile ? "column" : "row"}
+                        spacing={isMobile ? 1.5 : 3}
+                        alignItems={isMobile ? "flex-start" : "center"}
                         sx={{
                             mt: "auto",
                             pt: 1.5,
@@ -283,5 +303,3 @@ const CourseCard = ({ id, title, description, progress, lastAccessed, image, lev
 }
 
 export default CourseCard
-
-

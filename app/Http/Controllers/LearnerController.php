@@ -225,24 +225,40 @@ class LearnerController extends Controller
                 return response()->json(['message' => 'Learner profile not found'], 404);
             }
 
-            return response()->json([
-                'id' => $user->id,
-                'username' => $user->username,
-                'email' => $user->email,
-                'avatar' => $user->avatar,
-                'bio' => $user->bio,
-                'phone' => $user->phone,
-                'notifications' => $user->notifications ?? ['email' => true, 'app' => true],
-                // Learner-specific fields
-                'fields_of_interest' => $learner->fields_of_interest,
-                'languages' => $learner->languages,
-                'certifications' => $learner->certifications,
-                'bank_info' => $learner->bank_info,
-            ], 200);
+            // Get all user fields except password
+            $userData = $user->only([
+                'id',
+                'username',
+                'email',
+                'avatar',
+                'bio',
+                'phone',
+                'notifications'
+            ]);
+
+            // Get all learner fields
+            $learnerData = $learner->only([
+                'fields_of_interest',
+                'languages',
+                'certifications',
+                'bank_info'
+            ]);
+
+            // Merge user and learner data
+            $responseData = array_merge($userData, $learnerData);
+
+            // Ensure arrays are initialized
+            $responseData['fields_of_interest'] = $responseData['fields_of_interest'] ?? [];
+            $responseData['languages'] = $responseData['languages'] ?? [];
+            $responseData['certifications'] = $responseData['certifications'] ?? [];
+            $responseData['notifications'] = $responseData['notifications'] ?? ['email' => true, 'app' => true];
+
+            return response()->json($responseData, 200);
         } catch (\Exception $e) {
             Log::error('Error in settings', [
                 'user_id' => $user->id,
                 'error' => $e->getMessage(),
+                'trace' => $e->getTraceAsString()
             ]);
             return response()->json(['message' => 'Internal server error'], 500);
         }
@@ -380,77 +396,52 @@ class LearnerController extends Controller
     public function updatePersonalInfo(Request $request): \Illuminate\Http\JsonResponse
     {
         $user = Auth::user();
-        if (!$user || $user->role !== 'learner') {
+        if (!$user) {
+            return response()->json(['message' => 'Unauthenticated'], 401);
+        }
+
+        if ($user->role !== 'learner') {
             return response()->json(['message' => 'Unauthorized'], 403);
         }
 
         try {
-            // Log the incoming request data
-            Log::info('Update personal info request', [
-                'user_id' => $user->id,
-                'request_data' => $request->all()
-            ]);
-
             $validated = $request->validate([
-                'username' => 'sometimes|string|max:255|unique:users,username,' . $user->id,
-                'email' => 'sometimes|email|unique:users,email,' . $user->id,
-                'avatar' => 'sometimes|nullable|image|mimes:jpeg,png,jpg|max:5120',
-                'bio' => 'sometimes|nullable|string|max:1000',
-                'phone' => 'sometimes|nullable|string|max:20',
+                'username' => 'sometimes|required|string|max:255',
+                'email' => 'sometimes|required|email|max:255|unique:users,email,' . $user->id,
+                'bio' => 'sometimes|nullable|string',
+                'avatar' => 'sometimes|nullable|image|mimes:jpeg,png,jpg,gif|max:5120'
             ]);
 
-            // Log validated data
-            Log::info('Validated data', ['validated' => $validated]);
+            // Prepare update data
+            $updateData = [];
+            if (isset($validated['username'])) $updateData['username'] = $validated['username'];
+            if (isset($validated['email'])) $updateData['email'] = $validated['email'];
+            if (isset($validated['bio'])) $updateData['bio'] = $validated['bio'];
 
-            // Handle avatar
+            // Handle avatar upload
             if ($request->hasFile('avatar')) {
-                if ($user->avatar && Storage::disk('public')->exists(str_replace('/storage/', '', $user->avatar))) {
-                    Storage::disk('public')->delete(str_replace('/storage/', '', $user->avatar));
-                }
-                $path = $request->file('avatar')->store('avatars', 'public');
-                $validated['avatar'] = Storage::url($path);
+                $avatar = $request->file('avatar');
+                $avatarName = time() . '.' . $avatar->getClientOriginalExtension();
+                $avatar->move(public_path('avatars'), $avatarName);
+                $updateData['avatar'] = 'avatars/' . $avatarName;
             }
 
-            // Update user data using Eloquent
-            $user->update([
-                'username' => $validated['username'],
-                'email' => $validated['email'],
-                'bio' => $validated['bio'],
-                'phone' => $validated['phone'],
-                'avatar' => $validated['avatar'] ?? $user->avatar
-            ]);
-
-            // Refresh user data
-            $user->refresh();
-
-            Log::info('Updated user data', [
-                'user_id' => $user->id,
-                'updated_data' => $user->toArray()
-            ]);
+            // Only update if there are fields to update
+            if (!empty($updateData)) {
+                $user->update($updateData);
+                $user->refresh();
+            }
 
             return response()->json([
-                'message' => 'Personal information updated successfully',
-                'data' => [
-                    'username' => $user->username,
-                    'email' => $user->email,
-                    'avatar' => $user->avatar,
-                    'bio' => $user->bio,
-                    'phone' => $user->phone,
-                ]
-            ]);
-        } catch (ValidationException $e) {
-            Log::error('Validation error in update personal info', [
-                'user_id' => $user->id,
-                'errors' => $e->errors()
-            ]);
-            return response()->json(['message' => 'Validation failed', 'errors' => $e->errors()], 422);
+                'message' => 'Profile updated successfully',
+                'user' => $user->only(['id', 'username', 'email', 'avatar', 'bio'])
+            ], 200);
         } catch (\Exception $e) {
             Log::error('Error updating personal info', [
                 'user_id' => $user->id,
-                'error' => $e->getMessage(),
-                'trace' => $e->getTraceAsString()
+                'error' => $e->getMessage()
             ]);
-            return response()->json(['message' => 'Internal server error'], 500);
+            return response()->json(['message' => 'Error updating profile'], 500);
         }
     }
 
@@ -460,7 +451,11 @@ class LearnerController extends Controller
     public function updatePassword(Request $request): \Illuminate\Http\JsonResponse
     {
         $user = Auth::user();
-        if (!$user || $user->role !== 'learner') {
+        if (!$user) {
+            return response()->json(['message' => 'Unauthenticated'], 401);
+        }
+
+        if ($user->role !== 'learner') {
             return response()->json(['message' => 'Unauthorized'], 403);
         }
 
@@ -468,27 +463,26 @@ class LearnerController extends Controller
             $validated = $request->validate([
                 'current_password' => 'required|string',
                 'new_password' => 'required|string|min:8|confirmed',
+                'new_password_confirmation' => 'required|string'
             ]);
 
+            // Verify current password
             if (!Hash::check($validated['current_password'], $user->password)) {
                 return response()->json(['message' => 'Current password is incorrect'], 422);
             }
 
+            // Update password
             $user->update([
                 'password' => Hash::make($validated['new_password'])
             ]);
 
-            return response()->json([
-                'message' => 'Password updated successfully'
-            ]);
-        } catch (ValidationException $e) {
-            return response()->json(['message' => 'Validation failed', 'errors' => $e->errors()], 422);
+            return response()->json(['message' => 'Password updated successfully'], 200);
         } catch (\Exception $e) {
             Log::error('Error updating password', [
                 'user_id' => $user->id,
                 'error' => $e->getMessage()
             ]);
-            return response()->json(['message' => 'Internal server error'], 500);
+            return response()->json(['message' => 'Error updating password'], 500);
         }
     }
 
@@ -498,50 +492,48 @@ class LearnerController extends Controller
     public function updateAdditionalInfo(Request $request): \Illuminate\Http\JsonResponse
     {
         $user = Auth::user();
-        if (!$user || $user->role !== 'learner') {
+        if (!$user) {
+            return response()->json(['message' => 'Unauthenticated'], 401);
+        }
+
+        if ($user->role !== 'learner') {
             return response()->json(['message' => 'Unauthorized'], 403);
         }
 
         try {
             $validated = $request->validate([
-                'fields_of_interest' => 'sometimes|nullable|array',
-                'fields_of_interest.*' => 'string|max:255',
-                'languages' => 'sometimes|nullable|array',
-                'languages.*.name' => 'required|string|max:255',
-                'languages.*.code' => 'nullable|string|max:10',
-                'certifications' => 'sometimes|nullable|array',
-                'certifications.*.name' => 'required|string|max:255',
-                'certifications.*.institution' => 'nullable|string|max:255',
-                'bank_info' => 'sometimes|nullable|array',
-                'bank_info.iban' => 'nullable|string|max:255',
-                'bank_info.bankName' => 'nullable|string|max:255',
-                'bank_info.paymentMethod' => 'nullable|string|max:255',
+                'fields_of_interest' => 'sometimes|array',
+                'languages' => 'sometimes|array',
+                'certifications' => 'sometimes|array'
             ]);
 
-            $learner = $user->learner;
+            $learner = Learner::where('user_id', $user->id)->first();
             if (!$learner) {
-                $learner = Learner::create(['user_id' => $user->id]);
+                return response()->json(['message' => 'Learner profile not found'], 404);
             }
 
-            $learner->update($validated);
+            // Prepare update data
+            $updateData = [];
+            if (isset($validated['fields_of_interest'])) $updateData['fields_of_interest'] = $validated['fields_of_interest'];
+            if (isset($validated['languages'])) $updateData['languages'] = $validated['languages'];
+            if (isset($validated['certifications'])) $updateData['certifications'] = $validated['certifications'];
+
+            // Only update if there are fields to update
+            if (!empty($updateData)) {
+                $learner->update($updateData);
+                $learner->refresh();
+            }
 
             return response()->json([
-                'message' => 'Additional information updated successfully',
-                'data' => [
-                    'fields_of_interest' => $learner->fields_of_interest,
-                    'languages' => $learner->languages,
-                    'certifications' => $learner->certifications,
-                    'bank_info' => $learner->bank_info,
-                ]
-            ]);
-        } catch (ValidationException $e) {
-            return response()->json(['message' => 'Validation failed', 'errors' => $e->errors()], 422);
+                'message' => 'Additional info updated successfully',
+                'learner' => $learner->only(['fields_of_interest', 'languages', 'certifications'])
+            ], 200);
         } catch (\Exception $e) {
             Log::error('Error updating additional info', [
                 'user_id' => $user->id,
                 'error' => $e->getMessage()
             ]);
-            return response()->json(['message' => 'Internal server error'], 500);
+            return response()->json(['message' => 'Error updating additional info'], 500);
         }
     }
 

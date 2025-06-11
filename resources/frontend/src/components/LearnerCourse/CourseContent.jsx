@@ -108,6 +108,32 @@ const FILE_TYPES = {
   default: { icon: File, canPreview: false, category: "Other" },
 }
 
+const isDirectUrl = (resource) => {
+  // Check if it's a link type
+  if (resource.type === 'link' || resource.type === 'url') {
+    return true;
+  }
+  // Check if the resource name looks like a URL
+  const urlPattern = /^(https?:\/\/)?(www\.)?[a-zA-Z0-9-]+\.[a-zA-Z]{2,}(\/.*)?$/;
+  return urlPattern.test(resource.name);
+};
+
+const formatUrl = (url) => {
+  if (!url) return '';
+  
+  // Remove any existing protocol to avoid duplicates
+  url = url.replace(/^(https?:\/\/)?/, '');
+  
+  // Remove any leading slashes or whitespace
+  url = url.replace(/^\/+|\/+$/g, '').trim();
+  
+  // If it's already a valid URL (contains a dot and doesn't have spaces)
+  if (/^[^\s]+\.[^\s]+/.test(url)) {
+    return `https://${url}`;
+  }
+  
+  return url;
+};
 // Mapping of resource.type to file extensions
 const TYPE_TO_EXTENSION = {
   pdf: ".pdf",
@@ -145,9 +171,27 @@ const formatFileSize = (bytes) => {
 
 // Resource action buttons component
 const ResourceActions = ({ resource, onDownload, onPreview, onOpen, isDownloading }) => {
-  const fileInfo = getFileTypeInfo(resource.name, resource.type)
-  const actions = []
+  const fileInfo = getFileTypeInfo(resource.name, resource.type);
+  const actions = [];
+  const isUrl = isDirectUrl(resource);
 
+  // For URL/Link resources - Primary action is "Open Link"
+  if (isUrl || resource.type === 'link' || resource.type === 'url') {
+    return (
+      <div className="flex items-center gap-2">
+        <button
+          onClick={() => onOpen(formatUrl(resource.url || resource.name))}
+          className="flex items-center gap-2 px-3 py-1.5 text-sm bg-blue-600 text-white rounded-lg hover:bg-blue-700 transition-colors"
+          title="Open link"
+        >
+          <ExternalLink className="w-4 h-4" />
+          Open Link
+        </button>
+      </div>
+    );
+  }
+
+  // For regular files - Keep existing logic
   // Preview action (for previewable files)
   if (fileInfo.canPreview && resource.url) {
     actions.push(
@@ -163,28 +207,26 @@ const ResourceActions = ({ resource, onDownload, onPreview, onOpen, isDownloadin
           <Eye className="w-4 h-4" />
         )}
         {fileInfo.category === "Videos" || fileInfo.category === "Audio" ? "Play" : "Preview"}
-      </button>,
-    )
+      </button>
+    );
   }
 
-  // Download action (always available, except for links)
-  if (fileInfo.category !== "Links") {
-    actions.push(
-      <button
-        key="download"
-        onClick={() => onDownload(resource.id, resource)}
-        disabled={isDownloading}
-        className="flex items-center gap-2 px-3 py-1.5 text-sm bg-black text-white rounded-lg hover:bg-gray-800 transition-colors disabled:opacity-50"
-        title="Download file"
-      >
-        <Download className="w-4 h-4" />
-        {isDownloading ? "Downloading..." : "Download"}
-      </button>,
-    )
-  }
+  // Download action (always available for files)
+  actions.push(
+    <button
+      key="download"
+      onClick={() => onDownload(resource.id, resource)}
+      disabled={isDownloading}
+      className="flex items-center gap-2 px-3 py-1.5 text-sm bg-black text-white rounded-lg hover:bg-gray-800 transition-colors disabled:opacity-50"
+      title="Download file"
+    >
+      <Download className="w-4 h-4" />
+      {isDownloading ? "Downloading..." : "Download"}
+    </button>
+  );
 
-  // Open in new tab action (for URLs and web-viewable files)
-  if (resource.url && (fileInfo.category === "Links" || fileInfo.canPreview)) {
+  // Open in new tab action (for web-viewable files)
+  if (resource.url && fileInfo.canPreview) {
     actions.push(
       <button
         key="open"
@@ -194,12 +236,12 @@ const ResourceActions = ({ resource, onDownload, onPreview, onOpen, isDownloadin
       >
         <ExternalLink className="w-4 h-4" />
         Open
-      </button>,
-    )
+      </button>
+    );
   }
 
-  return <div className="flex items-center gap-2">{actions}</div>
-}
+  return <div className="flex items-center gap-2">{actions}</div>;
+};
 
 const CourseContent = ({
   currentModule,
@@ -229,28 +271,44 @@ const CourseContent = ({
   }
 
   const handleDownloadResource = async (resourceId, resource) => {
-    if (downloadingResources.has(resourceId)) return
+    // Check if it's a direct URL or link type first
+    if (isDirectUrl(resource) || resource.type === 'link' || resource.type === 'url') {
+      const url = formatUrl(resource.url || resource.name);
+      console.log('🔗 Opening external link:', url);
+      window.open(url, '_blank', 'noopener,noreferrer');
+      return;
+    }
+   
+    if (downloadingResources.has(resourceId)) return;
 
-    setDownloadingResources((prev) => new Set(prev).add(resourceId))
+    setDownloadingResources((prev) => new Set(prev).add(resourceId));
 
     try {
-      const baseName = resource.name.replace(/\.[^/.]+$/, "")
-      const extension = TYPE_TO_EXTENSION[resource.type.toLowerCase()] || ".bin"
-      const fileName = extension ? `${baseName}${extension}` : baseName
+      const baseName = resource.name.replace(/\.[^/.]+$/, "");
+      const extension = TYPE_TO_EXTENSION[resource.type.toLowerCase()] || ".bin";
+      const fileName = extension ? `${baseName}${extension}` : baseName;
 
-      await downloadResource(resourceId, fileName)
+      await downloadResource(resourceId, fileName);
     } catch (error) {
-      console.error("Download failed:", error)
+      console.error("Download failed:", error);
     } finally {
       setDownloadingResources((prev) => {
-        const newSet = new Set(prev)
-        newSet.delete(resourceId)
-        return newSet
-      })
+        const newSet = new Set(prev);
+        newSet.delete(resourceId);
+        return newSet;
+      });
     }
   }
 
   const handlePreviewResource = (resource) => {
+    // Check if it's a direct URL or link type first
+    if (isDirectUrl(resource) || resource.type === 'link' || resource.type === 'url') {
+      const url = formatUrl(resource.url || resource.name);
+      console.log('🔗 Opening external link:', url);
+      window.open(url, '_blank', 'noopener,noreferrer');
+      return;
+    }
+
     const fileInfo = getFileTypeInfo(resource.name, resource.type)
 
     if (fileInfo.category === "Images") {
@@ -425,8 +483,6 @@ const CourseContent = ({
             })()}
           </div>
         )}
-
-      
 
         {/* Navigation */}
         <div className="flex justify-between items-center pt-8 border-t border-gray-200">

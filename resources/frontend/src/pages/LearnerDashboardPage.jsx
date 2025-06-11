@@ -163,23 +163,9 @@ const LearnerDashboardPage = () => {
         <div className="bg-white border border-gray-200 rounded-lg p-8 mb-8">
           <div className="flex justify-between items-start mb-8">
             <div>
-              <h1 className="text-3xl font-bold text-black mb-2">Welcome back, {dashboard?.user?.name}!</h1>
-              <p className="text-gray-600 mb-6">Continue your learning journey</p>
+              <h1 className="text-3xl font-bold text-black mb-2">Bienvenue , {dashboard?.user?.name}!</h1>
+              <p className="text-gray-600 mb-6">Poursuivez votre parcours d'apprentissage</p>
 
-              <div className="flex flex-wrap gap-2">
-                <span className="px-3 py-1 bg-blue-50 text-blue-700 border border-blue-200 rounded-full text-sm">
-                  <MenuBookIcon className="w-4 h-4 inline mr-1" />
-                  {dashboard?.courses_enrolled || 0} Enrolled
-                </span>
-                <span className="px-3 py-1 bg-green-50 text-green-700 border border-green-200 rounded-full text-sm">
-                  <CheckCircleIcon className="w-4 h-4 inline mr-1" />
-                  {dashboard?.courses_completed || 0} Completed
-                </span>
-                <span className="px-3 py-1 bg-gray-50 text-gray-700 border border-gray-200 rounded-full text-sm">
-                  <AccessTimeIcon className="w-4 h-4 inline mr-1" />
-                  Last active: {dashboard?.last_connection || "Recently"}
-                </span>
-              </div>
             </div>
             <button
               onClick={fetchData}
@@ -200,7 +186,7 @@ const LearnerDashboardPage = () => {
             onClick={() => setShowStats(!showStats)}
             className="flex items-center gap-2 mb-4 text-gray-600 hover:text-black transition-colors"
           >
-            <span className="font-medium">Statistics</span>
+            <span className="font-medium">Statistiques</span>
             {showStats ? <ExpandMore className="w-5 h-5" /> : <ChevronRight className="w-5 h-5" />}
           </button>
 
@@ -211,58 +197,58 @@ const LearnerDashboardPage = () => {
                 <div className="flex items-center justify-center gap-2 mb-2">
                   <span className="text-3xl font-bold text-blue-600">{overallProgress}%</span>
                   <button
-                    title="Your average progress across all enrolled courses. This shows how much you've completed overall."
+                    title="Votre progression moyenne sur tous les cours inscrits. Cela indique votre progression globale."
                     className="text-gray-400 hover:text-gray-600"
                   >
                     <HelpOutlineIcon className="w-4 h-4" />
                   </button>
                 </div>
-                <p className="text-sm text-gray-600 font-medium">Overall Progress</p>
+                <p className="text-sm text-gray-600 font-medium">Progression globale</p>
               </div>
 
               <div className="text-center">
                 <div className="flex items-center justify-center gap-2 mb-2">
                   <span className="text-3xl font-bold text-green-600">{dashboard?.courses_enrolled || 0}</span>
                   <button
-                    title="Total number of courses you're currently enrolled in. These are courses you can access and continue learning."
+                    title="nombre total de cours auxquels vous êtes actuellement inscrit. Il s'agit de cours auxquels vous pouvez accéder et continuer à apprendre."
                     className="text-gray-400 hover:text-gray-600"
                   >
                     <HelpOutlineIcon className="w-4 h-4" />
                   </button>
                 </div>
-                <p className="text-sm text-gray-600 font-medium">Enrolled Courses</p>
+                <p className="text-sm text-gray-600 font-medium">Formations inscrites</p>
               </div>
 
               <div className="text-center">
                 <div className="flex items-center justify-center gap-2 mb-2">
                   <span className="text-3xl font-bold text-purple-600">{dashboard?.courses_completed || 0}</span>
                   <button
-                    title="Number of courses you've successfully completed with 100% progress. Great job on finishing these!"
+                    title="Nombre de cours que vous avez terminés avec 100 % de progression. N'oubliez pas de passer l'examen final pour l'obtention de votre certification de la fin formation !"
                     className="text-gray-400 hover:text-gray-600"
                   >
                     <HelpOutlineIcon className="w-4 h-4" />
                   </button>
                 </div>
-                <p className="text-sm text-gray-600 font-medium">Completed</p>
+                <p className="text-sm text-gray-600 font-medium">Formations terminés</p>
               </div>
 
               <div className="text-center">
                 <div className="flex items-center justify-center gap-2 mb-2">
                   <span className="text-3xl font-bold text-orange-600">{allCourses.length}</span>
                   <button
-                    title="Total number of courses available in our catalog that you can explore and enroll in."
+                    title="Nombre total de cours disponibles dans notre catalogue que vous pouvez explorer et auxquels vous pouvez vous inscrire."
                     className="text-gray-400 hover:text-gray-600"
                   >
                     <HelpOutlineIcon className="w-4 h-4" />
                   </button>
                 </div>
-                <p className="text-sm text-gray-600 font-medium">Available Courses</p>
+                <p className="text-sm text-gray-600 font-medium">Formations disponibles</p>
               </div>
             </div>
           )}
         </div>
 
-        {/* Courses Section */}
+        {/* Courses Section and certificates */}
         <div className="bg-white border border-gray-200 rounded-lg">
           {/* Tabs */}
           <div className="border-b border-gray-200">
@@ -274,7 +260,7 @@ const LearnerDashboardPage = () => {
                 }`}
               >
                 <TrendingUpIcon className="w-5 h-5" />
-                <span>My Courses</span>
+                <span>Mes formations</span>
                 <span className="px-2 py-1 bg-blue-100 text-blue-700 text-xs rounded-full">
                   {sortedEnrolledCourses.length}
                 </span>
@@ -286,7 +272,7 @@ const LearnerDashboardPage = () => {
                 }`}
               >
                 <NewReleasesIcon className="w-5 h-5" />
-                <span>Available Courses</span>
+                <span>Formations disponibles</span>
                 <span className="px-2 py-1 bg-blue-100 text-blue-700 text-xs rounded-full">
                   {sortedAvailableCourses.length}
                 </span>
@@ -314,7 +300,7 @@ const LearnerDashboardPage = () => {
                   className="flex items-center gap-2 px-4 py-2 border border-gray-300 rounded-lg hover:bg-gray-50 transition-colors"
                 >
                   <SortIcon className="w-4 h-4" />
-                  <span>Sort by</span>
+                  <span>Trier par</span>
                   <ExpandMore className={`w-4 h-4 transition-transform ${showSortOptions ? "rotate-180" : ""}`} />
                 </button>
 
@@ -346,7 +332,7 @@ const LearnerDashboardPage = () => {
             {activeTab === 0 ? (
               <>
                 {sortedEnrolledCourses.length > 0 ? (
-                  <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
+                   <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6"> 
                     {sortedEnrolledCourses.map((course) => (
                       <CourseCard
                         key={course.id}
@@ -362,27 +348,26 @@ const LearnerDashboardPage = () => {
                         enrolled
                       />
                     ))}
-                  </div>
+                   </div> 
                 ) : (
                   <div className="text-center py-12">
                     <div className="w-20 h-20 bg-gray-100 rounded-full flex items-center justify-center mx-auto mb-4">
                       <MenuBookIcon className="w-8 h-8 text-gray-400" />
                     </div>
                     <h3 className="text-xl font-semibold mb-2 text-black">
-                      {searchQuery ? "No courses found" : "No enrolled courses"}
+                      {searchQuery ? "Aucune formation trouvée" : "Aucune Formation inscrite"}
                     </h3>
                     <p className="text-gray-600 mb-6 max-w-md mx-auto">
                       {searchQuery
-                        ? "We couldn't find any courses matching your search."
-                        : "You haven't enrolled in any courses yet. Browse our catalog to get started!"}
+                        ? "Nous n'avons trouvé aucune formation correspondante à votre recherche."
+                        : "Vous n'êtes encore inscrit à aucune formation. Parcourez notre catalogue pour commencer!"}
                     </p>
                     <button
                       onClick={() => setActiveTab(1)}
                       className="flex items-center gap-2 px-6 py-3 bg-black text-white rounded-lg hover:bg-gray-800 transition-colors"
                     >
                       <NewReleasesIcon className="w-5 h-5" />
-                      Browse Courses
-                    </button>
+Decouvrir nos formations                    </button>
                   </div>
                 )}
               </>
@@ -409,7 +394,7 @@ const LearnerDashboardPage = () => {
                       <SchoolIcon className="w-8 h-8 text-gray-400" />
                     </div>
                     <h3 className="text-xl font-semibold mb-2 text-black">
-                      {searchQuery ? "No courses found" : "No available courses"}
+                      {searchQuery ? "Aucune formation trouvée":"Aucune formation disponible"}
                     </h3>
                     <p className="text-gray-600 mb-6 max-w-md mx-auto">
                       {searchQuery
@@ -434,11 +419,11 @@ const LearnerDashboardPage = () => {
         <div className="mt-8 p-8 text-center bg-gray-50 border border-gray-200 rounded-lg">
           <EmojiEventsIcon className="w-12 h-12 text-black mx-auto mb-3" />
           <h3 className="text-xl font-semibold mb-2 text-black italic">
-            "Education is the most powerful weapon which you can use to change the world."
+           "L’éducation est l’arme la plus puissante que vous puissiez utiliser pour changer le monde."
           </h3>
           <p className="text-gray-600 flex items-center justify-center gap-1">
             <LightbulbIcon className="w-4 h-4" />
-            Keep learning and growing every day!
+           Continuez à apprendre et à grandir chaque jour !
           </p>
         </div>
       </div>

@@ -22,7 +22,7 @@ const CourseSidebar = ({ modules, currentModuleId, progress, isOpen, onModuleSel
 
     return (
         <div
-            className={`fixed inset-y-0 left-0 w-64 bg-white shadow-lg transform ${
+            className={`fixed inset-y-0 left-0 w-64 bg-white shadow-lg transform z-50 ${
                 isOpen ? 'translate-x-0' : '-translate-x-full'
             } transition-transform duration-300 ease-in-out lg:static lg:translate-x-0 z-20`}
         >

@@ -31,6 +31,13 @@ const EnrollmentPage = () => {
   const [thumbnailError, setThumbnailError] = useState(false)
   const [avatarError, setAvatarError] = useState(false)
   const [comments, setComments] = useState([])
+  const [progress, setProgress] = useState(0)
+
+  // Add this useEffect to monitor progress changes
+  useEffect(() => {
+    console.log("🚀 Progress State Changed:", progress)
+    console.log("🚀 Progress State Type:", typeof progress)
+  }, [progress])
 
   // Toggle states for collapsible sections
   const [showLearningOutcomes, setShowLearningOutcomes] = useState(false)
@@ -47,7 +54,10 @@ const EnrollmentPage = () => {
         const [courseData, commentsData] = await Promise.all([courseDetails(courseId), ShowCourseComments(courseId)])
 
         console.log("🚀 Course Details Response:", courseData)
+        console.log("🚀 Full Course Object:", courseData.course)
         console.log("🚀 Comments Response:", commentsData)
+        console.log("🚀 Raw Progress Value:", courseData.progress)
+        console.log("🚀 Progress Type:", typeof courseData.progress)
 
         if (!courseData.course || typeof courseData.is_enrolled === "undefined") {
           throw new Error("Invalid response format")
@@ -55,6 +65,12 @@ const EnrollmentPage = () => {
         setCourse(courseData.course)
         setIsEnrolled(courseData.is_enrolled)
         setComments(commentsData || [])
+        
+        // Set progress from course data and ensure it's a number
+        const progressValue = courseData.progress ?? 0
+        console.log("🚀 Setting Progress Value:", progressValue)
+        console.log("🚀 Progress Value Type:", typeof progressValue)
+        setProgress(Number(progressValue))
       } catch (err) {
         console.error("❌ Course Details Error:", err)
         if (err.response?.status === 404) {
@@ -116,14 +132,20 @@ const EnrollmentPage = () => {
     }
   }
 
-  const handleThumbnailLoad = () => {
-    setThumbnailLoading(false)
-  }
+ const handleThumbnailLoad = () => {
+  console.log('✅ Thumbnail loaded successfully')
+  console.log('✅ Loaded URL:', `${API_URL}${course.course_thumbnail}`)
+  setThumbnailLoading(false)
+}
 
-  const handleThumbnailError = () => {
-    setThumbnailLoading(false)
-    setThumbnailError(true)
-  }
+const handleThumbnailError = (e) => {
+  console.error('❌ Thumbnail failed to load')
+  console.error('❌ Failed URL:', `${API_URL}${course.course_thumbnail}`)
+  console.error('❌ Error event:', e)
+  console.error('❌ Error target:', e.target)
+  console.error('❌ Error type:', e.type)
+  setThumbnailLoading(false)
+}
 
   const handleAvatarLoad = () => {
     setAvatarLoading(false)
@@ -139,7 +161,7 @@ const EnrollmentPage = () => {
       <div className="min-h-screen bg-white flex items-center justify-center">
         <div className="text-center">
           <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-black mx-auto mb-4"></div>
-          <p className="text-lg text-gray-600">Loading course details...</p>
+          <p className="text-lg text-gray-600">Chargement...</p>
         </div>
       </div>
     )
@@ -168,11 +190,13 @@ const EnrollmentPage = () => {
       {/* Hero Thumbnail Section - Full Width */}
       <div className="relative h-80 bg-gray-900 overflow-hidden">
      
-        <img
-          src={`${API_URL}${course.course_thumbnail}`}
-          alt={course.title}
-         
-        />
+           <img
+        src={`${API_URL}${course.course_thumbnail}`}
+        alt={course.title}
+        onLoad={handleThumbnailLoad}
+        onError={handleThumbnailError}
+       
+      />
         <div className="absolute inset-0 bg-black bg-opacity-40"></div>
 
         {/* Course Title Overlay */}
@@ -196,15 +220,15 @@ const EnrollmentPage = () => {
             <div className="flex flex-wrap gap-8 text-sm">
               <div className="flex items-center space-x-2">
                 <Star className="text-yellow-500 w-5 h-5" />
-                <span className="font-medium text-gray-900">{course.rating}</span>
+                <span className="font-medium text-gray-900">{course.rating ? course.rating : 0 } étoiles</span>
               </div>
               <div className="flex items-center space-x-2">
                 <Group className="text-gray-500 w-5 h-5" />
-                <span className="text-gray-600">{course.students_count?.toLocaleString() || 0} students</span>
+                <span className="text-gray-600">{course.students_count?.toLocaleString() || 0} apprenants</span>
               </div>
               <div className="flex items-center space-x-2">
                 <Schedule className="text-gray-500 w-5 h-5" />
-                <span className="text-gray-600">{course.duration_hours} hours</span>
+                <span className="text-gray-600">Duration totale éstimée en heures :{Math.floor((course.modules?.reduce((acc, module) => acc + module.duration, 0) || 0) / 60)}</span>
               </div>
             </div>
 
@@ -214,11 +238,9 @@ const EnrollmentPage = () => {
                 onClick={() => setShowLearningOutcomes(!showLearningOutcomes)}
                 className="flex items-center justify-between w-full text-left group"
               >
-                <h2 className="text-2xl font-bold text-gray-900">What you'll learn</h2>
+                <h2 className="text-2xl font-bold text-gray-900">Ce que vous allez apprendre</h2>
                 <div className="flex items-center space-x-2">
-                  <span className="text-sm text-gray-500">
-                    {showLearningOutcomes ? "Hide" : "Show"} learning outcomes
-                  </span>
+                  <span className="text-sm text-gray-500">{showLearningOutcomes ? "Envelopper" : "Développer"}</span>
                   {showLearningOutcomes ? (
                     <ExpandMore className="w-6 h-6 text-gray-500 group-hover:text-gray-700 transition-colors" />
                   ) : (
@@ -230,12 +252,12 @@ const EnrollmentPage = () => {
               {showLearningOutcomes && (
                 <div className="mt-6 space-y-4 animate-in slide-in-from-top-2 duration-300">
                   {[
-                    "Master essential concepts and fundamentals",
-                    "Apply skills through hands-on projects",
-                    "Learn industry best practices and standards",
-                    "Build real-world applications and projects",
-                    "Understand advanced techniques and methodologies",
-                    "Develop problem-solving and critical thinking skills",
+                    "Maîtrisez les concepts et les fondamentaux essentiels",
+                    "Appliquez vos compétences à travers des projets pratiques",
+                    "Apprenez les meilleures pratiques et normes de l'industrie",
+                    "Créez des applications et des projets concrets",
+                    "Comprenez les techniques et méthodologies avancées",
+                    "Développez vos compétences en résolution de problèmes et en pensée critique",
                   ].map((outcome, index) => (
                     <div key={index} className="flex items-start space-x-3">
                       <CheckCircle className="text-green-600 w-5 h-5 mt-0.5 flex-shrink-0" />
@@ -252,9 +274,9 @@ const EnrollmentPage = () => {
                 onClick={() => setShowModules(!showModules)}
                 className="flex items-center justify-between w-full text-left group mb-2"
               >
-                <h2 className="text-2xl font-bold text-gray-900">Course content</h2>
+                <h2 className="text-2xl font-bold text-gray-900">Contenu</h2>
                 <div className="flex items-center space-x-2">
-                  <span className="text-sm text-gray-500">{showModules ? "Hide" : "Show"} modules</span>
+                  <span className="text-sm text-gray-500">{showModules ? "Envelopper" : "Développer"}</span>
                   {showModules ? (
                     <ExpandMore className="w-6 h-6 text-gray-500 group-hover:text-gray-700 transition-colors" />
                   ) : (
@@ -265,7 +287,7 @@ const EnrollmentPage = () => {
 
               <p className="text-gray-600 mb-6">
                 {course.modules?.length || 0} modules •{" "}
-                {Math.floor((course.modules?.reduce((acc, module) => acc + module.duration, 0) || 0) / 60)} hours total
+              Duration totale éstimée en heures :{Math.floor((course.modules?.reduce((acc, module) => acc + module.duration, 0) || 0) / 60)} 
               </p>
 
               {showModules && (
@@ -295,7 +317,7 @@ const EnrollmentPage = () => {
 
             {/* Instructor Details */}
             <div className="bg-white rounded-lg border border-gray-200 p-8">
-              <h2 className="text-2xl font-bold text-gray-900 mb-6">About the instructor</h2>
+              <h2 className="text-2xl font-bold text-gray-900 mb-6">Instructeur de la formation</h2>
               <div className="flex flex-col sm:flex-row space-y-4 sm:space-y-0 sm:space-x-6">
                 <div className="flex-shrink-0">
                   <img
@@ -312,7 +334,7 @@ const EnrollmentPage = () => {
 
                   {Array.isArray(course.instructor.skills) && course.instructor.skills.length > 0 && (
                     <div className="mb-4">
-                      <h4 className="font-medium text-gray-900 mb-2">Skills</h4>
+                      <h4 className="font-medium text-gray-900 mb-2">Compétences</h4>
                       <div className="flex flex-wrap gap-2">
                         {course.instructor.skills.map((skill, index) => (
                           <span
@@ -328,7 +350,7 @@ const EnrollmentPage = () => {
 
                   {Array.isArray(course.instructor.languages) && course.instructor.languages.length > 0 && (
                     <div>
-                      <h4 className="font-medium text-gray-900 mb-2">Languages</h4>
+                      <h4 className="font-medium text-gray-900 mb-2">Langues</h4>
                       <div className="flex flex-wrap gap-2">
                         {course.instructor.languages.map((lang, index) => (
                           <span
@@ -346,11 +368,11 @@ const EnrollmentPage = () => {
             </div>
 
             <div className="bg-white rounded-lg border border-gray-200 p-8 mt-6">
-  <h2 className="text-2xl font-bold text-gray-900 mb-6">Course Reviews</h2>
+              <h2 className="text-2xl font-bold text-gray-900 mb-6">Évaluations de la formation "{course.title}"</h2>
   
   {comments.length === 0 ? (
     <div className="text-center py-8">
-      <p className="text-gray-500">No reviews yet for this course.</p>
+      <p className="text-gray-500">Aucune évaluation sur la formation pour le moment</p>
     </div>
   ) : (
     <div className="space-y-6">
@@ -373,7 +395,7 @@ const EnrollmentPage = () => {
                   <span className="text-sm text-gray-600">{comment.rating}</span>
                 </div>
               </div>
-              <p className="text-gray-600 mt-1">{comment.comment}</p>
+              <p className="text-gray-600 mt-1">{comment.text}</p>
               <p className="text-sm text-gray-400 mt-2">
                 {new Date(comment.created_at).toLocaleDateString('en-US', {
                   year: 'numeric',
@@ -390,16 +412,118 @@ const EnrollmentPage = () => {
 </div>
 
             {/* Notes Panel */}
-            <div className="bg-white rounded-lg border border-gray-200 p-8">
-              <NotesPanel
-                courseId={courseId}
-                notes={course.userNotes || ""}
-                onSaveNotes={(notes, rating) => {
-                  console.log("Notes saved:", notes, "Rating:", rating)
-                  // You can update the course state here if needed
-                }}
-              />
+            
+{/* Notes Panel */}
+<div className="bg-white rounded-lg border border-gray-200 p-8">
+  {console.log("🚀 Current Progress in Render:", progress)}
+  {console.log("🚀 Current Progress Type in Render:", typeof progress)}
+  {isEnrolled ? (
+    Number(progress) >= 100 ? (
+      <div>
+        <div className="flex items-center justify-between mb-6">
+          <h3 className="text-xl font-semibold text-gray-900">Course Review & Notes</h3>
+          <div className="flex items-center bg-green-100 text-green-800 px-3 py-1 rounded-full text-sm font-medium">
+            <CheckCircle className="w-4 h-4 mr-1" />
+            Course Completed
+          </div>
+        </div>
+        
+        <NotesPanel
+          courseId={courseId}
+          notes={course.userNotes || ""}
+          onSaveNotes={(notes, rating) => {
+            console.log("Notes saved:", notes, "Rating:", rating)
+            // You can update the course state here if needed
+          }}
+        />
+      </div>
+    ) : (
+      <div className="relative group">
+        {/* Overlay with disabled state */}
+        <div className="absolute inset-0 bg-white bg-opacity-80 flex flex-col items-center justify-center z-10 cursor-not-allowed group-hover:bg-opacity-90 transition-all">
+          <div className="text-center p-6">
+            <svg 
+              className="w-12 h-12 mx-auto text-gray-400 group-hover:text-red-400 transition-colors" 
+              fill="none" 
+              stroke="currentColor" 
+              viewBox="0 0 24 24"
+            >
+              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="1.5" d="M12 9v2m0 4h.01m-6.938 4h13.856c1.54 0 2.502-1.667 1.732-3L13.732 4c-.77-1.333-2.694-1.333-3.464 0L3.34 16c-.77 1.333.192 3 1.732 3z" />
+            </svg>
+            <h3 className="text-lg font-medium text-gray-700 mt-3 group-hover:text-red-600 transition-colors">
+              Complete the course to leave feedback
+            </h3>
+            <p className="text-gray-500 mt-1 text-sm">
+              {console.log("🚀 Progress in Display:", progress)}
+              {console.log("🚀 Progress Type in Display:", typeof progress)}
+              {Math.round(Number(progress))}% completed - {100 - Math.round(Number(progress))}% remaining
+            </p>
+          </div>
+        </div>
+        
+        {/* Disabled Notes Panel */}
+        <div className="opacity-60 pointer-events-none">
+          <div className="flex items-center justify-between mb-6">
+            <h3 className="text-xl font-semibold text-gray-900">Course Review & Notes</h3>
+            <div className="flex items-center bg-amber-100 text-amber-800 px-3 py-1 rounded-full text-sm font-medium">
+              <svg className="w-4 h-4 mr-1" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M12 8v4l3 3m6-3a9 9 0 11-18 0 9 9 0 0118 0z" />
+              </svg>
+              In Progress ({Math.round(Number(progress))}%)
             </div>
+          </div>
+          <NotesPanel
+            courseId={courseId}
+            notes={course.userNotes || ""}
+            onSaveNotes={() => {}}
+            disabled
+          />
+        </div>
+      </div>
+    )
+  ) : (
+    <div className="relative group">
+      {/* Overlay with disabled state */}
+      <div className="absolute inset-0 bg-white bg-opacity-80 flex flex-col items-center justify-center z-10 cursor-not-allowed group-hover:bg-opacity-90 transition-all">
+        <div className="text-center p-6">
+          <svg 
+            className="w-12 h-12 mx-auto text-gray-400 group-hover:text-red-400 transition-colors" 
+            fill="none" 
+            stroke="currentColor" 
+            viewBox="0 0 24 24"
+          >
+            <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="1.5" d="M18.364 5.636l-12.728 12.728M5.636 5.636l12.728 12.728" />
+          </svg>
+          <h3 className="text-lg font-medium text-gray-700 mt-3 group-hover:text-red-600 transition-colors">
+            Inscrivez-vous à la formation pour laisser un commentaire
+          </h3>
+          <p className="text-gray-500 mt-1 text-sm">
+            Rejoignez cette formation pour accéder aux notes et aux fonctionnalités de notation
+          </p>
+        </div>
+      </div>
+      
+      {/* Disabled Notes Panel */}
+      <div className="opacity-60 pointer-events-none">
+        <div className="flex items-center justify-between mb-6">
+          <h3 className="text-xl font-semibold text-gray-900">Evaluations et notes sur la formation </h3>
+          <div className="flex items-center bg-gray-100 text-gray-800 px-3 py-1 rounded-full text-sm font-medium">
+            <svg className="w-4 h-4 mr-1" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M12 15v2m-6 4h12a2 2 0 002-2v-6a2 2 0 00-2-2H6a2 2 0 00-2 2v6a2 2 0 002 2zm10-10V7a4 4 0 00-8 0v4h8z" />
+            </svg>
+            Pas inscrit
+          </div>
+        </div>
+        <NotesPanel
+          courseId={courseId}
+          notes=""
+          onSaveNotes={() => {}}
+          disabled
+        />
+      </div>
+    </div>
+  )}
+</div>
           </div>
 
           {/* Right Sidebar - 1/3 width with sticky scrolling */}
@@ -417,21 +541,21 @@ const EnrollmentPage = () => {
                 {isEnrolled ? (
                   <div className="text-center">
                     <CheckCircle className="text-green-600 w-12 h-12 mx-auto mb-4" />
-                    <h3 className="text-lg font-bold text-gray-900 mb-2">You're enrolled!</h3>
-                    <p className="text-gray-600 mb-6">Continue your learning journey</p>
+                    <h3 className="text-lg font-bold text-gray-900 mb-2">Vous etes inscrits !</h3>
+                    <p className="text-gray-600 mb-6">Poursuivez votre parcours d'apprentissage</p>
                     <div className="space-y-3">
                       <button
                         onClick={() => navigate(`/learner/courses/${courseId}/1`)}
                         className="w-full flex items-center justify-center space-x-2 bg-gray-900 text-white py-3 px-4 rounded-lg hover:bg-gray-800 transition-colors font-medium"
                       >
                         <PlayArrow className="w-5 h-5" />
-                        <span>Continue Course</span>
+                        <span>Continue la formation</span>
                       </button>
                       <button
                         onClick={handleLeaveCourse}
                         className="w-full py-3 px-4 border border-red-300 text-red-700 rounded-lg hover:bg-red-50 transition-colors font-medium"
                       >
-                        Leave Course
+                        Quitter la formation
                       </button>
                     </div>
                   </div>
@@ -444,10 +568,10 @@ const EnrollmentPage = () => {
                     {isEnrolling ? (
                       <div className="flex items-center justify-center space-x-2">
                         <div className="animate-spin rounded-full h-5 w-5 border-b-2 border-white"></div>
-                        <span>Enrolling...</span>
+                        <span>En train de s'inscrire à la formation...</span>
                       </div>
                     ) : (
-                      "Enroll Now"
+                      "Inscris-toi maintenant"
                     )}
                   </button>
                 )}
@@ -455,13 +579,13 @@ const EnrollmentPage = () => {
 
               {/* Course Includes */}
               <div className="bg-white rounded-lg border border-gray-200 p-6">
-                <h3 className="text-lg font-bold text-gray-900 mb-4">This course includes</h3>
+                <h3 className="text-lg font-bold text-gray-900 mb-4">Cette formation inclut</h3>
                 <div className="space-y-4">
                   {[
                     { icon: <Assignment className="w-5 h-5" />, text: `${course.modules?.length || 0} modules` },
-                    { icon: <CloudDownload className="w-5 h-5" />, text: "Downloadable resources" },
-                    { icon: <WorkspacePremium className="w-5 h-5" />, text: "Certificate of completion" },
-                    { icon: <AccessTime className="w-5 h-5" />, text: "Full lifetime access" },
+                    { icon: <CloudDownload className="w-5 h-5" />, text: "Des ressources téléchargeables" },
+                    { icon: <WorkspacePremium className="w-5 h-5" />, text: "Certification à l’issue de la formation" },
+                    { icon: <AccessTime className="w-5 h-5" />, text: "Accès à vie" },
                   ].map((feature, index) => (
                     <div key={index} className="flex items-center space-x-3">
                       <div className="text-gray-600">{feature.icon}</div>

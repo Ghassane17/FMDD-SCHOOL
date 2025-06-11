@@ -6,7 +6,7 @@ use App\Models\Course;
 use App\Models\Learner;
 use App\Models\Module;
 use App\Models\QuizQuestion;
-use App\Models\CourseResource;
+use App\Models\Resource;
 use Illuminate\Http\Request;
 use Illuminate\Http\JsonResponse;
 use Illuminate\Support\Facades\Auth;
@@ -14,7 +14,7 @@ use Illuminate\Support\Facades\Log;
 use Illuminate\Support\Facades\Storage;
 use Illuminate\Validation\ValidationException;
 
-class CourseResourceController extends Controller
+class ResourceController extends Controller
 {
     /**
      * Get a module with its resources for a specific course
@@ -313,7 +313,7 @@ class CourseResourceController extends Controller
      */
     private function getCourseResources(int $courseId): array
     {
-        return CourseResource::where('course_id', $courseId)
+        return Resource::where('course_id', $courseId)
             ->get()
             ->map(function ($resource) {
                 return $this->formatResourceData($resource);
@@ -383,7 +383,7 @@ class CourseResourceController extends Controller
     /**
      * Format resource data for response
      */
-    private function formatResourceData(CourseResource $resource): array
+    private function formatResourceData(Resource $resource): array
     {
         return [
             'id' => $resource->id,

@@ -14,7 +14,7 @@ use Illuminate\Support\Facades\Log;
 use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Facades\Storage;
 use Illuminate\Support\Facades\Validator;
-use App\Models\CourseResource;
+use App\Models\Resource;
 
 class CourseInstructorController extends Controller
 {
@@ -59,7 +59,6 @@ class CourseInstructorController extends Controller
                 });
 
             return response()->json(['courses' => $courses], 200);
-
         } catch (\Exception $e) {
             Log::error('Error in getInstructorCourses', [
                 'user_id' => $user->id ?? null,
@@ -146,7 +145,7 @@ class CourseInstructorController extends Controller
                 // Handle thumbnail upload
                 if ($request->hasFile('course_thumbnail')) {
                     $path = $request->file('course_thumbnail')
-                                ->store("courses/{$course->id}/thumbnail", 'public');
+                        ->store("courses/{$course->id}/thumbnail", 'public');
                     $course->course_thumbnail = '/storage/' . $path;
                     $course->save();
                 }
@@ -167,10 +166,12 @@ class CourseInstructorController extends Controller
                         $newModule = Module::create($moduleData);
 
                         // Handle file upload if present
-                        if (in_array($module['type'], ['pdf', 'image', 'video']) && 
-                            $request->hasFile("modules.{$index}.file")) {
+                        if (
+                            in_array($module['type'], ['pdf', 'image', 'video']) &&
+                            $request->hasFile("modules.{$index}.file")
+                        ) {
                             $path = $request->file("modules.{$index}.file")
-                                        ->store("courses/{$course->id}/modules/{$newModule->id}", 'public');
+                                ->store("courses/{$course->id}/modules/{$newModule->id}", 'public');
                             $newModule->file_path = '/storage/' . $path;
                             $newModule->save();
                         }
@@ -197,31 +198,31 @@ class CourseInstructorController extends Controller
                     'duration_min'  => $request->exam['duration_min'],
                     'passing_score' => $request->exam['passing_score'],
                 ]);
-    
+
                 foreach ($request->exam['questions'] as $q) {
                     ExamQuestion::create([
                         'exam_id'      => $exam->id,
-                        'question_text'=> $q['question'],
+                        'question_text' => $q['question'],
                         'options'      => $q['options'],
-                        'correct_index'=> $q['correctAnswer'],
+                        'correct_index' => $q['correctAnswer'],
                     ]);
                 }
 
-                
+
                 // ─── Handle resources ──────────────────────────────────────────
                 if ($request->has('resources')) {
                     foreach ($request->resources as $index => $resource) {
                         $url = null;
-                        
+
                         if (in_array($resource['type'], ['pdf', 'image', 'video']) && isset($resource['file'])) {
                             $url = $request->file("resources.{$index}.file")
-                                        ->store("courses/{$course->id}/resources", 'public');
+                                ->store("courses/{$course->id}/resources", 'public');
                             $url = '/storage/' . $url;
                         } elseif (in_array($resource['type'], ['link', 'other'])) {
                             $url = $resource['url'];
                         }
 
-                        CourseResource::create([
+                        Resource::create([
                             'course_id' => $course->id,
                             'name'      => $resource['name'],
                             'type'      => $resource['type'],
@@ -231,11 +232,10 @@ class CourseInstructorController extends Controller
                 }
 
                 DB::commit();
-                
+
                 return response()->json([
                     'message' => 'Course created successfully'
                 ], 201);
-
             } catch (\Exception $e) {
                 DB::rollBack();
                 Log::error('Error in createCourse transaction', [
@@ -272,13 +272,13 @@ class CourseInstructorController extends Controller
         if (!$instructor) {
             return response()->json(['message' => 'Instructor profile not found'], 404);
         }
-        
+
         try {
             DB::beginTransaction();
-            
+
             // 2️⃣ Load course + relationships. Note we use 'exam' not 'exams'
             $course = Course::with(['modules', 'resources', 'exam', 'learners'])
-                            ->find($courseId);
+                ->find($courseId);
 
             if (!$course) {
                 return response()->json(['message' => 'Course not found'], 404);
@@ -334,7 +334,6 @@ class CourseInstructorController extends Controller
                 'success' => true,
                 'message' => 'Course deleted successfully'
             ], 200);
-
         } catch (\Exception $e) {
             DB::rollBack();
             Log::error('Error in deleteCourse', [
@@ -364,7 +363,7 @@ class CourseInstructorController extends Controller
         if (!$instructor) {
             return response()->json(['message' => 'Instructor profile not found'], 404);
         }
-        
+
         try {
             $course = Course::find($courseId);
             if (!$course) {
@@ -376,10 +375,9 @@ class CourseInstructorController extends Controller
             }
 
             return response()->json([
-                'course' => $course , 
+                'course' => $course,
                 'students' => $course->learners->count(),
             ], 200);
-
         } catch (\Exception $e) {
             Log::error('Error in getCourseById', [
                 'error' => $e->getMessage(),
@@ -403,11 +401,11 @@ class CourseInstructorController extends Controller
         if (!$instructor) {
             return response()->json(['message' => 'Instructor profile not found'], 404);
         }
-        
+
         try {
             // Load course with all necessary relationships
             $course = Course::with([
-                'modules' => function($query) {
+                'modules' => function ($query) {
                     $query->orderBy('order', 'asc');
                 },
                 'modules.quizQuestions',
@@ -439,7 +437,7 @@ class CourseInstructorController extends Controller
                 'created_at' => $course->created_at,
                 'updated_at' => $course->updated_at,
                 'students_count' => $course->learners->count(),
-                'modules' => $course->modules->map(function($module) {
+                'modules' => $course->modules->map(function ($module) {
                     return [
                         'id' => $module->id,
                         'title' => $module->title,
@@ -448,7 +446,7 @@ class CourseInstructorController extends Controller
                         'file_path' => $module->file_path,
                         'order' => $module->order,
                         'duration' => $module->duration,
-                        'quiz_questions' => $module->quizQuestions->map(function($question) {
+                        'quiz_questions' => $module->quizQuestions->map(function ($question) {
                             return [
                                 'id' => $question->id,
                                 'question' => $question->question,
@@ -464,7 +462,7 @@ class CourseInstructorController extends Controller
                     'instructions' => $course->exam->instructions,
                     'duration_min' => $course->exam->duration_min,
                     'passing_score' => $course->exam->passing_score,
-                    'questions' => $course->exam->questions->map(function($question) {
+                    'questions' => $course->exam->questions->map(function ($question) {
                         return [
                             'id' => $question->id,
                             'question_text' => $question->question_text,
@@ -473,7 +471,7 @@ class CourseInstructorController extends Controller
                         ];
                     })
                 ] : null,
-                'resources' => $course->resources->map(function($resource) {
+                'resources' => $course->resources->map(function ($resource) {
                     return [
                         'id' => $resource->id,
                         'name' => $resource->name,
@@ -486,7 +484,6 @@ class CourseInstructorController extends Controller
             return response()->json([
                 'course' => $formattedCourse
             ], 200);
-
         } catch (\Exception $e) {
             Log::error('Error in getAllContentCourse', [
                 'course_id' => $courseId,
@@ -496,6 +493,4 @@ class CourseInstructorController extends Controller
             return response()->json(['message' => 'Internal server error'], 500);
         }
     }
-
-
 }

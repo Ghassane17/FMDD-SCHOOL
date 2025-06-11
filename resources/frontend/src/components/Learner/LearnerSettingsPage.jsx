@@ -1,7 +1,6 @@
-import { useNavigate } from 'react-router-dom';
 import React, { useState, useEffect } from 'react';
-import { updateInstructorProfile, updateInstructorCertifications, updateInstructorLanguages, updateInstructorSkills } from '../../services/api_instructor';
-import { getLearnerSettings } from '../../services/api';
+import { updatePersonalInfo, updateAdditionalInfo } from '../../services/api';
+import { getLearnerSettings, updatePassword } from '../../services/api';
 import { Loader2, User, Lock, Star, Globe, Award, Save } from 'lucide-react';
 import SkillsForm from "../formateurs/profile-completion-formateur/SkillsForm";
 import LanguagesForm from "../formateurs/profile-completion-formateur/LanguagesForm";
@@ -30,10 +29,12 @@ import {
   PhotoCamera as PhotoCameraIcon
 } from '@mui/icons-material';
 
-export default function LearnerSettingsPage({ backend_url }) {
+const API_URL = import.meta.env.VITE_BACKEND_URL; 
+
+export default function LearnerSettingsPage() {
   const [profileLoading, setProfileLoading] = useState(false);
   const [passwordLoading, setPasswordLoading] = useState(false);
-  const [loading, setLoading] = useState(true); // New loading state for data fetching
+  const [loading, setLoading] = useState(true);
   const [error, setError] = useState(null);
   const [success, setSuccess] = useState(null);
 
@@ -44,8 +45,6 @@ export default function LearnerSettingsPage({ backend_url }) {
     bio: ''
   });
 
-  const [showEditModal, setShowEditModal] = useState(false);
-  const [editTab, setEditTab] = useState('skills');
   const [skills, setSkills] = useState([]);
   const [languages, setLanguages] = useState([]);
   const [certifications, setCertifications] = useState([]);
@@ -57,6 +56,7 @@ export default function LearnerSettingsPage({ backend_url }) {
   const [certificationsBuffer, setCertificationsBuffer] = useState([]);
   const [avatarPreview, setAvatarPreview] = useState(null);
   const [avatar, setAvatar] = useState(null);
+  
 
   // Fetch learner settings on component mount
   useEffect(() => {
@@ -65,20 +65,30 @@ export default function LearnerSettingsPage({ backend_url }) {
       setError(null);
       try {
         const response = await getLearnerSettings();
-        const learnerData = response.data; // Adjust based on your API response structure
+        const learnerData = response.data;
+        
+        // Set form data
         setFormData({
           username: learnerData.username || '',
           email: learnerData.email || '',
           bio: learnerData.bio || ''
         });
+
+        // Set avatar
         setAvatarPreview(learnerData.avatar || null);
+
+        // Set skills, languages, and certifications
         setSkills(learnerData.fields_of_interest || []);
         setLanguages(learnerData.languages || []);
         setCertifications(learnerData.certifications || []);
+
+        // Set buffer states
         setSkillsBuffer(learnerData.fields_of_interest || []);
         setLanguagesBuffer(learnerData.languages || []);
         setCertificationsBuffer(learnerData.certifications || []);
-      } catch (err) {
+
+      } catch (error) {
+        console.error('Error fetching learner settings:', error);
         setError('Erreur lors du chargement des données du profil');
       } finally {
         setLoading(false);
@@ -88,12 +98,19 @@ export default function LearnerSettingsPage({ backend_url }) {
     fetchLearnerData();
   }, []); // Empty dependency array to run only on mount
 
+   // Construct avatar URL
   const getAvatarUrl = (avatarPath) => {
-    if (!avatarPath) return '/default-avatar.png';
+    // Return default avatar if no path is provided
+    if (!avatarPath) {
+      return '/default-avatar.png';
+    }
+    // Handle local file preview for newly uploaded avatars
     if (avatarPath instanceof File) {
       return URL.createObjectURL(avatarPath);
     }
-    return avatarPath.startsWith('http') ? avatarPath : `${backend_url}${avatarPath}`;
+    // Construct full URL for backend avatar paths
+    const cleanPath = avatarPath.startsWith('/') ? avatarPath.slice(1) : avatarPath;
+    return `${API_URL}/${cleanPath}`;
   };
 
   const handleAvatarChange = (e) => {
@@ -111,7 +128,6 @@ export default function LearnerSettingsPage({ backend_url }) {
       setAvatarPreview(file);
     }
   };
-
   const handleProfileUpdate = async (e) => {
     e.preventDefault();
     setProfileLoading(true);
@@ -120,23 +136,35 @@ export default function LearnerSettingsPage({ backend_url }) {
 
     try {
       const dataToSend = new FormData();
-      dataToSend.append('username', formData.username);
-      dataToSend.append('email', formData.email);
-      dataToSend.append('bio', formData.bio);
+      
+      // Only append fields that have values
+      if (formData.username) dataToSend.append('username', formData.username);
+      if (formData.email) dataToSend.append('email', formData.email);
+      if (formData.bio) dataToSend.append('bio', formData.bio);
       if (avatar && avatar instanceof File) {
         dataToSend.append('avatar', avatar);
       }
 
-      const response = await updateInstructorProfile(dataToSend);
+      // Update personal info
+      const response = await updatePersonalInfo(dataToSend);
+      
+      // Update additional info (skills, languages, certifications)
+      const additionalInfo = {
+        fields_of_interest: skills,
+        languages: languages,
+        certifications: certifications
+      };
+      await updateAdditionalInfo(additionalInfo);
+
       setSuccess('Profil mis à jour avec succès');
 
       if (response.data) {
         setFormData({
-          username: response.data.username,
-          email: response.data.email,
-          bio: response.data.bio
+          username: response.data.user.username,
+          email: response.data.user.email,
+          bio: response.data.user.bio
         });
-        setAvatarPreview(response.data.avatar || null);
+        setAvatarPreview(response.data.user.avatar || null);
         setAvatar(null);
 
         if (avatar) {
@@ -145,8 +173,9 @@ export default function LearnerSettingsPage({ backend_url }) {
           }, 1000);
         }
       }
-    } catch (err) {
-      setError(err.message || 'Une erreur est survenue lors de la mise à jour du profil');
+    } catch (error) {
+      console.error('Error updating profile:', error);
+      setError(error.response?.data?.message || 'Une erreur est survenue lors de la mise à jour du profil');
     } finally {
       setProfileLoading(false);
     }
@@ -154,30 +183,41 @@ export default function LearnerSettingsPage({ backend_url }) {
 
   const handleChangePassword = async (e) => {
     e.preventDefault();
+    setPasswordLoading(true);
+    setError(null);
+    setSuccess(null);
+
     const formData = new FormData(e.target);
     const currentPassword = formData.get('currentPassword');
     const newPassword = formData.get('newPassword');
     const confirmPassword = formData.get('confirmPassword');
 
-    if (newPassword !== confirmPassword) {
-      setError('Les mots de passe ne correspondent pas');
-      return;
-    }
-
-    setPasswordLoading(true);
-    setError(null);
-    setSuccess(null);
-
     try {
-      await updateInstructorProfile({
+      // Basic client-side validation
+      if (!currentPassword || !newPassword || !confirmPassword) {
+        throw new Error('Tous les champs sont obligatoires');
+      }
+
+      if (newPassword !== confirmPassword) {
+        throw new Error('Les mots de passe ne correspondent pas');
+      }
+
+      if (currentPassword === newPassword) {
+        throw new Error('Le nouveau mot de passe doit être différent de l\'ancien');
+      }
+
+      await updatePassword({
         current_password: currentPassword,
         new_password: newPassword,
         new_password_confirmation: confirmPassword
       });
+
       setSuccess('Mot de passe mis à jour avec succès');
       e.target.reset();
-    } catch (err) {
-      setError(err.message || 'Une erreur est survenue lors du changement de mot de passe');
+      
+    } catch (error) {
+      console.error('Error updating password:', error);
+      setError(error.response?.data?.message || error.message || 'Une erreur est survenue lors du changement de mot de passe');
     } finally {
       setPasswordLoading(false);
     }
@@ -271,7 +311,7 @@ export default function LearnerSettingsPage({ backend_url }) {
               <Divider sx={{ mb: { xs: 2, sm: 3 } }} />
 
               {/* Avatar Section */}
-              <Box sx={{ display: 'flex', flexDirection: { xs: 'column', sm: 'row' }, alignItems: 'center', gap: { xs: 1.5, sm: 3 }, mb: { xs: 2, sm: 4 }, p: { xs: 1, sm: 3 }, bgcolor: 'rgba(25, 118, 210, 0.04)', borderRadius: 2 }}>
+             <Box sx={{ display: 'flex', flexDirection: { xs: 'column', sm: 'row' }, alignItems: 'center', gap: { xs: 1.5, sm: 3 }, mb: { xs: 2, sm: 4 }, p: { xs: 1, sm: 3 }, bgcolor: 'rgba(25, 118, 210, 0.04)', borderRadius: 2 }}>
                 <Box sx={{ position: 'relative', mb: { xs: 1, sm: 0 } }}>
                   <Avatar
                     src={getAvatarUrl(avatarPreview)}
@@ -734,24 +774,7 @@ export default function LearnerSettingsPage({ backend_url }) {
                 </button>
                 <button
                   className="px-6 py-2.5 bg-gradient-to-r from-indigo-600 to-blue-500 text-white rounded-xl font-semibold hover:from-indigo-700 hover:to-blue-600 shadow-lg transition-all duration-200 transform hover:scale-105 disabled:opacity-60"
-                  onClick={async () => {
-                    setSkillsLoading(true);
-                    setSkillsError(null);
-                    setSkillsSuccess(null);
-                    try {
-                      await updateInstructorSkills({ fields_of_interest: skillsBuffer });
-                      setSkills(skillsBuffer);
-                      setSkillsSuccess('Compétences mises à jour avec succès');
-                      setTimeout(() => {
-                        setShowSkillsModal(false);
-                        setSkillsSuccess(null);
-                      }, 1200);
-                    } catch (err) {
-                      setSkillsError('Erreur lors de la mise à jour des compétences');
-                    } finally {
-                      setSkillsLoading(false);
-                    }
-                  }}
+                  onClick={handleSkillsUpdate}
                   disabled={skillsLoading}
                 >
                   {skillsLoading ? 'Enregistrement...' : 'Enregistrer'}
@@ -785,24 +808,7 @@ export default function LearnerSettingsPage({ backend_url }) {
                 </button>
                 <button
                   className="px-6 py-2.5 bg-gradient-to-r from-green-600 to-emerald-500 text-white rounded-xl font-semibold hover:from-green-700 hover:to-emerald-600 shadow-lg transition-all duration-200 transform hover:scale-105 disabled:opacity-60"
-                  onClick={async () => {
-                    setLanguagesLoading(true);
-                    setLanguagesError(null);
-                    setLanguagesSuccess(null);
-                    try {
-                      await updateInstructorLanguages({ languages: languagesBuffer });
-                      setLanguages(languagesBuffer);
-                      setLanguagesSuccess('Langues mises à jour avec succès');
-                      setTimeout(() => {
-                        setShowLanguagesModal(false);
-                        setLanguagesSuccess(null);
-                      }, 1200);
-                    } catch (err) {
-                      setLanguagesError('Erreur lors de la mise à jour des langues');
-                    } finally {
-                      setLanguagesLoading(false);
-                    }
-                  }}
+                  onClick={handleLanguagesUpdate}
                   disabled={languagesLoading}
                 >
                   {languagesLoading ? 'Enregistrement...' : 'Enregistrer'}
@@ -836,24 +842,7 @@ export default function LearnerSettingsPage({ backend_url }) {
                 </button>
                 <button
                   className="px-6 py-2.5 bg-gradient-to-r from-orange-600 to-amber-500 text-white rounded-xl font-semibold hover:from-orange-700 hover:to-amber-600 shadow-lg transition-all duration-200 transform hover:scale-105 disabled:opacity-60"
-                  onClick={async () => {
-                    setCertificationsLoading(true);
-                    setCertificationsError(null);
-                    setCertificationsSuccess(null);
-                    try {
-                      await updateInstructorCertifications({ certifications: certificationsBuffer });
-                      setCertifications(certificationsBuffer);
-                      setCertificationsSuccess('Certifications mises à jour avec succès');
-                      setTimeout(() => {
-                        setShowCertificationsModal(false);
-                        setCertificationsSuccess(null);
-                      }, 1200);
-                    } catch (err) {
-                      setCertificationsError('Erreur lors de la mise à jour des certifications');
-                    } finally {
-                      setCertificationsLoading(false);
-                    }
-                  }}
+                  onClick={handleCertificationsUpdate}
                   disabled={certificationsLoading}
                 >
                   {certificationsLoading ? 'Enregistrement...' : 'Enregistrer'}

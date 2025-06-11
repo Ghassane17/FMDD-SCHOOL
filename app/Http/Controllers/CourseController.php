@@ -87,10 +87,18 @@ class CourseController extends Controller
 
             // Check enrollment status for authenticated user
             $isEnrolled = false;
+            $progress = 0; // Initialize progress here
+
             if (Auth::check()) {
                 $learner = Learner::where('user_id', Auth::id())->first();
+
                 if ($learner) {
-                    $isEnrolled = $learner->courses()->where('course_id', $id)->exists();
+                    $coursePivot = $learner->courses()->where('course_id', $id)->first();
+
+                    if ($coursePivot) {
+                        $isEnrolled = true;
+                        $progress = $coursePivot->pivot->progress ?? 0;
+                    }
                 }
             }
 
@@ -101,8 +109,6 @@ class CourseController extends Controller
                 'description' => $course->description,
                 'course_thumbnail' => $course->course_thumbnail,
                 'duration_hours' => $course->duration_hours,
-
-
                 'level' => $course->level,
                 'rating' => $course->rating,
                 'students_count' => $course->students_count,
@@ -121,14 +127,15 @@ class CourseController extends Controller
                         'title' => $module->title,
                         'duration' => $module->duration,
                         'order' => $module->order,
-                        'type' => $module->type // Add this line
+                        'type' => $module->type
                     ];
                 })
             ];
 
             return response()->json([
                 'course' => $formattedCourse,
-                'is_enrolled' => $isEnrolled
+                'is_enrolled' => $isEnrolled,
+                'progress' => (int)($progress),
             ]);
         } catch (\Exception $e) {
             Log::error('Error in getCourseDetails', [
