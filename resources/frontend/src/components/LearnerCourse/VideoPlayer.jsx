@@ -1,16 +1,30 @@
 import React, { useState, useCallback, useRef, useEffect } from 'react';
 import { Box, CircularProgress, Typography, IconButton, Slider, Popper, Paper } from '@mui/material';
-import { Play, Pause, Volume2, VolumeX, Maximize, Minimize } from 'lucide-react';
+import { 
+    Play, 
+    Pause, 
+    Volume2, 
+    VolumeX, 
+    Maximize, 
+    Minimize,
+    SkipBack,
+    SkipForward,
+    Settings,
+    Clock,
+    RotateCcw
+} from 'lucide-react';
 
-const API_URL = import.meta.env.VITE_BACKEND_URL ;
+const API_URL = import.meta.env.VITE_BACKEND_URL;
 const FALLBACK_POSTER = 'https://placehold.co/600x400?text=Video+Not+Available';
+const SKIP_DURATION = 10; // seconds to skip forward/backward
 
 /**
  * VideoPlayer Component
- * Renders the course video with responsive styling and loading states
+ * Enhanced video player with better controls and user experience
  * 
  * @param {Object} props
  * @param {string} props.url - URL of the video to play
+ * @param {string} props.title - Optional title of the video
  */
 const VideoPlayer = ({ url, title }) => {
     const [isLoading, setIsLoading] = useState(true);
@@ -21,11 +35,18 @@ const VideoPlayer = ({ url, title }) => {
     const [currentTime, setCurrentTime] = useState(0);
     const [duration, setDuration] = useState(0);
     const [videoPoster, setVideoPoster] = useState(null);
+    const [showControls, setShowControls] = useState(true);
+    const [showVolumeSlider, setShowVolumeSlider] = useState(false);
+    const [volume, setVolume] = useState(0.5);
+    const [playbackRate, setPlaybackRate] = useState(1);
+    const [showSettings, setShowSettings] = useState(false);
+    const [buffered, setBuffered] = useState(0);
+    const [isBuffering, setIsBuffering] = useState(false);
+
     const videoRef = useRef(null);
     const containerRef = useRef(null);
     const volumeButtonRef = useRef(null);
-    const [showVolumeSlider, setShowVolumeSlider] = useState(false);
-    const [volume, setVolume] = useState(0.5);
+    const controlsTimeoutRef = useRef(null);
 
     // Capture a frame from the video to use as poster
     const captureVideoFrame = useCallback(() => {
@@ -46,77 +67,48 @@ const VideoPlayer = ({ url, title }) => {
             return null;
         }
 
-        console.log('Original video URL:', url);
-
         // If URL is already absolute, use it as is
         if (url.startsWith('http://') || url.startsWith('https://')) {
-            console.log('Using absolute URL:', url);
             return url;
         }
 
         // Clean the path and construct the full URL
         const cleanPath = url.replace(/^\/+/, '').replace(/^storage\//, '');
-        const fullUrl = `${API_URL}/storage/${cleanPath}`;
-        console.log('Constructed video URL:', fullUrl);
-        return fullUrl;
+        return `${API_URL}/storage/${cleanPath}`;
     }, [url]);
 
     // Handle video loading
     const handleVideoLoad = useCallback(() => {
-        console.log('Video loaded successfully');
         setIsLoading(false);
         setError(null);
         if (videoRef.current) {
             setDuration(videoRef.current.duration);
-            // Capture a frame after the video is loaded
             captureVideoFrame();
         }
     }, [captureVideoFrame]);
 
     const handleVideoError = useCallback((e) => {
         console.error('Video load error:', e);
-        console.error('Video element error:', e.target?.error);
-        console.error('Video source:', videoRef.current?.currentSrc);
-        console.error('Video network state:', videoRef.current?.networkState);
-        console.error('Video ready state:', videoRef.current?.readyState);
         setIsLoading(false);
         setError('Failed to load video. Please try again later.');
     }, []);
 
-    // Log video state changes
-    useEffect(() => {
+    // Handle buffering
+    const handleProgress = useCallback(() => {
         if (videoRef.current) {
-            const video = videoRef.current;
-            
-            const handleCanPlay = () => console.log('Video can play');
-            const handleWaiting = () => console.log('Video is waiting for data');
-            const handleStalled = () => console.log('Video playback stalled');
-            const handleSuspend = () => console.log('Video loading suspended');
-            const handleLoadStart = () => console.log('Video load started');
-            const handleLoadedMetadata = () => console.log('Video metadata loaded');
-            const handleLoadedData = () => console.log('Video data loaded');
-            const handleProgress = () => console.log('Video loading progress');
-            
-            video.addEventListener('canplay', handleCanPlay);
-            video.addEventListener('waiting', handleWaiting);
-            video.addEventListener('stalled', handleStalled);
-            video.addEventListener('suspend', handleSuspend);
-            video.addEventListener('loadstart', handleLoadStart);
-            video.addEventListener('loadedmetadata', handleLoadedMetadata);
-            video.addEventListener('loadeddata', handleLoadedData);
-            video.addEventListener('progress', handleProgress);
-            
-            return () => {
-                video.removeEventListener('canplay', handleCanPlay);
-                video.removeEventListener('waiting', handleWaiting);
-                video.removeEventListener('stalled', handleStalled);
-                video.removeEventListener('suspend', handleSuspend);
-                video.removeEventListener('loadstart', handleLoadStart);
-                video.removeEventListener('loadedmetadata', handleLoadedMetadata);
-                video.removeEventListener('loadeddata', handleLoadedData);
-                video.removeEventListener('progress', handleProgress);
-            };
+            const buffered = videoRef.current.buffered;
+            if (buffered.length > 0) {
+                setBuffered(buffered.end(buffered.length - 1));
+            }
         }
+    }, []);
+
+    const handleWaiting = useCallback(() => {
+        setIsBuffering(true);
+    }, []);
+
+    const handleCanPlay = useCallback(() => {
+        setIsBuffering(false);
     }, []);
 
     // Handle video playback
@@ -163,8 +155,35 @@ const VideoPlayer = ({ url, title }) => {
 
     const handleVolumeChange = useCallback((_, newValue) => {
         if (videoRef.current) {
-            videoRef.current.volume = newValue / 100;
-            setVolume(newValue / 100);
+            const volumeValue = newValue / 100;
+            videoRef.current.volume = volumeValue;
+            setVolume(volumeValue);
+            setIsMuted(volumeValue === 0);
+        }
+    }, []);
+
+    const handlePlaybackRateChange = useCallback((rate) => {
+        if (videoRef.current) {
+            videoRef.current.playbackRate = rate;
+            setPlaybackRate(rate);
+        }
+    }, []);
+
+    const skipForward = useCallback(() => {
+        if (videoRef.current) {
+            videoRef.current.currentTime = Math.min(
+                videoRef.current.currentTime + SKIP_DURATION,
+                videoRef.current.duration
+            );
+        }
+    }, []);
+
+    const skipBackward = useCallback(() => {
+        if (videoRef.current) {
+            videoRef.current.currentTime = Math.max(
+                videoRef.current.currentTime - SKIP_DURATION,
+                0
+            );
         }
     }, []);
 
@@ -185,6 +204,12 @@ const VideoPlayer = ({ url, title }) => {
                 toggleMute();
             } else if (e.code === 'KeyF') {
                 toggleFullscreen();
+            } else if (e.code === 'ArrowRight') {
+                e.preventDefault();
+                skipForward();
+            } else if (e.code === 'ArrowLeft') {
+                e.preventDefault();
+                skipBackward();
             } else if (e.code === 'ArrowUp') {
                 e.preventDefault();
                 if (videoRef.current) {
@@ -206,12 +231,37 @@ const VideoPlayer = ({ url, title }) => {
 
         document.addEventListener('keydown', handleKeyPress);
         return () => document.removeEventListener('keydown', handleKeyPress);
-    }, [togglePlay, toggleMute, toggleFullscreen, volume]);
+    }, [togglePlay, toggleMute, toggleFullscreen, volume, skipForward, skipBackward]);
 
-    // Add focus handling for the video container
-    const handleContainerFocus = useCallback(() => {
-        containerRef.current?.focus();
-    }, []);
+    // Handle mouse movement for controls visibility
+    useEffect(() => {
+        const handleMouseMove = () => {
+            setShowControls(true);
+            if (controlsTimeoutRef.current) {
+                clearTimeout(controlsTimeoutRef.current);
+            }
+            controlsTimeoutRef.current = setTimeout(() => {
+                if (isPlaying) {
+                    setShowControls(false);
+                }
+            }, 3000);
+        };
+
+        const container = containerRef.current;
+        if (container) {
+            container.addEventListener('mousemove', handleMouseMove);
+            container.addEventListener('mouseleave', () => setShowControls(false));
+        }
+
+        return () => {
+            if (container) {
+                container.removeEventListener('mousemove', handleMouseMove);
+            }
+            if (controlsTimeoutRef.current) {
+                clearTimeout(controlsTimeoutRef.current);
+            }
+        };
+    }, [isPlaying]);
 
     if (!url) {
         return (
@@ -224,7 +274,11 @@ const VideoPlayer = ({ url, title }) => {
     }
 
     return (
-        <div className="relative w-full aspect-video bg-black rounded-lg overflow-hidden">
+        <div 
+            ref={containerRef}
+            className="relative w-full aspect-video bg-black rounded-lg overflow-hidden group"
+            tabIndex={0}
+        >
             {isLoading && (
                 <div className="absolute inset-0 flex items-center justify-center bg-black">
                     <CircularProgress sx={{ color: 'white' }} />
@@ -252,20 +306,29 @@ const VideoPlayer = ({ url, title }) => {
                         onEnded={() => setIsPlaying(false)}
                         onLoadStart={() => setIsLoading(true)}
                         onLoadedData={() => setIsLoading(false)}
-                        onProgress={handleTimeUpdate}
+                        onProgress={handleProgress}
+                        onWaiting={handleWaiting}
+                        onCanPlay={handleCanPlay}
                     >
                         <source src={videoSrc()} type="video/mp4" />
                         Your browser does not support the video tag.
                     </video>
 
+                    {/* Buffering Indicator */}
+                    {isBuffering && (
+                        <div className="absolute inset-0 flex items-center justify-center bg-black/50">
+                            <CircularProgress size={40} sx={{ color: 'white' }} />
+                        </div>
+                    )}
+
                     {/* Play Button Overlay */}
                     {!isPlaying && !isLoading && !error && (
                         <div 
-                            className="absolute inset-0 flex items-center justify-center bg-black/50 cursor-pointer"
+                            className="absolute inset-0 flex items-center justify-center bg-black/50 cursor-pointer group-hover:bg-black/40 transition-all"
                             onClick={togglePlay}
                         >
-                            <div className="w-16 h-16 bg-white/20 rounded-full flex items-center justify-center hover:bg-white/30 transition-all">
-                                <Play className="w-8 h-8 text-white" />
+                            <div className="w-20 h-20 bg-white/20 rounded-full flex items-center justify-center hover:bg-white/30 transition-all">
+                                <Play className="w-10 h-10 text-white" />
                             </div>
                         </div>
                     )}
@@ -273,10 +336,8 @@ const VideoPlayer = ({ url, title }) => {
                     {/* Controls Overlay */}
                     <div 
                         className={`absolute bottom-0 left-0 right-0 bg-gradient-to-t from-black/90 to-transparent p-4 transition-opacity duration-300 ${
-                            showVolumeSlider ? 'opacity-100' : 'opacity-0'
+                            showControls ? 'opacity-100' : 'opacity-0'
                         }`}
-                        onMouseEnter={() => setShowVolumeSlider(true)}
-                        onMouseLeave={() => setShowVolumeSlider(false)}
                     >
                         {/* Progress Bar */}
                         <div className="relative mb-2">
@@ -304,6 +365,11 @@ const VideoPlayer = ({ url, title }) => {
                                     },
                                 }}
                             />
+                            {/* Buffered Progress */}
+                            <div 
+                                className="absolute top-1/2 left-0 h-1 bg-white/30 -translate-y-1/2"
+                                style={{ width: `${(buffered / duration) * 100}%` }}
+                            />
                         </div>
 
                         <div className="flex items-center justify-between">
@@ -313,6 +379,20 @@ const VideoPlayer = ({ url, title }) => {
                                     sx={{ color: 'white' }}
                                 >
                                     {isPlaying ? <Pause size={24} /> : <Play size={24} />}
+                                </IconButton>
+
+                                <IconButton 
+                                    onClick={skipBackward}
+                                    sx={{ color: 'white' }}
+                                >
+                                    <SkipBack size={24} />
+                                </IconButton>
+
+                                <IconButton 
+                                    onClick={skipForward}
+                                    sx={{ color: 'white' }}
+                                >
+                                    <SkipForward size={24} />
                                 </IconButton>
 
                                 <IconButton 
@@ -337,11 +417,11 @@ const VideoPlayer = ({ url, title }) => {
                                         <div className="bg-black/90 p-2 rounded-lg">
                                             <Slider
                                                 orientation="vertical"
-                                                value={isMuted ? 0 : volume}
+                                                value={isMuted ? 0 : volume * 100}
                                                 onChange={handleVolumeChange}
                                                 min={0}
-                                                max={1}
-                                                step={0.1}
+                                                max={100}
+                                                step={1}
                                                 sx={{
                                                     height: 100,
                                                     color: 'white',
@@ -372,6 +452,33 @@ const VideoPlayer = ({ url, title }) => {
                             </div>
 
                             <div className="flex items-center gap-2">
+                                {/* Playback Speed */}
+                                <div className="relative">
+                                    <IconButton 
+                                        onClick={() => setShowSettings(!showSettings)}
+                                        sx={{ color: 'white' }}
+                                    >
+                                        <Settings size={24} />
+                                    </IconButton>
+                                    {showSettings && (
+                                        <div className="absolute bottom-full right-0 mb-2 bg-black/90 rounded-lg p-2">
+                                            <div className="space-y-2">
+                                                {[0.5, 0.75, 1, 1.25, 1.5, 2].map((rate) => (
+                                                    <button
+                                                        key={rate}
+                                                        onClick={() => handlePlaybackRateChange(rate)}
+                                                        className={`block w-full px-4 py-2 text-sm text-white hover:bg-white/20 rounded ${
+                                                            playbackRate === rate ? 'bg-white/20' : ''
+                                                        }`}
+                                                    >
+                                                        {rate}x
+                                                    </button>
+                                                ))}
+                                            </div>
+                                        </div>
+                                    )}
+                                </div>
+
                                 <IconButton 
                                     onClick={toggleFullscreen}
                                     sx={{ color: 'white' }}

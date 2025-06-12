@@ -196,10 +196,10 @@ const CourseLearnerLayout = () => {
     <CourseContext.Provider value={courseContextValue}>
       <div className="min-h-screen bg-white flex flex-col">
         {/* Course Header - Full width at top */}
-        <div className="bg-white border-b border-gray-200 px-6 py-4">
+        <div className="bg-white border-b border-gray-200 px-8 py-6">
           <div className="flex justify-between items-center mb-4">
-            <h1 className="text-2xl font-bold text-black">{courseData?.title || 'Loading...'}</h1>
-            <div className="text-sm text-gray-600">Progress: {progress}%</div>
+            <h1 className="text-3xl font-bold text-black">{courseData?.title || 'Loading...'}</h1>
+            <div className="text-base text-gray-600">Progression: {progress}%</div>
           </div>
           <CourseHeader courseTitle={courseData?.title || 'Loading...'} toggleSidebar={toggleSidebar} progress={calculateProgress()} />
         </div>
@@ -207,7 +207,7 @@ const CourseLearnerLayout = () => {
         {/* Main Layout Container - Full height and width */}
         <div className="flex flex-1 overflow-hidden">
           {/* Course Sidebar - Fixed position */}
-          <div ref={sidebarRef}>
+          <div ref={sidebarRef} className="h-full">
             <CourseSidebar
               modules={modules}
               currentModuleId={currentModule?.id}
@@ -224,8 +224,8 @@ const CourseLearnerLayout = () => {
             {!courseData || !currentModule ? (
               <div className="flex items-center justify-center h-full">
                 <div className="text-center">
-                  <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-gray-900 mx-auto mb-4"></div>
-                  <p className="text-gray-600">Chargement...</p>
+                  <div className="animate-spin rounded-full h-16 w-16 border-b-2 border-gray-900 mx-auto mb-4"></div>
+                  <p className="text-lg text-gray-600">Loading...</p>
                 </div>
               </div>
             ) : (

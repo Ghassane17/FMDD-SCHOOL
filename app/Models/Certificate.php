@@ -8,17 +8,25 @@ use Illuminate\Database\Eloquent\Factories\HasFactory;
 
 class Certificate extends Model
 {
-use HasFactory;
+    use HasFactory;
 
-protected $fillable = ['user_id', 'course_id', 'certificate_path', 'url_path', 'issued_at'];
+    protected $fillable = [
+        'learner_id',
+        'course_id',
+        'certificate_code',
+        'url_path',
+        'issued_at'
+    ];
 
-public function user(): \Illuminate\Database\Eloquent\Relations\BelongsTo
-{
-return $this->belongsTo(User::class);
-}
+    protected $dates = ['issued_at'];
 
-public function course(): \Illuminate\Database\Eloquent\Relations\BelongsTo
-{
-return $this->belongsTo(Course::class);
-}
+    public function learner()
+    {
+        return $this->belongsTo(Learner::class);
+    }
+
+    public function course()
+    {
+        return $this->belongsTo(Course::class);
+    }
 }

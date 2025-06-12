@@ -28,6 +28,24 @@ const LearnerCourse = () => {
     // Local state for course content
     const [notes, setNotes] = useState('');
     const [loading, setLoading] = useState(false);
+    const [isFocused, setIsFocused] = useState(false);
+
+    // Toggle focus mode
+    const toggleFocusMode = () => {
+        setIsFocused(!isFocused);
+    };
+
+    // Handle escape key to exit focus mode
+    React.useEffect(() => {
+        const handleEscape = (e) => {
+            if (e.key === 'Escape' && isFocused) {
+                setIsFocused(false);
+            }
+        };
+
+        window.addEventListener('keydown', handleEscape);
+        return () => window.removeEventListener('keydown', handleEscape);
+    }, [isFocused]);
 
     // Navigate to previous module
     const goToPreviousModule = async () => {
@@ -127,19 +145,23 @@ const LearnerCourse = () => {
 
     // Main course content
     return (
-        <div className="flex-1">
-            <CourseContent
-                currentModule={currentModule}
-                hasPrevious={currentModuleIndex > 0}
-                hasNext={currentModuleIndex < modules.length - 1}
-                onPreviousClick={goToPreviousModule}
-                onNextClick={goToNextModule}
-                onQuizComplete={(score) => handleQuizComplete(currentModule.id, score)}
-                courseId={courseId}
-                onSaveNotes={handleSaveNotes}
-                notes={notes}
-                onModuleComplete={handleModuleComplete}
-            />
+        <div className={`flex-1 transition-all duration-300 ${isFocused ? 'fixed inset-0 z-50 bg-white' : ''}`}>
+            <div className={`relative transition-all duration-300 ${isFocused ? 'max-w-4xl mx-auto h-full overflow-auto' : ''}`}>
+                <CourseContent
+                    currentModule={currentModule}
+                    hasPrevious={currentModuleIndex > 0}
+                    hasNext={currentModuleIndex < modules.length - 1}
+                    onPreviousClick={goToPreviousModule}
+                    onNextClick={goToNextModule}
+                    onQuizComplete={(score) => handleQuizComplete(currentModule.id, score)}
+                    courseId={courseId}
+                    onSaveNotes={handleSaveNotes}
+                    notes={notes}
+                    onModuleComplete={handleModuleComplete}
+                    isFocused={isFocused}
+                    onToggleFocus={toggleFocusMode}
+                />
+            </div>
         </div>
     );
 };

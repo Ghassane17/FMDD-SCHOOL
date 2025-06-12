@@ -27,7 +27,7 @@ const CourseSidebar = ({ modules, currentModuleId, progress, isOpen, onModuleSel
             } transition-transform duration-300 ease-in-out lg:static lg:translate-x-0 z-20`}
         >
             <div className="p-4 h-full overflow-y-auto">
-                <h2 className="text-lg font-semibold text-gray-800 mb-4">Course Modules</h2>
+                <h2 className="text-lg font-semibold text-gray-800 mb-4">Modules</h2>
                 <ul className="space-y-2">
                     {modules.map((module) => (
                         <li key={module.id}>
@@ -64,13 +64,11 @@ const CourseSidebar = ({ modules, currentModuleId, progress, isOpen, onModuleSel
                                 <School className="mr-2 text-indigo-600" fontSize="small" />
                             )}
                             <span className="text-sm font-medium">
-                                {isExamDisabled ? 'Final Exam (Locked)' : 'Final Exam'}
+                                {isExamDisabled ? 'Examen final (Pas disponible)' : 'Examen final'}
                             </span>
                         </button>
                         {isExamDisabled && (
-                            <p className="mt-2 text-xs text-gray-500 px-3">
-                                Complete all modules ({progress}%) to unlock the final exam
-                            </p>
+                            <p className="mt-2 text-xs text-gray-500 px-3">Vous devez compléter tous les modules ({progress} %) pour accéder à l’examen final.</p>
                         )}
                     </div>
                 )}

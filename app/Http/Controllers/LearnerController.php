@@ -353,11 +353,27 @@ class LearnerController extends Controller
             // Update courses_completed count
             $learner->update(['courses_completed' => $completedCourses]);
 
+            $certificates = $learner->certificates()
+                ->with(['course'])
+                ->get()
+                ->map(function ($certificate) {
+                    return [
+                        'id' => $certificate->id,
+                        'certificate_code' => $certificate->certificate_code,
+                        'course_name' => $certificate->course->title,
+                        'created_at' => $certificate->created_at,
+                        'download_url' => route('certificates.download', $certificate->id),
+                        'preview_url' => route('certificates.preview', $certificate->id)
+                    ];
+                });
+
             return response()->json([
                 'learner_id' => $learner->id,
                 'courses_enrolled' => $actualEnrolledCount,
                 'courses_completed' => $completedCourses,
+                'certificates' => $certificates,
                 'last_connection' => $learner->last_connection,
+
                 'user' => [
                     'name' => $user->username,
                     'avatar' => $user->avatar,
@@ -574,6 +590,81 @@ class LearnerController extends Controller
             return response()->json(['message' => 'Internal server error'], 500);
         }
     }
+
+    //--------------------------------------------------------------------------------------
+
+    public function getLearnerDashboard()
+    {
+        $user = auth()->user();
+
+        // Get enrolled courses with progress
+        $enrolledCourses = $user->learner->courses()
+            ->with(['modules', 'modules.userProgress' => function ($query) use ($user) {
+                $query->where('user_id', $user->id);
+            }])
+            ->get()
+            ->map(function ($course) use ($user) {
+                $totalModules = $course->modules->count();
+                $completedModules = $course->modules->filter(function ($module) {
+                    return $module->userProgress->isNotEmpty() && $module->userProgress->first()->is_completed;
+                })->count();
+
+                $progress = $totalModules > 0 ? round(($completedModules / $totalModules) * 100) : 0;
+
+                return [
+                    'id' => $course->id,
+                    'title' => $course->title,
+                    'description' => $course->description,
+                    'progress' => $progress,
+                    'last_accessed' => $course->pivot->last_accessed,
+                    'course_thumbnail' => $course->course_thumbnail,
+                    'level' => $course->level,
+                    'students' => $course->students_count,
+                    'rating' => $course->rating,
+                    'is_completed' => $progress === 100
+                ];
+            });
+
+        // Get certificates with proper relationships
+        $certificates = $user->learner->certificates()
+            ->with(['course', 'learner.user'])
+            ->get()
+            ->map(function ($certificate) {
+                return [
+                    'id' => $certificate->id,
+                    'certificate_code' => $certificate->certificate_code,
+                    'course_name' => $certificate->course->title,
+                    'created_at' => $certificate->created_at,
+                    'download_url' => route('certificates.download', $certificate->id),
+                    'preview_url' => route('certificates.preview', $certificate->id, false)
+                ];
+            });
+
+        // Update learner's last connection
+        $user->learner->update(['last_connection' => now()]);
+
+        // Calculate statistics
+        $coursesEnrolled = $enrolledCourses->count();
+        $coursesCompleted = $enrolledCourses->where('is_completed', true)->count();
+
+        return response()->json([
+            'user' => [
+                'id' => $user->id,
+                'name' => $user->name,
+                'email' => $user->email,
+                'avatar' => $user->avatar,
+                'bio' => $user->bio
+            ],
+            'enrolled_courses' => $enrolledCourses,
+            'certificates' => $certificates,
+            'courses_enrolled' => $coursesEnrolled,
+            'courses_completed' => $coursesCompleted,
+            'last_connection' => $user->learner->last_connection
+        ]);
+    }
+
+    //--------------------------------------------------------------------------------------
+
 
     //--------------------------------------------------------------------------------------
 
