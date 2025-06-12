@@ -3,7 +3,7 @@ import { useParams, useNavigate } from 'react-router-dom';
 import { Trash2, AlertTriangle, ArrowLeft, Settings2, Edit2, Users, Clock, Star, Tag } from 'lucide-react';
 import { getCourseById, deleteCourse } from '../../services/api_instructor';
 
-const backend_url = import.meta.env.VITE_API_URL || 'http://localhost:8000';
+const backend_url = import.meta.env.VITE_BACKEND_URL || 'http://localhost:8000';
 
 const ManageCourse = () => {
   const { courseId } = useParams();

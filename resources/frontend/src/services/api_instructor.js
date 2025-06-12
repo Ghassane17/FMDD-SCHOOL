@@ -82,7 +82,6 @@ export const updateInstructorProfile = async (profileData) => {
             withCredentials: true,
             timeout: 30000,
         });
-        console.log(profileData.get('email')) ;
         const response = await uploadApi.post('/instructor/profile', profileData);
         return response.data;
     } catch (error) {
@@ -352,3 +351,51 @@ export const getInstructorComments = async () => {
     }
 };
 
+/**
+ * Get comment replies
+ * @param {string} commentId - The ID of the comment to fetch replies for
+ * @returns {Promise} Promise object containing the comment replies data
+ */
+
+export const getCommentReplies = async (commentId) => {
+    try {
+        const response = await api.get(`/comments/${commentId}/replies`);
+        return response.data;
+    } catch (error) {
+        console.error('Error fetching comment replies:', error);
+        throw error;
+    }
+};
+
+/**
+ * Store a new comment reply
+ * @param {string} commentId - The ID of the comment to store the reply for
+ * @param {Object} replyData - The reply data to store
+ * @returns {Promise} Promise object containing the stored reply data
+ */
+
+export const storeCommentReply = async (commentId, replyData) => {
+    try {
+        const response = await api.post(`/comments/${commentId}/replies`, replyData);
+        return response.data;
+    } catch (error) {
+        console.error('Error storing comment reply:', error);
+        throw error;
+    }
+};
+
+/**
+ * Delete a comment reply
+ * @param {string} replyId - The ID of the reply to delete
+ * @returns {Promise} Promise object containing the deletion result
+ */
+
+export const deleteCommentReply = async (replyId) => {
+    try {
+        const response = await api.delete(`/replies/${replyId}`);
+        return response.data;
+    } catch (error) {
+        console.error('Error deleting comment reply:', error);
+        throw error;
+    }
+};

@@ -34,4 +34,11 @@ class Comment extends Model
         return $this->belongsTo(Course::class);
     }
 
+    /**
+     * Get the replies for the comment.
+     */
+    public function replies()
+    {
+        return $this->hasMany(CommentReply::class);
+    }
 }

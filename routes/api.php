@@ -12,7 +12,7 @@ use App\Http\Controllers\Auth\LoginController;
 use App\Http\Controllers\CourseController;
 use App\Http\Controllers\LearnerController;
 use App\Http\Controllers\InstructorController;
-
+use App\Http\Controllers\CommentReplyController;
 // Authentication Routes
 Route::post('/register', [RegisterController::class, 'register'])->name('register');
 Route::patch('/learner/profile', [LearnerController::class, 'profile'])->name('learner.profile');
@@ -85,6 +85,10 @@ Route::middleware('auth:sanctum')->group(function () {
     Route::get('/instructor/comments', [InstructorController::class, 'getInstructorComments'])->name('instructor.getInstructorComments');
     Route::get('/instructor/courses/{courseId}/content', [CourseInstructorController::class, 'getAllContentCourse'])->name('instructor.getAllContentCourse');
 
+    // Comment Replies Routes
+    Route::get('/comments/{commentId}/replies', [CommentReplyController::class, 'getCommentReplies'])->name('comment.getCommentReplies');
+    Route::post('/comments/{commentId}/replies', [CommentReplyController::class, 'storeReply'])->name('comment.storeReply');
+    Route::delete('/replies/{replyId}', [CommentReplyController::class, 'deleteReply'])->name('comment.deleteReply');
 
     // Download file by path
     Route::get('/download-resource', [DownloadController::class, 'downloadResource']);

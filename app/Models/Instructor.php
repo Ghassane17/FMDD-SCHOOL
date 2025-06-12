@@ -41,6 +41,12 @@ class Instructor extends Model
         return $this->hasMany(Availability::class);
     }
 
+    // 1‑à‑n avec CommentReply
+    public function replies(): HasMany
+    {
+        return $this->hasMany(CommentReply::class);
+    }
+
     /**
      * Les attributs assignables en masse.
      */
