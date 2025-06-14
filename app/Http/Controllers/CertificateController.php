@@ -59,8 +59,16 @@ class CertificateController extends Controller
         $pdf->setOptions([
             'isHtml5ParserEnabled' => true,
             'isRemoteEnabled' => true,
-            'dpi' => 150,
-            'defaultFont' => 'sans-serif'
+            'dpi' => 300,
+            'defaultFont' => 'sans-serif',
+            'margin-top' => 0,
+            'margin-right' => 0,
+            'margin-bottom' => 0,
+            'margin-left' => 0,
+            'page-size' => 'A4',
+            'orientation' => 'landscape',
+            'encoding' => 'UTF-8',
+            'enable-local-file-access' => true
         ]);
 
         // Generate filename and path
@@ -88,39 +96,26 @@ class CertificateController extends Controller
                 return response()->json(['message' => 'Unauthorized'], 403);
             }
 
-            // Define the file path
-            $filePath = 'public/certificates/' . $certificate->certificate_code . '.pdf';
-
-            // Generate the PDF if it doesn't exist
-            if (!Storage::exists($filePath)) {
-                $pdf = Pdf::loadView('certificates.template', [
-                    'certificate' => $certificate,
-                    'learner' => $certificate->learner,
-                    'course' => $certificate->course,
-                    'date' => $certificate->created_at->format('F d, Y')
-                ]);
-
-                // Set PDF options for single page and encoding
-                $pdf->setPaper('a4', 'landscape')
-                    ->setOption('margin-top', 0)
-                    ->setOption('margin-right', 0)
-                    ->setOption('margin-bottom', 0)
-                    ->setOption('margin-left', 0)
-                    ->setOption('page-size', 'A4')
-                    ->setOption('orientation', 'landscape')
-                    ->setOption('encoding', 'UTF-8')
-                    ->setOption('enable-local-file-access', true);
-
-                // Save the PDF to public storage
-                Storage::put($filePath, $pdf->output());
+            // Ensure issued_at is a Carbon instance
+            if (is_string($certificate->issued_at)) {
+                $certificate->issued_at = \Carbon\Carbon::parse($certificate->issued_at);
             }
 
-            // Return the file for download
-            return Storage::download(
-                $filePath,
-                "certificate-{$certificate->certificate_code}.pdf",
-                ['Content-Type' => 'application/pdf']
-            );
+            // Generate PDF
+            $pdf = Pdf::loadView('certificates.certificate', [
+                'certificate' => $certificate
+            ]);
+
+            // Simple PDF settings
+            $pdf->setPaper('a4', 'landscape');
+            $pdf->setOptions([
+                'isHtml5ParserEnabled' => true,
+                'isRemoteEnabled' => true,
+                'defaultFont' => 'sans-serif'
+            ]);
+
+            // Return the PDF for download
+            return $pdf->download("certificate-{$certificate->certificate_code}.pdf");
         } catch (\Exception $e) {
             \Log::error('Certificate download error: ' . $e->getMessage());
             return response()->json(['message' => 'Error downloading certificate'], 500);
