@@ -237,13 +237,40 @@ class ExamController extends Controller
                 'total' => $questions->count(),
             ]);
 
+            //certificate logic 
+
+            $passed = ($score / $questions->count() * 100) >= $exam->passing_score;
+            $course->learners()->updateExistingPivot($learner->id, [
+                'exam_success' => $passed,
+            ]);
+
+            if ($passed) {
+                // Check if certificate already exists
+                $alreadyExists = \App\Models\Certificate::where('learner_id', $learner->id)
+                    ->where('course_id', $course->id)
+                    ->exists();
+
+                if (!$alreadyExists) {
+                    // Use the CertificateController to generate the certificate
+                    $certificate = \App\Http\Controllers\CertificateController::issueCertificate($learner->id, $course->id);
+
+                    if ($certificate) {
+                        Log::info('Certificate issued', [
+                            'learner_id' => $learner->id,
+                            'course_id' => $course->id,
+                            'certificate_code' => $certificate->certificate_code
+                        ]);
+                    }
+                }
+            }
+
             return response()->json([
                 'success' => true,
                 'data' => [
                     'score' => $score,
                     'total' => $questions->count(),
                     'percentage' => ($score / $questions->count()) * 100,
-                    'passed' => ($score / $questions->count() * 100) >= $exam->passing_score,
+                    'passed' => $passed,
                     'questions' => $questionsWithAnswers
                 ],
             ]);

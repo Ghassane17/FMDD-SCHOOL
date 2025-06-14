@@ -32,7 +32,7 @@ const CourseHeader = ({ courseTitle, toggleSidebar, progress }) => {
         </div>
         <div className="pb-4">
           <div className="flex items-center justify-between mb-2">
-            <span className="text-sm font-medium text-gray-700">Course Progress</span>
+            <span className="text-sm font-medium text-gray-700">Progression</span>
             <span className="text-sm font-medium text-gray-700">{progress}%</span>
           </div>
           <ProgressBar percent={progress} />

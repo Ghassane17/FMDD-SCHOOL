@@ -9,6 +9,7 @@ use App\Http\Controllers\PublicController;
 use Illuminate\Support\Facades\Route;
 use App\Http\Controllers\Auth\RegisterController;
 use App\Http\Controllers\Auth\LoginController;
+use App\Http\Controllers\CertificateController;
 use App\Http\Controllers\CourseController;
 use App\Http\Controllers\LearnerController;
 use App\Http\Controllers\InstructorController;
@@ -99,4 +100,20 @@ Route::middleware('auth:sanctum')->group(function () {
     Route::post('instructor/courses/{courseId}/modules', [CourseInstructorController::class, 'editCourseModules'])->name('instructor.editCourseModules');
     Route::patch('instructor/courses/{courseId}/exam', [CourseInstructorController::class, 'editCourseExam'])->name('instructor.editCourseExam');
     Route::post('instructor/courses/{courseId}/resources', [CourseInstructorController::class, 'editCourseResources'])->name('instructor.editCourseResources');
+    // Download file by path
+    Route::get('/download-resource', [DownloadController::class, 'downloadResource']);
+    Route::get('/courses/{courseId}/comments', [CommentController::class, 'showCourseComments']);
+
+    // Certificate routes
+    Route::get('/certificates/{certificateId}/download', [CertificateController::class, 'download'])
+        ->middleware('auth:sanctum')
+        ->name('certificates.download');
+
+    Route::get('/certificates/verify/{certificateCode}', [CertificateController::class, 'verify'])
+        ->name('certificates.verify');
+});
+
+// Certificate routes
+Route::middleware(['auth:sanctum'])->group(function () {
+    Route::get('/certificates/{certificate}/download', [CertificateController::class, 'download'])->name('api.certificates.download');
 });

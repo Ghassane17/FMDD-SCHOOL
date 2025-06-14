@@ -188,25 +188,37 @@ const handleThumbnailError = (e) => {
   return (
     <div className="min-h-screen bg-gray-50">
       {/* Hero Thumbnail Section - Full Width */}
-      <div className="relative h-80 bg-gray-900 overflow-hidden">
-     
-           <img
-        src={`${API_URL}${course.course_thumbnail}`}
-        alt={course.title}
-        onLoad={handleThumbnailLoad}
-        onError={handleThumbnailError}
-       
-      />
-        <div className="absolute inset-0 bg-black bg-opacity-40"></div>
+      <div className="relative h-90   justify-center bg-gray-900 overflow-hidden">
+        {thumbnailLoading && (
+          <div className="absolute inset-0 flex items-center justify-center bg-gray-900">
+            <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-white"></div>
+          </div>
+        )}
+        <img
+          src={`${API_URL}${course.course_thumbnail}`}
+          alt={course.title}
+          onLoad={handleThumbnailLoad}
+          onError={handleThumbnailError}
+          className={`w-full h-full object-cover transition-opacity duration-300 ${
+            thumbnailLoading ? 'opacity-0' : 'opacity-100'
+          }`}
+        />
+        
+        {/* Glassmorphism Overlay */}
+        <div className="absolute inset-0 bg-gradient-to-b from-black/60 via-black/40 to-black/80 backdrop-blur-sm"></div>
 
         {/* Course Title Overlay */}
         <div className="absolute bottom-0 left-0 right-0 p-8">
           <div className="max-w-7xl mx-auto">
-            <div className="inline-block px-3 py-1 bg-white bg-opacity-20 backdrop-blur-sm rounded-full text-black text-sm font-medium mb-4">
+            <div className="inline-block px-4 py-1.5 bg-white/10 backdrop-blur-md rounded-full text-white text-sm font-medium mb-4 border border-white/20">
               {course.level}
             </div>
-            <h1 className="text-4xl md:text-5xl font-bold text-white mb-4 leading-tight">{course.title}</h1>
-            <p className="text-xl text-gray-200 max-w-3xl leading-relaxed">{course.description}</p>
+            <h1 className="text-4xl md:text-5xl font-bold text-white mb-4 leading-tight drop-shadow-lg">
+              {course.title}
+            </h1>
+            <p className="text-xl text-gray-200 max-w-3xl leading-relaxed drop-shadow-md">
+              {course.description}
+            </p>
           </div>
         </div>
       </div>
@@ -368,8 +380,12 @@ const handleThumbnailError = (e) => {
             </div>
 
             <div className="bg-white rounded-lg border border-gray-200 p-8 mt-6">
-              <h2 className="text-2xl font-bold text-gray-900 mb-6">Évaluations de la formation "{course.title}"</h2>
-  
+<h2 className="text-2xl font-bold text-gray-900 mb-6">
+  Évaluations de la formation 
+<span className="text-blue-500">      {course.title}
+  </span>
+</h2>
+ 
   {comments.length === 0 ? (
     <div className="text-center py-8">
       <p className="text-gray-500">Aucune évaluation sur la formation pour le moment</p>
@@ -451,12 +467,12 @@ const handleThumbnailError = (e) => {
               <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="1.5" d="M12 9v2m0 4h.01m-6.938 4h13.856c1.54 0 2.502-1.667 1.732-3L13.732 4c-.77-1.333-2.694-1.333-3.464 0L3.34 16c-.77 1.333.192 3 1.732 3z" />
             </svg>
             <h3 className="text-lg font-medium text-gray-700 mt-3 group-hover:text-red-600 transition-colors">
-              Complete the course to leave feedback
+              complète la formation pour commmenter
             </h3>
             <p className="text-gray-500 mt-1 text-sm">
               {console.log("🚀 Progress in Display:", progress)}
               {console.log("🚀 Progress Type in Display:", typeof progress)}
-              {Math.round(Number(progress))}% completed - {100 - Math.round(Number(progress))}% remaining
+              {Math.round(Number(progress))}% accomplis - {100 - Math.round(Number(progress))}% restants
             </p>
           </div>
         </div>
@@ -464,7 +480,7 @@ const handleThumbnailError = (e) => {
         {/* Disabled Notes Panel */}
         <div className="opacity-60 pointer-events-none">
           <div className="flex items-center justify-between mb-6">
-            <h3 className="text-xl font-semibold text-gray-900">Course Review & Notes</h3>
+            <h3 className="text-xl font-semibold text-gray-900">Notes et évaluations </h3>
             <div className="flex items-center bg-amber-100 text-amber-800 px-3 py-1 rounded-full text-sm font-medium">
               <svg className="w-4 h-4 mr-1" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                 <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M12 8v4l3 3m6-3a9 9 0 11-18 0 9 9 0 0118 0z" />
@@ -584,7 +600,7 @@ const handleThumbnailError = (e) => {
                   {[
                     { icon: <Assignment className="w-5 h-5" />, text: `${course.modules?.length || 0} modules` },
                     { icon: <CloudDownload className="w-5 h-5" />, text: "Des ressources téléchargeables" },
-                    { icon: <WorkspacePremium className="w-5 h-5" />, text: "Certification à l’issue de la formation" },
+                    { icon: <WorkspacePremium className="w-5 h-5" />, text: "Certification à l'issue de la formation" },
                     { icon: <AccessTime className="w-5 h-5" />, text: "Accès à vie" },
                   ].map((feature, index) => (
                     <div key={index} className="flex items-center space-x-3">

@@ -23,6 +23,8 @@ import {
   CheckCircle,
   Folder,
   FolderOpen,
+  Maximize2,
+  Minimize2,
 } from "lucide-react"
 import ContentRenderer from "./ContentRenderer"
 import { downloadResource } from "../../services/api.js"
@@ -255,6 +257,8 @@ const CourseContent = ({
   onSaveNotes,
   notes,
   onModuleComplete,
+  isFocused,
+  onToggleFocus,
 }) => {
   const [downloadingResources, setDownloadingResources] = useState(new Set())
   const [previewResource, setPreviewResource] = useState(null)
@@ -351,41 +355,58 @@ const CourseContent = ({
 
   return (
     <div className="flex-1 bg-white overflow-auto">
-      <div className="max-w-4xl mx-auto p-8">
+      <div className="max-w-6xl mx-auto p-8">
         {/* Module Header */}
-        <div className="flex justify-between items-start mb-8">
+        <div className="flex justify-between items-start mb-10">
           <div className="flex-1">
-            <h1 className="text-3xl font-bold text-black mb-2">{currentModule.title}</h1>
-            <div className="flex items-center gap-4 text-sm text-gray-600">
-              <span>Module Content</span>
+            <h1 className="text-4xl font-bold text-black mb-4">{currentModule.title}</h1>
+            <div className="flex items-center gap-4 text-base text-gray-600">
+              
               {currentModule.is_completed && (
-                <div className="flex items-center gap-1 text-green-600">
-                  <CheckCircle className="w-4 h-4" />
+                <div className="flex items-center gap-2 text-green-600">
+                  <CheckCircle className="w-5 h-5" />
                   <span>Completed</span>
                 </div>
               )}
             </div>
           </div>
 
-          {!currentModule.is_completed && (
+          <div className="flex items-center gap-4">
+            {!currentModule.is_completed && (
+              <button
+                onClick={() => {
+                  if (typeof onModuleComplete === "function") {
+                    onModuleComplete(currentModule.id)
+                  }
+                }}
+                className="flex items-center gap-2 px-6 py-3 bg-green-600 text-white rounded-lg hover:bg-green-700 transition-colors text-base"
+              >
+                <CheckCircle className="w-5 h-5" />
+                J’ai terminé ce module
+              </button>
+            )}
             <button
-              onClick={() => {
-                if (typeof onModuleComplete === "function") {
-                  onModuleComplete(currentModule.id)
-                } else {
-                  console.error("onModuleComplete is not a function:", onModuleComplete)
-                }
-              }}
-              className="flex items-center gap-2 px-4 py-2 bg-green-600 text-white rounded-lg hover:bg-green-700 transition-colors"
+              onClick={onToggleFocus}
+              className="flex items-center gap-2 px-4 py-2 border border-gray-300 rounded-lg hover:bg-gray-50 transition-colors"
+              title={isFocused ? "Exit focus mode" : "Enter focus mode"}
             >
-              <CheckCircle className="w-4 h-4" />
-              Mark Complete
+              {isFocused ? (
+                <>
+                  <Minimize2 className="w-5 h-5" />
+                  <span className="hidden sm:inline">Exit Focus</span>
+                </>
+              ) : (
+                <>
+                  <Maximize2 className="w-5 h-5" />
+                  <span className="hidden sm:inline">Focus</span>
+                </>
+              )}
             </button>
-          )}
+          </div>
         </div>
 
         {/* Content Renderer */}
-        <div className="mb-12">
+        <div className={`mb-16 transition-all duration-300 ${isFocused ? 'scale-105' : ''}`}>
           <ContentRenderer
             type={currentModule.type}
             textContent={currentModule.text_content}
@@ -400,12 +421,8 @@ const CourseContent = ({
 
         {/* Resources Section */}
         {currentModule.resources?.length > 0 && (
-          <div className="mb-12">
-            <h2
-              onClick={() => {
-                console.log("🚀 Current Module:", currentModule)
-              }}
-              className="text-2xl font-bold text-black mb-6">Resources ({currentModule.resources.length})</h2>
+          <div className={`mb-16 transition-all duration-300 ${isFocused ? 'opacity-50' : ''}`}>
+            <h2 className="text-3xl font-bold text-black mb-8">Resources ({currentModule.resources.length})</h2>
 
             {(() => {
               const groupedResources = groupResourcesByCategory(currentModule.resources)
@@ -415,25 +432,25 @@ const CourseContent = ({
                 const IconComponent = isExpanded ? FolderOpen : Folder
 
                 return (
-                  <div key={category} className="mb-6 border border-gray-200 rounded-lg overflow-hidden">
+                  <div key={category} className="mb-8 border border-gray-200 rounded-lg overflow-hidden">
                     <button
                       onClick={() => toggleCategory(category)}
-                      className="w-full flex items-center justify-between p-4 bg-gray-50 hover:bg-gray-100 transition-colors"
+                      className="w-full flex items-center justify-between p-6 bg-gray-50 hover:bg-gray-100 transition-colors"
                     >
-                      <div className="flex items-center gap-3">
-                        <IconComponent className="w-5 h-5 text-gray-600" />
-                        <h3 className="text-lg font-semibold text-black">{category}</h3>
-                        <span className="px-2 py-1 bg-white text-gray-600 text-sm rounded-full">
+                      <div className="flex items-center gap-4">
+                        <IconComponent className="w-6 h-6 text-gray-600" />
+                        <h3 className="text-xl font-semibold text-black">{category}</h3>
+                        <span className="px-3 py-1 bg-white text-gray-600 text-base rounded-full">
                           {resources.length}
                         </span>
                       </div>
                       <ChevronDown
-                        className={`w-5 h-5 text-gray-600 transition-transform ${isExpanded ? "rotate-180" : ""}`}
+                        className={`w-6 h-6 text-gray-600 transition-transform ${isExpanded ? "rotate-180" : ""}`}
                       />
                     </button>
 
                     {isExpanded && (
-                      <div className="p-4 space-y-3 bg-white">
+                      <div className="p-6 space-y-4 bg-white">
                         {resources.map((resource) => {
                           const fileInfo = getFileTypeInfo(resource.name, resource.type)
                           const IconComponent = fileInfo.icon
@@ -441,13 +458,13 @@ const CourseContent = ({
                           return (
                             <div
                               key={resource.id}
-                              className="flex items-center justify-between p-4 border border-gray-200 rounded-lg hover:bg-gray-50 transition-colors"
+                              className="flex items-center justify-between p-6 border border-gray-200 rounded-lg hover:bg-gray-50 transition-colors"
                             >
-                              <div className="flex items-center gap-3 flex-1 min-w-0">
-                                <IconComponent className="w-6 h-6 text-gray-600 flex-shrink-0" />
+                              <div className="flex items-center gap-4 flex-1 min-w-0">
+                                <IconComponent className="w-8 h-8 text-gray-600 flex-shrink-0" />
                                 <div className="flex-1 min-w-0">
-                                  <h4 className="font-medium text-black truncate">{resource.name}</h4>
-                                  <div className="flex items-center gap-2 text-sm text-gray-600">
+                                  <h4 className="text-lg font-medium text-black truncate">{resource.name}</h4>
+                                  <div className="flex items-center gap-3 text-base text-gray-600">
                                     <span className="capitalize">{resource.type}</span>
                                     {resource.size && (
                                       <>
@@ -485,23 +502,23 @@ const CourseContent = ({
         )}
 
         {/* Navigation */}
-        <div className="flex justify-between items-center pt-8 border-t border-gray-200">
+        <div className={`flex justify-between items-center pt-8 border-t border-gray-200 transition-all duration-300 ${isFocused ? 'opacity-50' : ''}`}>
           <button
             onClick={onPreviousClick}
             disabled={!hasPrevious}
-            className="flex items-center gap-2 px-6 py-3 border border-gray-300 rounded-lg hover:bg-gray-50 transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
+            className="flex items-center gap-3 px-8 py-4 border border-gray-300 rounded-lg hover:bg-gray-50 transition-colors disabled:opacity-50 disabled:cursor-not-allowed text-base"
           >
-            <ChevronLeft className="w-4 h-4" />
+            <ChevronLeft className="w-5 h-5" />
             Previous
           </button>
 
           <button
             onClick={onNextClick}
             disabled={!hasNext}
-            className="flex items-center gap-2 px-6 py-3 bg-black text-white rounded-lg hover:bg-gray-800 transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
+            className="flex items-center gap-3 px-8 py-4 bg-black text-white rounded-lg hover:bg-gray-800 transition-colors disabled:opacity-50 disabled:cursor-not-allowed text-base"
           >
             Next
-            <ChevronRight className="w-4 h-4" />
+            <ChevronRight className="w-5 h-5" />
           </button>
         </div>
       </div>
@@ -550,6 +567,8 @@ CourseContent.propTypes = {
   onSaveNotes: PropTypes.func.isRequired,
   notes: PropTypes.string,
   onModuleComplete: PropTypes.func.isRequired,
+  isFocused: PropTypes.bool,
+  onToggleFocus: PropTypes.func.isRequired,
 }
 
 export default CourseContent

@@ -2,7 +2,7 @@
 
 import { useState, useEffect, useCallback, useRef } from "react"
 import { Link, useNavigate } from "react-router-dom"
-import { Bell, LogOut, Menu, Settings, ExpandIcon as ExpandMore, ChevronRight } from "lucide-react"
+import { Bell, LogOut, Menu, Settings, ExpandIcon as ExpandMore, ChevronRight, User, BookOpen, Search, MessageCircle, Home } from "lucide-react"
 import { getLearnerNotifications, markNotificationAsRead, updateNotifications, logout } from "@/services/api.js"
 import { FaUserCircle } from "react-icons/fa"
 
@@ -165,12 +165,16 @@ const Header = ({ school, avatar, notifications: initialNotifications = [] }) =>
     navigate("/login")
   }
 
+  const handleMenuItemClick = () => {
+    setOpen((prev) => ({ ...prev, menu: false }))
+  }
+
   return (
     <header className="bg-white border-b border-gray-200 sticky top-0 z-50">
       <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
         <div className="flex items-center justify-between h-16">
           {/* Left Side: Logo + Mobile Menu */}
-          <div className="flex items-center space-x-8">
+          <div className="flex items-center space-x-4">
             <button
               onClick={() => toggle("mobileMenu")}
               className="md:hidden p-2 rounded-lg text-gray-600 hover:text-black hover:bg-gray-100 transition-colors"
@@ -181,32 +185,10 @@ const Header = ({ school, avatar, notifications: initialNotifications = [] }) =>
             <Link to="/learner" className="text-xl font-bold text-black hover:text-gray-700 transition-colors">
               {school}
             </Link>
-
-            {/* Desktop Navigation Links */}
-            <nav className="hidden md:flex items-center space-x-6">
-              <Link
-                to="all-enrolled-courses"
-                className="text-sm font-medium text-gray-700 hover:text-black transition-colors"
-              >
-                My Courses
-              </Link>
-              <Link
-                to="suggested-courses"
-                className="text-sm font-medium text-gray-700 hover:text-black transition-colors"
-              >
-                Browse Courses
-              </Link>
-              <Link to="contact" className="text-sm font-medium text-gray-700 hover:text-black transition-colors">
-                Contact
-              </Link>
-              <Link to="/learner" className="text-sm font-medium text-gray-700 hover:text-black transition-colors">
-                Dashboard
-              </Link>
-            </nav>
           </div>
 
-          {/* Right Side: Icons & Menu */}
-          <div className="flex items-center space-x-4">
+          {/* Right Side: Notifications & Avatar Menu */}
+          <div className="flex items-center space-x-3">
             {/* Notifications */}
             <div className="relative header-notifications">
               <button
@@ -330,16 +312,7 @@ const Header = ({ school, avatar, notifications: initialNotifications = [] }) =>
               )}
             </div>
 
-            {/* Settings Link */}
-            <Link
-              to="settings"
-              className="p-2 rounded-lg text-gray-600 hover:text-black hover:bg-gray-100 transition-colors"
-              aria-label="Settings"
-            >
-              <Settings className="w-5 h-5" />
-            </Link>
-
-            {/* User Avatar (Profile only) */}
+            {/* User Avatar - Consolidated Menu */}
             <div className="relative header-menu">
               <button
                 onClick={() => toggle("menu")}
@@ -357,37 +330,92 @@ const Header = ({ school, avatar, notifications: initialNotifications = [] }) =>
               </button>
 
               {open.menu && (
-                <div className="absolute right-0 mt-2 w-48 bg-white rounded-lg border border-gray-200 shadow-lg z-20">
+                <div className="absolute right-0 mt-2 w-56 bg-white rounded-lg border border-gray-200 shadow-lg z-20">
                   <div className="py-2">
-                    <div className="px-4 py-2 border-b border-gray-100">
-                      <p className="text-sm font-medium text-black">Profile</p>
-                      <p className="text-xs text-gray-500">Manage your account</p>
+                    {/* Profile Section */}
+                    <div className="px-4 py-3 border-b border-gray-100">
+                      <p className="text-sm font-medium text-black">Account Menu</p>
+                      <p className="text-xs text-gray-500">Access all features</p>
                     </div>
-                    <Link
-                      to="/profile"
-                      className="block px-4 py-2 text-sm text-gray-700 hover:bg-gray-50 hover:text-black transition-colors"
-                    >
-                      View Profile
-                    </Link>
-                    <Link
-                      to="/account"
-                      className="block px-4 py-2 text-sm text-gray-700 hover:bg-gray-50 hover:text-black transition-colors"
-                    >
-                      Account Settings
-                    </Link>
+
+                    {/* Navigation Links */}
+                    <div className="py-1">
+                      <Link
+                        to="/learner"
+                        onClick={handleMenuItemClick}
+                        className="flex items-center gap-3 px-4 py-2 text-sm text-gray-700 hover:bg-gray-50 hover:text-black transition-colors"
+                      >
+                        <Home className="w-4 h-4" />
+                        Dashboard
+                      </Link>
+                      <Link
+                        to="all-enrolled-courses"
+                        onClick={handleMenuItemClick}
+                        className="flex items-center gap-3 px-4 py-2 text-sm text-gray-700 hover:bg-gray-50 hover:text-black transition-colors"
+                      >
+                        <BookOpen className="w-4 h-4" />
+                        My Courses
+                      </Link>
+                      <Link
+                        to="suggested-courses"
+                        onClick={handleMenuItemClick}
+                        className="flex items-center gap-3 px-4 py-2 text-sm text-gray-700 hover:bg-gray-50 hover:text-black transition-colors"
+                      >
+                        <Search className="w-4 h-4" />
+                        Browse Courses
+                      </Link>
+                      <Link
+                        to="contact"
+                        onClick={handleMenuItemClick}
+                        className="flex items-center gap-3 px-4 py-2 text-sm text-gray-700 hover:bg-gray-50 hover:text-black transition-colors"
+                      >
+                        <MessageCircle className="w-4 h-4" />
+                        Contact
+                      </Link>
+                    </div>
+
+                    {/* Account Section */}
+                    <div className="border-t border-gray-100 py-1">
+                      <Link
+                        to="/profile"
+                        onClick={handleMenuItemClick}
+                        className="flex items-center gap-3 px-4 py-2 text-sm text-gray-700 hover:bg-gray-50 hover:text-black transition-colors"
+                      >
+                        <User className="w-4 h-4" />
+                        View Profile
+                      </Link>
+                      <Link
+                        to="settings"
+                        onClick={handleMenuItemClick}
+                        className="flex items-center gap-3 px-4 py-2 text-sm text-gray-700 hover:bg-gray-50 hover:text-black transition-colors"
+                      >
+                        <Settings className="w-4 h-4" />
+                        Settings
+                      </Link>
+                      <Link
+                        to="/account"
+                        onClick={handleMenuItemClick}
+                        className="flex items-center gap-3 px-4 py-2 text-sm text-gray-700 hover:bg-gray-50 hover:text-black transition-colors"
+                      >
+                        <Settings className="w-4 h-4" />
+                        Account Settings
+                      </Link>
+                    </div>
+
+                    {/* Logout Section */}
+                    <div className="border-t border-gray-100 py-1">
+                      <button
+                        onClick={handleLogout}
+                        className="flex items-center gap-3 w-full px-4 py-2 text-sm text-red-600 hover:bg-red-50 hover:text-red-700 transition-colors"
+                      >
+                        <LogOut className="w-4 h-4" />
+                        Logout
+                      </button>
+                    </div>
                   </div>
                 </div>
               )}
             </div>
-
-            {/* Logout */}
-            <button
-              onClick={handleLogout}
-              aria-label="Logout"
-              className="p-2 rounded-lg text-gray-600 hover:text-red-600 hover:bg-red-50 transition-colors"
-            >
-              <LogOut className="w-5 h-5" />
-            </button>
           </div>
         </div>
       </div>
@@ -397,40 +425,54 @@ const Header = ({ school, avatar, notifications: initialNotifications = [] }) =>
         <div className="md:hidden border-t border-gray-200 bg-white">
           <div className="px-4 py-2 space-y-1">
             <Link
+              to="/learner"
+              onClick={() => toggle("mobileMenu")}
+              className="flex items-center gap-3 px-3 py-2 text-sm text-gray-700 hover:bg-gray-50 hover:text-black rounded-lg transition-colors"
+            >
+              <Home className="w-4 h-4" />
+              Dashboard
+            </Link>
+            <Link
               to="/learner/all-enrolled-courses"
               onClick={() => toggle("mobileMenu")}
-              className="block px-3 py-2 text-sm text-gray-700 hover:bg-gray-50 hover:text-black rounded-lg transition-colors"
+              className="flex items-center gap-3 px-3 py-2 text-sm text-gray-700 hover:bg-gray-50 hover:text-black rounded-lg transition-colors"
             >
+              <BookOpen className="w-4 h-4" />
               My Courses
             </Link>
             <Link
               to="/learner/suggested-courses"
               onClick={() => toggle("mobileMenu")}
-              className="block px-3 py-2 text-sm text-gray-700 hover:bg-gray-50 hover:text-black rounded-lg transition-colors"
+              className="flex items-center gap-3 px-3 py-2 text-sm text-gray-700 hover:bg-gray-50 hover:text-black rounded-lg transition-colors"
             >
+              <Search className="w-4 h-4" />
               Browse Courses
             </Link>
             <Link
               to="/learner/contact"
               onClick={() => toggle("mobileMenu")}
-              className="block px-3 py-2 text-sm text-gray-700 hover:bg-gray-50 hover:text-black rounded-lg transition-colors"
+              className="flex items-center gap-3 px-3 py-2 text-sm text-gray-700 hover:bg-gray-50 hover:text-black rounded-lg transition-colors"
             >
+              <MessageCircle className="w-4 h-4" />
               Contact
             </Link>
             <Link
               to="/learner/settings"
               onClick={() => toggle("mobileMenu")}
-              className="block px-3 py-2 text-sm text-gray-700 hover:bg-gray-50 hover:text-black rounded-lg transition-colors"
+              className="flex items-center gap-3 px-3 py-2 text-sm text-gray-700 hover:bg-gray-50 hover:text-black rounded-lg transition-colors"
             >
+              <Settings className="w-4 h-4" />
               Settings
             </Link>
-            <Link
-              to="/learner"
-              onClick={() => toggle("mobileMenu")}
-              className="block px-3 py-2 text-sm text-gray-700 hover:bg-gray-50 hover:text-black rounded-lg transition-colors"
-            >
-              Dashboard
-            </Link>
+            <div className="border-t border-gray-200 pt-2 mt-2">
+              <button
+                onClick={handleLogout}
+                className="flex items-center gap-3 w-full px-3 py-2 text-sm text-red-600 hover:bg-red-50 hover:text-red-700 rounded-lg transition-colors"
+              >
+                <LogOut className="w-4 h-4" />
+                Logout
+              </button>
+            </div>
           </div>
         </div>
       )}
@@ -439,6 +481,3 @@ const Header = ({ school, avatar, notifications: initialNotifications = [] }) =>
 }
 
 export default Header
-
-
-

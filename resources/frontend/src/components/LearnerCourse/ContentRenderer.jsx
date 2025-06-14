@@ -4,7 +4,8 @@ import { FileText, Image, FileQuestion, Video, Download, ZoomIn, ZoomOut, Rotate
 import { Box, IconButton, CircularProgress, Tooltip } from '@mui/material';
 import { toast } from 'react-hot-toast';
 import {  markModuleAsCompleted } from '../../services/api'; // Adjust path as needed
-
+import ReactQuill from 'react-quill';
+import 'react-quill/dist/quill.snow.css';
 const API_URL = import.meta.env.VITE_BACKEND_URL;
 
 /**
@@ -212,12 +213,21 @@ const handleQuizComplete = async () => {
         let pdfUrl, authenticatedUrl, videoUrl, currentQuestion;
 
         switch (type) {
-            case 'text':
-                return (
-                    <div className="prose max-w-none">
-                        {textContent}
-                    </div>
-                );
+      case 'text':
+  return (
+    <div 
+      className="prose prose-lg max-w-none"
+      dangerouslySetInnerHTML={{ __html: textContent }}
+      style={{
+        // Override ReactQuill's default styles
+        '.ql-editor': {
+          padding: '0 !important',
+          border: 'none !important',
+          outline: 'none !important'
+        }
+      }}
+    />
+  );
 
             case 'pdf':
                 pdfUrl = filePath ? filePath.replace(/^\/+/, '').replace(/^storage\/+/, '') :
@@ -231,7 +241,7 @@ const handleQuizComplete = async () => {
                 });
 
                 return (
-                    <div className="w-full h-[600px] relative bg-gray-100 rounded-lg overflow-hidden">
+                    <div className="w-full h-[800px] relative bg-gray-100 rounded-lg overflow-hidden">
                         {pdfLoading && (
                             <div className="absolute inset-0 flex items-center justify-center bg-gray-100">
                                 <CircularProgress />
@@ -305,44 +315,46 @@ const handleQuizComplete = async () => {
                     finalUrl: videoUrl
                 });
                 return videoUrl ? (
-                    <VideoPlayer url={videoUrl.replace(/^\/+/, '').replace(/^storage\//, '')} />
+                    <div className="w-full aspect-video bg-gray-100 rounded-lg overflow-hidden">
+                        <VideoPlayer url={videoUrl.replace(/^\/+/, '').replace(/^storage\//, '')} />
+                    </div>
                 ) : (
                     <div className="w-full aspect-video bg-gray-100 rounded-lg flex items-center justify-center">
-                        <p className="text-gray-500">No video available for this module.</p>
+                        <p className="text-lg text-gray-500">No video available for this module.</p>
                     </div>
                 );
 
             case 'quiz':
                 if (quizQuestions.length === 0) {
                     return (
-                        <div className="w-full p-4 bg-gray-100 rounded-lg text-center">
-                            <p className="text-gray-500">No quiz questions available.</p>
+                        <div className="w-full p-8 bg-gray-100 rounded-lg text-center">
+                            <p className="text-lg text-gray-500">No quiz questions available.</p>
                         </div>
                     );
                 }
 
                 if (quizCompleted) {
                     return (
-                        <div className="space-y-6">
+                        <div className="space-y-8">
                             <div className="text-center">
-                                <h3 className="text-2xl font-bold mb-2">Quiz Completed!</h3>
-                                <div className="text-4xl font-bold text-blue-600 mb-4">
+                                <h3 className="text-3xl font-bold mb-4">Quiz Completed!</h3>
+                                <div className="text-5xl font-bold text-blue-600 mb-6">
                                     {quizScore.toFixed(1)}%
                                 </div>
-                                <p className="text-gray-600">
+                                <p className="text-xl text-gray-600">
                                     You got {Math.round((quizScore / 100) * quizQuestions.length)} out of {quizQuestions.length} questions correct.
                                 </p>
                             </div>
 
-                            <div className="space-y-4">
+                            <div className="space-y-6">
                                 {quizQuestions.map((question, index) => (
-                                    <div key={index} className="p-4 bg-white rounded-lg shadow">
-                                        <p className="font-medium mb-2">{question.question}</p>
-                                        <div className="space-y-2">
+                                    <div key={index} className="p-6 bg-white rounded-lg shadow">
+                                        <p className="text-xl font-medium mb-4">{question.question}</p>
+                                        <div className="space-y-3">
                                             {question.options.map((option, optIndex) => (
                                                 <div
                                                     key={optIndex}
-                                                    className={`p-2 rounded ${
+                                                    className={`p-4 rounded-lg text-lg ${
                                                         option.text === correctAnswerMap[index]
                                                             ? 'bg-green-100 text-green-800'
                                                             : answers[index] === option.text
@@ -360,7 +372,7 @@ const handleQuizComplete = async () => {
 
                             <button
                                 onClick={resetQuiz}
-                                className="w-full px-4 py-2 bg-blue-600 text-white rounded hover:bg-blue-700"
+                                className="w-full px-6 py-4 bg-blue-600 text-white rounded-lg hover:bg-blue-700 text-lg"
                             >
                                 Retake Quiz
                             </button>
@@ -474,10 +486,10 @@ const handleQuizComplete = async () => {
     };
 
     return (
-        <div className="mt-4">
-            <div className="flex items-center gap-2 mb-4">
+        <div className="mt-6">
+            <div className="flex items-center gap-3 mb-6">
                 {contentTypeIcons[type]}
-                <h3 className="text-lg font-medium capitalize">{type} Content</h3>
+                <h3 className="text-2xl font-medium capitalize">{type} Content</h3>
             </div>
             {renderContent()}
         </div>

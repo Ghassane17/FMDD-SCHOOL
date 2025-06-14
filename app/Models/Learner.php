@@ -20,7 +20,7 @@ class Learner extends Model
     ];
     public function user()
     {
-        return $this->belongsTo(User::class);
+        return $this->belongsTo(User::class, 'user_id');
     }
 
     public function courseEnrollments(): \Illuminate\Database\Eloquent\Relations\HasMany
@@ -32,7 +32,11 @@ class Learner extends Model
     {
         return $this->belongsToMany(Course::class, 'course_learner')
             ->using(CourseLearner::class)
-            ->withPivot('progress','exam_success' ,'certificate_generated','last_accessed')
+            ->withPivot('progress', 'exam_success', 'certificate_generated', 'last_accessed')
             ->withTimestamps();
+    }
+    public function certificates()
+    {
+        return $this->hasMany(Certificate::class);
     }
 }
