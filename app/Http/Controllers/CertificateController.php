@@ -19,8 +19,13 @@ class CertificateController extends Controller
             return null;
         }
 
-        $learner = Learner::with('user')->findOrFail($learnerId);
-        $course = Course::findOrFail($courseId);
+        // Load learner with user relationship
+        $learner = Learner::with(['user' => function ($query) {
+            $query->select('id', 'username', 'email');
+        }])->findOrFail($learnerId);
+
+        // Load course with necessary fields
+        $course = Course::select('id', 'title', 'description')->findOrFail($courseId);
 
         // Generate unique certificate code
         $certificateCode = strtoupper(Str::random(10));
@@ -34,9 +39,19 @@ class CertificateController extends Controller
             'url_path' => '', // Will be updated after PDF generation
         ]);
 
+        // Load the certificate with all necessary relationships
+        $certificate = $certificate->load([
+            'learner.user' => function ($query) {
+                $query->select('id', 'username', 'email');
+            },
+            'course' => function ($query) {
+                $query->select('id', 'title', 'description');
+            }
+        ]);
+
         // Generate PDF
         $pdf = Pdf::loadView('certificates.certificate', [
-            'certificate' => $certificate->load(['learner.user', 'course'])
+            'certificate' => $certificate
         ]);
 
         // Set PDF options
@@ -53,7 +68,7 @@ class CertificateController extends Controller
         $path = 'certificates/' . $filename;
 
         // Store PDF
-        Storage::put('public/' . $path, $pdf->output());
+        Storage::put('private/' . $path, $pdf->output());
 
         // Update certificate with the path
         $certificate->update([
@@ -128,7 +143,7 @@ class CertificateController extends Controller
         return response()->json([
             'valid' => true,
             'data' => [
-                'learner_name' => $certificate->learner->user->name,
+                'learner_name' => $certificate->learner->user->username,
                 'course_title' => $certificate->course->title,
                 'issued_at' => $certificate->issued_at->format('F j, Y'),
                 'certificate_code' => $certificate->certificate_code

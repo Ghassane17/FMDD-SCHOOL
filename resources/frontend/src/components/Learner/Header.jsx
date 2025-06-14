@@ -32,31 +32,31 @@ const Header = ({ school, isAuthenticated, user, onLogout }) => {
     }
 
     const loadAvatar = () => {
-      // If avatar is a full URL, use it directly
+    // If avatar is a full URL, use it directly
       if (user.avatar.startsWith("http")) {
         console.log("Using direct URL:", user.avatar);
-        if (isMounted) {
+      if (isMounted) {
           setAvatarSrc(user.avatar);
-        }
-        return;
       }
+      return;
+    }
 
-      // If avatar is a storage path that starts with /storage
+    // If avatar is a storage path that starts with /storage
       if (user.avatar.startsWith("/storage")) {
         const fullUrl = `${API_URL}${user.avatar}`;
         console.log("Using storage URL:", fullUrl);
-        if (isMounted) {
+      if (isMounted) {
           setAvatarSrc(fullUrl);
-        }
-        return;
       }
+      return;
+    }
 
-      // If avatar is just a filename or other relative path
+    // If avatar is just a filename or other relative path
       const fullUrl = `${API_URL}/storage/${user.avatar}`;
       console.log("Using relative path URL:", fullUrl);
-      if (isMounted) {
+    if (isMounted) {
         setAvatarSrc(fullUrl);
-      }
+    }
     };
 
     loadAvatar();
@@ -157,92 +157,92 @@ const Header = ({ school, isAuthenticated, user, onLogout }) => {
             >
               Contact
             </Link>
-          </div>
+                          </div>
 
           {/* Right Side: Auth/User Menu */}
           <div className="flex items-center space-x-3">
             {isAuthenticated ? (
               <>
                 {/* User Avatar Menu */}
-                <div className="relative header-menu">
-                  <button
-                    onClick={() => toggle("menu")}
-                    className="p-1 rounded-full border-2 border-gray-200 hover:border-gray-300 transition-colors"
-                  >
-                    {isAvatarLoading && <div className="w-8 h-8 rounded-full bg-gray-200 animate-pulse"></div>}
-                    <img
-                      ref={avatarRef}
-                      src={avatarSrc || "/placeholder.svg"}
-                      alt="User avatar"
-                      className={`w-8 h-8 rounded-full object-cover ${isAvatarLoading ? "hidden" : "block"}`}
-                      onLoad={handleAvatarLoad}
-                      onError={handleAvatarError}
-                    />
-                  </button>
+            <div className="relative header-menu">
+              <button
+                onClick={() => toggle("menu")}
+                className="p-1 rounded-full border-2 border-gray-200 hover:border-gray-300 transition-colors"
+              >
+                {isAvatarLoading && <div className="w-8 h-8 rounded-full bg-gray-200 animate-pulse"></div>}
+                <img
+                  ref={avatarRef}
+                  src={avatarSrc || "/placeholder.svg"}
+                  alt="User avatar"
+                  className={`w-8 h-8 rounded-full object-cover ${isAvatarLoading ? "hidden" : "block"}`}
+                  onLoad={handleAvatarLoad}
+                  onError={handleAvatarError}
+                />
+              </button>
 
-                  {open.menu && (
-                    <div className="absolute right-0 mt-2 w-56 bg-white rounded-lg border border-gray-200 shadow-lg z-20">
+              {open.menu && (
+                <div className="absolute right-0 mt-2 w-56 bg-white rounded-lg border border-gray-200 shadow-lg z-20">
                       <div className="p-2">
                         <div className="px-3 py-2">
                           <p className="text-sm font-medium text-black">{user?.name}</p>
                           <p className="text-xs text-gray-500">{user?.email}</p>
-                        </div>
+                    </div>
 
                         <div className="mt-2 space-y-1">
-                          <Link
-                            to="/learner"
+                      <Link
+                        to="/learner"
                             onClick={() => toggle("menu")}
                             className="flex items-center gap-3 px-3 py-2 text-sm text-gray-700 hover:bg-gray-50 hover:text-black rounded-lg transition-colors"
-                          >
-                            <Home className="w-4 h-4" />
-                            Dashboard
-                          </Link>
-                          <Link
+                      >
+                        <Home className="w-4 h-4" />
+                        Dashboard
+                      </Link>
+                      <Link
                             to="/learner/all-enrolled-courses"
                             onClick={() => toggle("menu")}
                             className="flex items-center gap-3 px-3 py-2 text-sm text-gray-700 hover:bg-gray-50 hover:text-black rounded-lg transition-colors"
-                          >
-                            <BookOpen className="w-4 h-4" />
-                            My Courses
-                          </Link>
-                          <Link
+                      >
+                        <BookOpen className="w-4 h-4" />
+                        My Courses
+                      </Link>
+                      <Link
                             to="/learner/suggested-courses"
                             onClick={() => toggle("menu")}
                             className="flex items-center gap-3 px-3 py-2 text-sm text-gray-700 hover:bg-gray-50 hover:text-black rounded-lg transition-colors"
-                          >
-                            <Search className="w-4 h-4" />
-                            Browse Courses
-                          </Link>
-                          <Link
+                      >
+                        <Search className="w-4 h-4" />
+                        Browse Courses
+                      </Link>
+                      <Link
                             to="/contact"
                             onClick={() => toggle("menu")}
                             className="flex items-center gap-3 px-3 py-2 text-sm text-gray-700 hover:bg-gray-50 hover:text-black rounded-lg transition-colors"
-                          >
-                            <MessageCircle className="w-4 h-4" />
-                            Contact
-                          </Link>
-                          <Link
+                      >
+                        <MessageCircle className="w-4 h-4" />
+                        Contact
+                      </Link>
+                      <Link
                             to="/learner/settings"
                             onClick={() => toggle("menu")}
                             className="flex items-center gap-3 px-3 py-2 text-sm text-gray-700 hover:bg-gray-50 hover:text-black rounded-lg transition-colors"
-                          >
-                            <Settings className="w-4 h-4" />
-                            Settings
-                          </Link>
+                      >
+                        <Settings className="w-4 h-4" />
+                        Settings
+                      </Link>
                           <div className="border-t border-gray-200 pt-2 mt-2">
-                            <button
+                      <button
                               onClick={onLogout}
                               className="flex items-center gap-3 w-full px-3 py-2 text-sm text-red-600 hover:bg-red-50 hover:text-red-700 rounded-lg transition-colors"
-                            >
-                              <LogOut className="w-4 h-4" />
-                              Logout
-                            </button>
+                      >
+                        <LogOut className="w-4 h-4" />
+                        Logout
+                      </button>
                           </div>
-                        </div>
-                      </div>
                     </div>
-                  )}
+                  </div>
                 </div>
+              )}
+            </div>
               </>
             ) : (
               <div className="flex items-center space-x-4">
@@ -304,53 +304,53 @@ const Header = ({ school, isAuthenticated, user, onLogout }) => {
                 <div className="border-t border-gray-200 pt-2 mt-2">
                   <Link
                     to="/learner"
-                    onClick={() => toggle("mobileMenu")}
-                    className="flex items-center gap-3 px-3 py-2 text-sm text-gray-700 hover:bg-gray-50 hover:text-black rounded-lg transition-colors"
-                  >
-                    <Home className="w-4 h-4" />
-                    Dashboard
-                  </Link>
-                  <Link
-                    to="/learner/all-enrolled-courses"
-                    onClick={() => toggle("mobileMenu")}
-                    className="flex items-center gap-3 px-3 py-2 text-sm text-gray-700 hover:bg-gray-50 hover:text-black rounded-lg transition-colors"
-                  >
-                    <BookOpen className="w-4 h-4" />
-                    My Courses
-                  </Link>
-                  <Link
-                    to="/learner/suggested-courses"
-                    onClick={() => toggle("mobileMenu")}
-                    className="flex items-center gap-3 px-3 py-2 text-sm text-gray-700 hover:bg-gray-50 hover:text-black rounded-lg transition-colors"
-                  >
-                    <Search className="w-4 h-4" />
-                    Browse Courses
-                  </Link>
-                  <Link
-                    to="/learner/contact"
-                    onClick={() => toggle("mobileMenu")}
-                    className="flex items-center gap-3 px-3 py-2 text-sm text-gray-700 hover:bg-gray-50 hover:text-black rounded-lg transition-colors"
-                  >
-                    <MessageCircle className="w-4 h-4" />
-                    Contact
-                  </Link>
-                  <Link
-                    to="/learner/settings"
-                    onClick={() => toggle("mobileMenu")}
-                    className="flex items-center gap-3 px-3 py-2 text-sm text-gray-700 hover:bg-gray-50 hover:text-black rounded-lg transition-colors"
-                  >
-                    <Settings className="w-4 h-4" />
-                    Settings
-                  </Link>
-                  <div className="border-t border-gray-200 pt-2 mt-2">
-                    <button
+              onClick={() => toggle("mobileMenu")}
+              className="flex items-center gap-3 px-3 py-2 text-sm text-gray-700 hover:bg-gray-50 hover:text-black rounded-lg transition-colors"
+            >
+              <Home className="w-4 h-4" />
+              Dashboard
+            </Link>
+            <Link
+              to="/learner/all-enrolled-courses"
+              onClick={() => toggle("mobileMenu")}
+              className="flex items-center gap-3 px-3 py-2 text-sm text-gray-700 hover:bg-gray-50 hover:text-black rounded-lg transition-colors"
+            >
+              <BookOpen className="w-4 h-4" />
+              My Courses
+            </Link>
+            <Link
+              to="/learner/suggested-courses"
+              onClick={() => toggle("mobileMenu")}
+              className="flex items-center gap-3 px-3 py-2 text-sm text-gray-700 hover:bg-gray-50 hover:text-black rounded-lg transition-colors"
+            >
+              <Search className="w-4 h-4" />
+              Browse Courses
+            </Link>
+            <Link
+              to="/learner/contact"
+              onClick={() => toggle("mobileMenu")}
+              className="flex items-center gap-3 px-3 py-2 text-sm text-gray-700 hover:bg-gray-50 hover:text-black rounded-lg transition-colors"
+            >
+              <MessageCircle className="w-4 h-4" />
+              Contact
+            </Link>
+            <Link
+              to="/learner/settings"
+              onClick={() => toggle("mobileMenu")}
+              className="flex items-center gap-3 px-3 py-2 text-sm text-gray-700 hover:bg-gray-50 hover:text-black rounded-lg transition-colors"
+            >
+              <Settings className="w-4 h-4" />
+              Settings
+            </Link>
+            <div className="border-t border-gray-200 pt-2 mt-2">
+              <button
                       onClick={onLogout}
-                      className="flex items-center gap-3 w-full px-3 py-2 text-sm text-red-600 hover:bg-red-50 hover:text-red-700 rounded-lg transition-colors"
-                    >
-                      <LogOut className="w-4 h-4" />
-                      Logout
-                    </button>
-                  </div>
+                className="flex items-center gap-3 w-full px-3 py-2 text-sm text-red-600 hover:bg-red-50 hover:text-red-700 rounded-lg transition-colors"
+              >
+                <LogOut className="w-4 h-4" />
+                Logout
+              </button>
+            </div>
                 </div>
               </>
             ) : (
