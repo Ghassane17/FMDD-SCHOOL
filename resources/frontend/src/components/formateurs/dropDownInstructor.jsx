@@ -51,7 +51,7 @@ export function DropDownInstructor({ currentInstructor }) {
           <Settings className="w-4 h-4 mr-2" />
           Account Settings
         </DropdownMenuItem>
-        <DropdownMenuItem onClick={() => navigate('/contact')}>
+        <DropdownMenuItem onClick={() => navigate('/instructor/contact')}>
           <Mail className="w-4 h-4 mr-2" />
           Contact Us
         </DropdownMenuItem>

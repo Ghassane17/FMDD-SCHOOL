@@ -93,4 +93,10 @@ Route::middleware('auth:sanctum')->group(function () {
     // Download file by path
     Route::get('/download-resource', [DownloadController::class, 'downloadResource']);
     Route::get('/courses/{courseId}/comments', [CommentController::class, 'showCourseComments']);
+
+    // Update courses
+    Route::post('instructor/courses/{courseId}/overview', [CourseInstructorController::class, 'editCourseOverview'])->name('instructor.editCourseOverview');
+    Route::post('instructor/courses/{courseId}/modules', [CourseInstructorController::class, 'editCourseModules'])->name('instructor.editCourseModules');
+    Route::patch('instructor/courses/{courseId}/exam', [CourseInstructorController::class, 'editCourseExam'])->name('instructor.editCourseExam');
+    Route::post('instructor/courses/{courseId}/resources', [CourseInstructorController::class, 'editCourseResources'])->name('instructor.editCourseResources');
 });

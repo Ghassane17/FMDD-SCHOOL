@@ -112,8 +112,8 @@ export default function CommentSection() {
   }
 
   const getRatingColor = (rating) => {
-    if (rating >= 4.5) return "text-emerald-600 bg-emerald-50 border-emerald-200"
-    if (rating >= 3.5) return "text-amber-600 bg-amber-50 border-amber-200"
+    if (rating >= 4) return "text-emerald-600 bg-emerald-50 border-emerald-200"
+    if (rating >= 3) return "text-amber-600 bg-amber-50 border-amber-200"
     return "text-red-600 bg-red-50 border-red-200"
   }
 
@@ -217,9 +217,6 @@ export default function CommentSection() {
                             <User className="h-6 w-6 text-white" />
                           </div>
                         )}
-                        <div className="absolute -bottom-1 -right-1 w-6 h-6 bg-white rounded-full flex items-center justify-center border-2 border-slate-200">
-                          <div className={`w-3 h-3 rounded-full ${getRatingColor(comment.rating).split(" ")[2]}`}></div>
-                        </div>
                       </div>
 
                       <div className="flex-1 min-w-0">
@@ -315,11 +312,11 @@ export default function CommentSection() {
                                 <img
                                   src={API_URL + reply.instructor.user.avatar || "/placeholder.svg"}
                                   alt={reply.instructor.user.name}
-                                  className="w-8 h-8 rounded-full object-cover border-2 border-white"
+                                  className="w-12 h-12 rounded-full object-cover border-2 border-white"
                                 />
                               ) : (
-                                <div className="w-8 h-8 rounded-full bg-gradient-to-br from-indigo-400 to-blue-500 flex items-center justify-center">
-                                  <User className="h-4 w-4 text-white" />
+                                <div className="w-12 h-12 rounded-full bg-gradient-to-br from-indigo-400 to-blue-500 flex items-center justify-center">
+                                  <User className="h-6 w-6 text-white" />
                                 </div>
                               )}
                               <div>
@@ -331,7 +328,7 @@ export default function CommentSection() {
                                 </span>
                                 <div className="flex items-center text-slate-500 text-xs mt-1">
                                   <Clock className="h-3 w-3 mr-1" />
-                                  {new Date(reply.created_at).toLocaleDateString()}
+                                  {reply.created_at.split("T")[0] + " | " + reply.created_at.split("T")[1].split(":")[0] + ":" + reply.created_at.split("T")[1].split(":")[1]}
                                 </div>
                               </div>
                             </div>

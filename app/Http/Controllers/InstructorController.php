@@ -281,7 +281,7 @@ class InstructorController extends Controller
         $courses = \App\Models\Course::where('instructor_id', $instructor->id)->get();
         $totalCourses = $courses->count();
         $totalStudents = $courses->sum('students_count') ?? 0;
-        $averageRating = $courses->whereNotNull('rating')->where('rating', '!=', 0)->avg('rating');
+        $averageRating = round($courses->whereNotNull('rating')->where('rating', '!=', 0)->avg('rating'), 1);
         return response()->json([
             'totalCourses' => $totalCourses,
             'totalStudents' => $totalStudents,

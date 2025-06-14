@@ -337,6 +337,206 @@ export const deleteCourse = async (courseId) => {
 };
 
 /**
+ * Update course functions
+ * @param {string} courseId - The ID of the course to update
+ * @param {Object} overviewData - The overview data to update
+ * @returns {Promise} Promise object containing the updated course data
+ */
+// ─── Update course overview ──────────────────────────────────────────
+export const updateCourseOverview = async (courseId, overviewData) => {
+    try {
+        const token = localStorage.getItem('token');
+        if (!token) {
+            throw new Error('Authentication token not found');
+        }
+
+        // Create a new axios instance with multipart/form-data for file uploads
+        const uploadApi = axios.create({
+            baseURL: apiBaseUrl,
+            headers: {
+                'Content-Type': 'multipart/form-data',
+                'X-Requested-With': 'XMLHttpRequest',
+                'Accept': 'application/json',
+                'Authorization': `Bearer ${token}`
+            },
+            withCredentials: true,
+            timeout: 30000,
+        });
+        const response = await uploadApi.post(`/instructor/courses/${courseId}/overview`, overviewData);
+        return response.data;
+    } catch (error) {
+        if (error.response?.data?.message) {
+            throw new Error(error.response.data.message);
+        }
+        console.error('Error updating course overview:', error);
+        throw error;
+    }
+};
+
+// ─── Update course resources ──────────────────────────────────────────
+
+export const updateCourseResources = async (courseId, resourcesData) => {
+    try {
+        const token = localStorage.getItem('token');
+        if (!token) {
+            throw new Error('Authentication token not found');
+        }
+
+        // Create FormData object
+        const formData = new FormData();
+        
+        // Add resources array to formData
+        if (Array.isArray(resourcesData) && resourcesData.length > 0) {
+            resourcesData.forEach((resource, index) => {
+                // Add each resource property
+                formData.append(`resources[${index}][name]`, resource.name);
+                formData.append(`resources[${index}][type]`, resource.type);
+                
+                // Handle file uploads
+                if (['pdf', 'video', 'image'].includes(resource.type) && resource.file) {
+                    formData.append(`resources[${index}][file]`, resource.file);
+                }
+                
+                // Handle URLs for links and other types
+                if (['link', 'other'].includes(resource.type) && resource.url) {
+                    formData.append(`resources[${index}][url]`, resource.url);
+                }
+            });
+        } else {
+            // If no resources provided, send empty array
+            formData.append('resources[]', ''); // This will be interpreted as an empty array by Laravel
+        }
+
+        // Log the form data for debugging
+        console.log('Sending form data:', {
+            resources: resourcesData,
+            formDataEntries: Array.from(formData.entries())
+        });
+
+        // Create a new axios instance with multipart/form-data for file uploads
+        const uploadApi = axios.create({
+            baseURL: apiBaseUrl,
+            headers: {
+                'Content-Type': 'multipart/form-data',
+                'X-Requested-With': 'XMLHttpRequest',
+                'Accept': 'application/json',
+                'Authorization': `Bearer ${token}`
+            },
+            withCredentials: true,
+            timeout: 120000, // 2 minutes timeout for file uploads
+        });
+
+        const response = await uploadApi.post(`/instructor/courses/${courseId}/resources`, formData);
+        return response.data;
+    } catch (error) {
+        console.error('Error updating course resources:', error);
+        if (error.response?.data) {
+            // Log the full error response
+            console.error('Error response:', error.response.data);
+            throw new Error(error.response.data.error || error.response.data.message || 'Failed to update resources');
+        }
+        throw error;
+    }
+};
+
+// ─── Update course exam ──────────────────────────────────────────
+
+export const updateCourseExam = async (courseId, examData, durationMin) => {
+    try {
+        const response = await api.patch(`/instructor/courses/${courseId}/exam`, {
+            exam: examData,
+            duration_min: durationMin
+        });
+        return response.data;
+    } catch (error) {
+        console.error('Error updating course exam:', error);
+        throw error;
+    }
+};
+
+// ─── Update course modules ──────────────────────────────────────────
+
+export const updateCourseModules = async (courseId, modulesData, durationMin) => {
+    try {
+        const token = localStorage.getItem('token');
+        if (!token) {
+            throw new Error('Authentication token not found');
+        }
+
+        // Create FormData object
+        const formData = new FormData();
+        
+        // Add duration_min
+        formData.append('duration_min', durationMin);
+
+        // Add modules data
+        if (Array.isArray(modulesData) && modulesData.length > 0) {
+            modulesData.forEach((module, index) => {
+                // Add basic module properties
+                formData.append(`modules[${index}][title]`, module.title);
+                formData.append(`modules[${index}][type]`, module.type);
+                formData.append(`modules[${index}][order]`, module.order);
+                formData.append(`modules[${index}][duration_min]`, module.duration_min || 0);
+
+                // Handle text content for text modules
+                if (module.type === 'text' && module.text_content) {
+                    formData.append(`modules[${index}][text_content]`, module.text_content);
+                }
+
+                // Handle file uploads for file-based modules
+                if (['pdf', 'video', 'image'].includes(module.type) && module.file) {
+                    // Ensure we're sending the file with the correct field name
+                    formData.append(`modules[${index}][file]`, module.file);
+                }
+
+                // Handle quiz questions
+                if (module.type === 'quiz' && module.quiz_questions) {
+                    module.quiz_questions.forEach((question, qIndex) => {
+                        formData.append(`modules[${index}][quiz_questions][${qIndex}][question]`, question.question);
+                        formData.append(`modules[${index}][quiz_questions][${qIndex}][options]`, JSON.stringify(question.options));
+                        formData.append(`modules[${index}][quiz_questions][${qIndex}][correct_option]`, question.correct_option);
+                    });
+                }
+
+                // Add module ID if it exists (for existing modules)
+                if (module.id) {
+                    formData.append(`modules[${index}][id]`, module.id);
+                }
+            });
+        }
+
+        // Create a new axios instance with multipart/form-data for file uploads
+        const uploadApi = axios.create({
+            baseURL: apiBaseUrl,
+            headers: {
+                'Content-Type': 'multipart/form-data',
+                'X-Requested-With': 'XMLHttpRequest',
+                'Accept': 'application/json',
+                'Authorization': `Bearer ${token}`
+            },
+            withCredentials: true,
+            timeout: 120000, // 2 minutes timeout for file uploads
+        });
+
+        // Log the form data for debugging
+        console.log('Sending modules data:', {
+            modules: modulesData,
+            formDataEntries: Array.from(formData.entries())
+        });
+
+        const response = await uploadApi.post(`/instructor/courses/${courseId}/modules`, formData);
+        return response.data;
+    } catch (error) {
+        console.error('Error updating course modules:', error);
+        if (error.response?.data) {
+            // Log the full error response
+            console.error('Error response:', error.response.data);
+            throw new Error(error.response.data.message || 'Failed to update modules');
+        }
+        throw error;
+    }
+};
+/**
  * Get instructor comments
  * @returns {Promise} Promise object containing instructor comments data
  */

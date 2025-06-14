@@ -89,7 +89,7 @@ const ManageCourse = () => {
             </button>
             <div className="flex items-center space-x-4">
               <button
-                onClick={() => navigate(`/update-course/${courseId}`)}
+                onClick={() => navigate(`/instructor/update-course/${courseId}`)}
                 className="flex items-center bg-indigo-600 hover:bg-indigo-700 text-white px-4 py-2 rounded-lg transition-all duration-200 shadow-md hover:shadow-lg cursor-pointer"
               >
                 <Edit2 className="w-5 h-5 mr-2" />

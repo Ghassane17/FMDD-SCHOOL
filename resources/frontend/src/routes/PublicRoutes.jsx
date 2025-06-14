@@ -8,7 +8,7 @@ import Login from '../pages/Login.jsx';
 import Register from '../pages/Register.jsx';
 import CompleteProfileInstructor from '../pages/CompleteProfileInstructor.jsx';
 import CompleteProfileLearner from "@/pages/CompleteProfileLearner.jsx";
-import CreateCourse from "@/pages/CreateCourse.jsx";
+
 const PublicRoutes = {
     element: <MainLayout />,
     children: [
@@ -42,11 +42,7 @@ const PublicRoutes = {
         },
         {
             path: 'learner-profile',
-            element: <CompleteProfileLearner />, // (create this component/page)
-        },
-        {
-            path: 'create-course',
-            element: <CreateCourse />,
+            element: <CompleteProfileLearner />,
         },
         {
             path: '*',

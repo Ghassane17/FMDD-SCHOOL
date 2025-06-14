@@ -36,7 +36,7 @@ const CourseList = ({ instructorData, backend_url }) => {
       description: courseDescription,
       image: courseImage ? URL.createObjectURL(courseImage) : null,
     }
-    navigate("/create-course", { state: { courseData } })
+    navigate("/instructor/create-course", { state: { courseData } })
     setShowCourseForm(false)
   }
 
@@ -64,7 +64,7 @@ const CourseList = ({ instructorData, backend_url }) => {
   }
 
   const handleCourseAction = (courseId) => {
-    navigate(`/manage-course/${courseId}`)
+    navigate(`/instructor/manage-course/${courseId}`)
   }
 
   const formatDuration = (minutes) => {
@@ -84,8 +84,9 @@ const CourseList = ({ instructorData, backend_url }) => {
   const getStatsCards = () => {
     const totalStudents = courses.reduce((sum, course) => sum + (course.students || 0), 0)
     const publishedCourses = courses.filter((course) => course.is_published).length
-    const averageRating =
-      courses.length > 0 ? courses.reduce((sum, course) => sum + (course.rating || 0), 0) / courses.length : 0
+    const instructorStats = JSON.parse(localStorage.getItem("instructorStats") || "{}")
+    const averageRating = instructorStats.averageRating || 0
+    console.log("averageRating", averageRating)
 
     return [
       {
@@ -338,28 +339,6 @@ const CourseList = ({ instructorData, backend_url }) => {
                   onChange={(e) => setCourseDescription(e.target.value)}
                   required
                 ></textarea>
-              </div>
-
-              <div>
-                <label className="block text-gray-700 mb-3 font-semibold">Image du cours</label>
-                <div className="relative">
-                  <input
-                    type="file"
-                    className="w-full px-4 py-3 border border-gray-300 rounded-xl focus:outline-none focus:ring-2 focus:ring-indigo-500 focus:border-indigo-500 transition-all duration-200"
-                    accept="image/*"
-                    onChange={handleFileChange}
-                  />
-                  {courseImage && (
-                    <div className="mt-4">
-                      <img
-                        src={URL.createObjectURL(courseImage) || "/placeholder.svg"}
-                        alt="Preview"
-                        className="w-full h-32 object-cover rounded-xl border border-gray-200"
-                      />
-                    </div>
-                  )}
-                </div>
-                <p className="text-sm text-gray-500 mt-2">Recommandé: 1200x600px, format JPG ou PNG</p>
               </div>
 
               {/* Modal Actions */}

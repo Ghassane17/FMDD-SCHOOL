@@ -170,8 +170,9 @@ class CourseInstructorController extends Controller
                             in_array($module['type'], ['pdf', 'image', 'video']) &&
                             $request->hasFile("modules.{$index}.file")
                         ) {
-                            $path = $request->file("modules.{$index}.file")
-                                ->store("courses/{$course->id}/modules/{$newModule->id}", 'public');
+                            $file = $request->file("modules.{$index}.file");
+                            $fileName = time() . '_' . $file->getClientOriginalName();
+                            $path = $file->storeAs("courses/{$course->id}/modules/{$newModule->id}", $fileName, 'public');
                             $newModule->file_path = '/storage/' . $path;
                             $newModule->save();
                         }
@@ -220,6 +221,11 @@ class CourseInstructorController extends Controller
                             $url = '/storage/' . $url;
                         } elseif (in_array($resource['type'], ['link', 'other'])) {
                             $url = $resource['url'];
+                        }
+                        if ($resource['type'] === 'link') {
+                            if (!preg_match('/^https?:\/\//', $url)) {
+                                $url = 'https://' . $url;
+                            }
                         }
 
                         Resource::create([
@@ -445,7 +451,7 @@ class CourseInstructorController extends Controller
                         'text_content' => $module->text_content,
                         'file_path' => $module->file_path,
                         'order' => $module->order,
-                        'duration' => $module->duration,
+                        'duration_min' => $module->duration,
                         'quiz_questions' => $module->quizQuestions->map(function ($question) {
                             return [
                                 'id' => $question->id,
@@ -493,4 +499,517 @@ class CourseInstructorController extends Controller
             return response()->json(['message' => 'Internal server error'], 500);
         }
     }
+
+    // ─── Edit course functions──────────────────────────────────────────
+
+    public function editCourseOverview(Request $request, $courseId)
+    {
+        // 1️⃣ Authorization
+        $user = Auth::user();
+        if (!$user || $user->role !== 'instructor') {
+            return response()->json(['message' => 'Unauthorized'], 403);
+        }
+
+        $instructor = Instructor::where('user_id', $user->id)->first();
+        if (!$instructor) {
+            return response()->json(['message' => 'Instructor profile not found'], 404);
+        }
+
+        // 2️⃣ Validation
+        $validator = Validator::make($request->all(), [
+            'title' => 'required|string|max:255',
+            'description' => 'required|string',
+            'level' => 'required|string|in:beginner,intermediate,advanced',
+            'category' => 'required|string|max:255',
+            'duration_min' => 'required|integer|min:0',
+        ]);
+
+        if ($validator->fails()) {
+            return response()->json(['message' => 'Validation failed', 'errors' => $validator->errors()], 422);
+        }
+
+        try {
+            $course = Course::find($courseId);
+            if (!$course) {
+                return response()->json(['message' => 'Course not found'], 404);
+            }
+
+            if ($course->instructor_id !== $instructor->id) {
+                return response()->json(['message' => 'Unauthorized'], 403);
+            }
+
+            if ($request->hasFile('course_thumbnail')) {
+                $oldPath = str_replace('/storage/', '', $course->course_thumbnail);
+                if (Storage::disk('public')->exists($oldPath)) {
+                    Storage::disk('public')->delete($oldPath);
+                }
+                $path = $request->file('course_thumbnail')
+                    ->store("courses/{$course->id}/thumbnail", 'public');
+                $course->course_thumbnail = '/storage/' . $path;
+            }
+            
+            $updateData = [
+                'title' => $validator->validated()['title'],
+                'description' => $validator->validated()['description'],
+                'level' => $validator->validated()['level'],
+                'category' => $validator->validated()['category'],
+                'duration_min' => $validator->validated()['duration_min'],
+                'is_published' => 0,
+            ];
+
+            // Handle thumbnail upload if a new file is provided
+            if ($request->hasFile('course_thumbnail')) {
+                            // Delete old thumbnail if it exists
+                if ($course->course_thumbnail) {
+                    $oldPath = str_replace('/storage/', '', $course->course_thumbnail);
+                    if (Storage::disk('public')->exists($oldPath)) {
+                        Storage::disk('public')->delete($oldPath);
+                    }
+                }
+            
+                // Store new thumbnail
+                $path = $request->file('course_thumbnail')
+                         ->store("courses/{$course->id}/thumbnail", 'public');
+                $updateData['course_thumbnail'] = '/storage/' . $path;
+            }
+
+            $course->update($updateData);
+
+
+            return response()->json([
+                'message' => 'Course overview updated successfully',
+                'course' => $course
+            ], 200);
+
+        } catch (\Exception $e) {
+            Log::error('Error in editCourseOverview', [
+                'course_id' => $courseId,
+                'error' => $e->getMessage(),
+                'trace' => $e->getTraceAsString()
+            ]);
+        }
+    }
+
+
+    // ─── Edit course resources ──────────────────────────────────────────
+
+    public function editCourseResources(Request $request, $courseId)
+    {
+        // Authorization
+        $user = Auth::user();
+        if (!$user || $user->role !== 'instructor') {
+            return response()->json(['message' => 'Unauthorized'], 403);
+        }
+
+        $instructor = Instructor::where('user_id', $user->id)->first();
+        if (!$instructor) {
+            return response()->json(['message' => 'Instructor profile not found'], 404);
+        }
+
+        try {
+            $course = Course::find($courseId);
+            if (!$course) {
+                return response()->json(['message' => 'Course not found'], 404);
+            }
+
+            if ($course->instructor_id !== $instructor->id) {
+                return response()->json(['message' => 'Unauthorized'], 403);
+            }
+
+            // Get existing resources from database
+            $existingResources = Resource::where('course_id', $course->id)->get();
+            $existingResourceIds = [];
+            $resourcesToKeep = [];
+
+            // Process incoming resources
+            $resourcesData = $request->input('resources', []);
+
+            foreach ($resourcesData as $index => $resourceData) {
+                $name = $resourceData['name'] ?? '';
+                $type = $resourceData['type'] ?? '';
+                $url = $resourceData['url'] ?? null;
+                $id = $resourceData['id'] ?? null;
+
+                // Skip if required fields are missing
+                if (empty($name) || empty($type)) {
+                    continue;
+                }
+
+                // Check if this is an existing resource (has ID and URL is a string, not a File)
+                if ($id && is_string($url) && !$request->hasFile("resources.{$index}.file")) {
+                    // This is an existing resource - keep it
+                    $existingResourceIds[] = $id;
+                    $resourcesToKeep[] = $id;
+                    continue;
+                }
+
+                // Handle new file uploads
+                if (in_array($type, ['pdf', 'video', 'image'])) {
+                    if ($request->hasFile("resources.{$index}.file")) {
+                        $file = $request->file("resources.{$index}.file");
+                        $path = $file->store("courses/{$course->id}/resources", 'public');
+                        $url = '/storage/' . $path;
+                    } else {
+                        continue; // Skip if file is missing for file-type resource
+                    }
+                }
+                // Handle URL-based resources
+                elseif (in_array($type, ['link', 'other'])) {
+                    if (empty($url)) {
+                        continue; // Skip if URL is missing for link-type resource
+                    }
+                }
+                else {
+                    continue; // Skip invalid type
+                }
+
+                // Create new resource record
+                if ($type === 'link') {
+                    if (!preg_match('/^https?:\/\//', $url)) {
+                        $url = 'https://' . $url;
+                    }
+                }
+                Resource::create([
+                    'course_id' => $course->id,
+                    'name' => $name,
+                    'type' => $type,
+                    'url' => $url,
+                ]);
+            }
+
+            // Delete resources that are no longer in the request
+            $resourcesToDelete = $existingResources->whereNotIn('id', $resourcesToKeep);
+            foreach ($resourcesToDelete as $resource) {
+                // Delete file from storage if it's a file-based resource
+                if (in_array($resource->type, ['pdf', 'video', 'image']) && $resource->url) {
+                    $filePath = str_replace('/storage/', '', $resource->url);
+                    if (Storage::disk('public')->exists($filePath)) {
+                        Storage::disk('public')->delete($filePath);
+                    }
+                }
+                // Delete from database
+                $resource->delete();
+            }
+
+            return response()->json([
+                'message' => 'Course resources updated successfully'
+            ], 200);
+
+        } catch (\Exception $e) {
+            Log::error('Error in editCourseResources', [
+                'course_id' => $courseId,
+                'error' => $e->getMessage(),
+                'trace' => $e->getTraceAsString()
+            ]);
+            return response()->json(['message' => 'Internal server error'], 500);
+        }
+    }
+
+    // ─── Edit course Exam ──────────────────────────────────────────
+
+    public function editCourseExam(Request $request, $courseId)
+    {
+        // Authorization
+        $user = Auth::user();
+        if (!$user || $user->role !== 'instructor') {
+            return response()->json(['message' => 'Unauthorized'], 403);
+        }
+
+        $instructor = Instructor::where('user_id', $user->id)->first();
+        if (!$instructor) {
+            return response()->json(['message' => 'Instructor profile not found'], 404);
+        }
+
+        try {
+            $course = Course::find($courseId);
+            if (!$course) {
+                return response()->json(['message' => 'Course not found'], 404);
+            }
+
+            if ($course->instructor_id !== $instructor->id) {
+                return response()->json(['message' => 'Unauthorized'], 403);
+            }
+
+            $exam = Exam::where('course_id', $course->id)->first();
+            if (!$exam) {
+                return response()->json(['message' => 'Exam not found'], 404);
+            }
+
+            // delete old exam questions
+            $exam->questions()->delete();
+
+            // create new exam questions
+            foreach ($request->input('exam.questions', []) as $question) {
+                $exam->questions()->create($question);
+            }
+
+            $exam->update([
+                'title' => $request->input('exam.title'),
+                'instructions' => $request->input('exam.instructions'),
+                'duration_min' => $request->input('exam.duration_min'),
+                'passing_score' => $request->input('exam.passing_score'),
+            ]);
+
+            $course->update([
+                'duration_min' => $request->input('duration_min'),
+            ]);
+
+            return response()->json([
+                'message' => 'Course exam updated successfully',
+                'exam' => $exam
+            ], 200);
+            
+
+        } catch (\Exception $e) {
+            Log::error('Error in editCourseExam', [
+                'course_id' => $courseId,
+                'error' => $e->getMessage(),
+                'trace' => $e->getTraceAsString()
+            ]);
+            return response()->json(['message' => 'Internal server error'], 500);
+        }
+    }
+
+    // ─── Edit course modules ──────────────────────────────────────────
+
+    public function editCourseModules(Request $request, $courseId)
+    {
+        // Authorization
+        $user = Auth::user();
+        if (!$user || $user->role !== 'instructor') {
+            return response()->json(['message' => 'Unauthorized'], 403);
+        }
+    
+        $instructor = Instructor::where('user_id', $user->id)->first();
+        if (!$instructor) {
+            return response()->json(['message' => 'Instructor profile not found'], 404);
+        }
+    
+        try {
+            DB::beginTransaction();
+    
+            // Log the incoming request data
+            Log::info('EditCourseModules Request Data:', [
+                'course_id' => $courseId,
+                'request_data' => $request->all(),
+                'files' => $request->allFiles()
+            ]);
+    
+            $course = Course::find($courseId);
+            if (!$course) {
+                DB::rollBack();
+                return response()->json(['message' => 'Course not found'], 404);
+            }
+    
+            if ($course->instructor_id !== $instructor->id) {
+                DB::rollBack();
+                return response()->json(['message' => 'Unauthorized'], 403);
+            }
+    
+            // Update course duration
+            if ($request->has('duration_min')) {
+                $course->duration_min = $request->input('duration_min');
+                $course->save();
+            }
+    
+            // Get the list of module IDs from the request
+            $requestModuleIds = [];
+            $modules = $request->input('modules', []);
+            
+            foreach ($modules as $moduleData) {
+                if (isset($moduleData['id']) && !empty($moduleData['id'])) {
+                    $requestModuleIds[] = (int)$moduleData['id'];
+                }
+            }
+    
+            // Delete old modules that are not in the request's input
+            $existingModules = Module::where('course_id', $course->id)->get();
+            foreach ($existingModules as $module) {
+                if (!in_array($module->id, $requestModuleIds)) {
+                    // Delete associated files
+                    if (in_array($module->type, ['pdf', 'video', 'image']) && $module->file_path) {
+                        $filePath = str_replace('/storage/', '', $module->file_path);
+                        if (Storage::disk('public')->exists($filePath)) {
+                            Storage::disk('public')->delete($filePath);
+                        }
+                    }
+                    
+                    // Delete quiz questions
+                    if ($module->type === 'quiz') {
+                        QuizQuestion::where('module_id', $module->id)->delete();
+                    }
+                    
+                    $module->delete();
+                }
+            }
+    
+            // Process modules from the request
+            foreach ($modules as $index => $moduleData) {
+                try {
+                    // Validate required fields
+                    if (empty($moduleData['title']) || empty($moduleData['type'])) {
+                        throw new \Exception("Missing required fields for module at index {$index}");
+                    }
+    
+                    // Determine if this is an existing module or new one
+                    $isExistingModule = isset($moduleData['id']) && !empty($moduleData['id']);
+                    
+                    if ($isExistingModule) {
+                        // Handle existing module modification
+                        $module = Module::where('id', $moduleData['id'])
+                            ->where('course_id', $course->id)
+                            ->first();
+    
+                        if (!$module) {
+                            throw new \Exception("Module with ID {$moduleData['id']} not found");
+                        }
+    
+                        // Update basic module properties
+                        $module->title = $moduleData['title'];
+                        $module->order = $moduleData['order'] ?? $index + 1;
+                        $module->duration = $moduleData['duration_min'] ?? null;
+    
+                        // Handle different module types
+                        switch ($module->type) {
+                            case 'text':
+                                $module->text_content = $moduleData['text_content'] ?? null;
+                                break;
+    
+                            case 'quiz':
+                                // Replace all quiz questions
+                                QuizQuestion::where('module_id', $module->id)->delete();
+                                $this->createQuizQuestions($module->id, $moduleData['quiz_questions'] ?? []);
+                                break;
+    
+                            case 'pdf':
+                            case 'video':
+                            case 'image':
+                                // Handle file update if new file is provided
+                                if ($request->hasFile("modules.{$index}.file")) {
+                                    // Delete old file
+                                    if ($module->file_path) {
+                                        $oldPath = str_replace('/storage/', '', $module->file_path);
+                                        if (Storage::disk('public')->exists($oldPath)) {
+                                            Storage::disk('public')->delete($oldPath);
+                                        }
+                                    }
+                                    
+                                    // Store new file
+                                    $file = $request->file("modules.{$index}.file");
+                                    $fileName = time() . '_' . $file->getClientOriginalName();
+                                    $path = $file->storeAs("courses/{$course->id}/modules/{$module->id}", $fileName, 'public');
+                                    $module->file_path = '/storage/' . $path;
+                                }
+                                break;
+                        }
+    
+                        $module->save();
+    
+                    } else {
+                        // Handle new module creation
+                        $newModuleData = [
+                            'course_id' => $course->id,
+                            'title' => $moduleData['title'],
+                            'type' => $moduleData['type'],
+                            'order' => $moduleData['order'] ?? $index + 1,
+                            'duration' => $moduleData['duration_min'] ?? null,
+                        ];
+    
+                        // Add type-specific data
+                        if ($moduleData['type'] === 'text') {
+                            $newModuleData['text_content'] = $moduleData['text_content'] ?? null;
+                        }
+    
+                        // Create the module first
+                        $newModule = Module::create($newModuleData);
+    
+                        // Handle file upload for new modules
+                        if (in_array($moduleData['type'], ['pdf', 'image', 'video'])) {
+                            if ($request->hasFile("modules.{$index}.file")) {
+                                $file = $request->file("modules.{$index}.file");
+                                $fileName = time() . '_' . $file->getClientOriginalName();
+                                $path = $file->storeAs("courses/{$course->id}/modules/{$newModule->id}", $fileName, 'public');
+                                $newModule->file_path = '/storage/' . $path;
+                                $newModule->save();
+                            }
+                        }
+    
+                        // Handle quiz questions for new modules
+                        if ($moduleData['type'] === 'quiz') {
+                            $this->createQuizQuestions($newModule->id, $moduleData['quiz_questions'] ?? []);
+                        }
+                    }
+    
+                } catch (\Exception $e) {
+                    Log::error('Error processing module:', [
+                        'module_index' => $index,
+                        'module_data' => $moduleData,
+                        'error' => $e->getMessage(),
+                        'trace' => $e->getTraceAsString()
+                    ]);
+                    DB::rollBack();
+                    throw $e;
+                }
+            }
+    
+            DB::commit();
+            
+            // Return updated course with modules
+            $updatedCourse = Course::with(['modules.quizQuestions'])->find($courseId);
+            
+            return response()->json([
+                'message' => 'Modules updated successfully',
+                'course' => $updatedCourse
+            ], 200);
+    
+        } catch (\Exception $e) {
+            DB::rollBack();
+            Log::error('Error in editCourseModules', [
+                'course_id' => $courseId,
+                'error' => $e->getMessage(),
+                'trace' => $e->getTraceAsString(),
+                'request_data' => $request->all()
+            ]);
+            
+            return response()->json([
+                'message' => 'Failed to update modules',
+                'error' => $e->getMessage()
+            ], 500);
+        }
+    }
+    
+    /**
+     * Helper method to create quiz questions
+     */
+    private function createQuizQuestions($moduleId, $questionsData)
+    {
+        if (!is_array($questionsData) || empty($questionsData)) {
+            return;
+        }
+    
+        foreach ($questionsData as $questionData) {
+            if (empty($questionData['question'])) {
+                continue;
+            }
+    
+            // Handle options - ensure it's an array
+            $options = [];
+            if (isset($questionData['options'])) {
+                if (is_array($questionData['options'])) {
+                    $options = $questionData['options'];
+                } elseif (is_string($questionData['options'])) {
+                    $decodedOptions = json_decode($questionData['options'], true);
+                    $options = is_array($decodedOptions) ? $decodedOptions : [];
+                }
+            }
+    
+            QuizQuestion::create([
+                'module_id' => $moduleId,
+                'question' => $questionData['question'],
+                'options' => $options,
+                'correct_option' => $questionData['correct_option'] ?? 0,
+            ]);
+        }
+    }
+    
 }
