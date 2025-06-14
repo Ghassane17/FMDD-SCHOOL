@@ -1,70 +1,74 @@
 "use client"
 
-import { useState, useEffect, useCallback, useRef } from "react"
 import { Link, useNavigate } from "react-router-dom"
-import { Bell, LogOut, Menu, Settings, ExpandIcon as ExpandMore, ChevronRight, User, BookOpen, Search, MessageCircle, Home } from "lucide-react"
-import { getLearnerNotifications, markNotificationAsRead, updateNotifications, logout } from "@/services/api.js"
+import { LogOut, Menu, Settings, User, BookOpen, Search, MessageCircle, Home } from "lucide-react"
 import { FaUserCircle } from "react-icons/fa"
+import { useState, useEffect, useRef, useCallback } from "react"
 
 const API_URL = import.meta.env.VITE_BACKEND_URL 
 
 const FallbackAvatarIcon = () => <FaUserCircle size={32} color="#ccc" />
 
-const Header = ({ school, avatar, notifications: initialNotifications = [] }) => {
+const Header = ({ school, isAuthenticated, user, onLogout }) => {
   const [open, setOpen] = useState({
     menu: false,
-    notifications: false,
     mobileMenu: false,
-  })
-  const [notifications, setNotifications] = useState(initialNotifications)
-  const [loading, setLoading] = useState(false)
-  const [notificationPreferences, setNotificationPreferences] = useState({
-    email: true,
-    app: true,
   })
   const [isAvatarLoading, setIsAvatarLoading] = useState(true)
   const [avatarSrc, setAvatarSrc] = useState(null)
-  const [showNotificationPrefs, setShowNotificationPrefs] = useState(false)
   const avatarRef = useRef(null)
   const navigate = useNavigate()
 
   // Initialize avatar source
   useEffect(() => {
     let isMounted = true;
+    console.log("Avatar effect - User:", user);
+    console.log("Avatar effect - Is authenticated:", isAuthenticated);
 
-    if (!avatar) {
+    if (!user?.avatar) {
+      console.log("No avatar in user data");
       setIsAvatarLoading(false);
       return;
     }
 
-    // If avatar is a full URL, use it directly
-    if (avatar.startsWith("http")) {
-      if (isMounted) {
-        setAvatarSrc(avatar);
+    const loadAvatar = () => {
+      // If avatar is a full URL, use it directly
+      if (user.avatar.startsWith("http")) {
+        console.log("Using direct URL:", user.avatar);
+        if (isMounted) {
+          setAvatarSrc(user.avatar);
+        }
+        return;
       }
-      return;
-    }
 
-    // If avatar is a storage path that starts with /storage
-    if (avatar.startsWith("/storage")) {
-      if (isMounted) {
-        setAvatarSrc(`${API_URL}${avatar}`);
+      // If avatar is a storage path that starts with /storage
+      if (user.avatar.startsWith("/storage")) {
+        const fullUrl = `${API_URL}${user.avatar}`;
+        console.log("Using storage URL:", fullUrl);
+        if (isMounted) {
+          setAvatarSrc(fullUrl);
+        }
+        return;
       }
-      return;
-    }
 
-    // If avatar is just a filename or other relative path
-    if (isMounted) {
-      setAvatarSrc(`${API_URL}/storage/${avatar}`);
-    }
+      // If avatar is just a filename or other relative path
+      const fullUrl = `${API_URL}/storage/${user.avatar}`;
+      console.log("Using relative path URL:", fullUrl);
+      if (isMounted) {
+        setAvatarSrc(fullUrl);
+      }
+    };
+
+    loadAvatar();
 
     return () => {
       isMounted = false;
     };
-  }, [avatar]);
+  }, [user?.avatar, isAuthenticated]);
 
   // Handle avatar loading
   const handleAvatarLoad = useCallback(() => {
+    console.log("Avatar loaded successfully");
     setIsAvatarLoading(false);
   }, []);
 
@@ -78,11 +82,11 @@ const Header = ({ school, avatar, notifications: initialNotifications = [] }) =>
   // Close menus when clicking outside
   useEffect(() => {
     const handleClickOutside = (event) => {
-      if (!event.target.closest(".header-menu") && !event.target.closest(".header-notifications")) {
+      if (!event.target.closest(".header-menu") ) {
         setOpen((prev) => ({
           ...prev,
           menu: false,
-          notifications: false,
+        
         }));
       }
     };
@@ -101,73 +105,13 @@ const Header = ({ school, avatar, notifications: initialNotifications = [] }) =>
     return cleanup;
   }, [navigate]);
 
-  useEffect(() => {
-    const user = JSON.parse(localStorage.getItem("user"));
-    if (user?.notifications) {
-      setNotificationPreferences(user.notifications);
-    }
-  }, []);
-
-  const toggle = useCallback(async (key) => {
-    if (key === "notifications") {
-      setLoading(true)
-      try {
-        const response = await getLearnerNotifications()
-        setNotifications(response.data)
-      } catch (error) {
-        console.error("Error loading notifications:", error)
-      } finally {
-        setLoading(false)
-      }
-    }
-
+  const toggle = useCallback((key) => {
     setOpen((prev) => ({
       ...prev,
       [key]: !prev[key],
       ...(key !== "mobileMenu" && { mobileMenu: false }),
-    }))
-  }, [])
-
-  const handleNotificationClick = async (notificationId) => {
-    try {
-      await markNotificationAsRead(notificationId)
-      setNotifications((prev) => prev.map((n) => (n.id === notificationId ? { ...n, read: true } : n)))
-    } catch (error) {
-      console.error("Error marking notification as read:", error)
-    }
-  }
-
-  const handlePreferenceChange = async (type) => {
-    try {
-      const newPreferences = {
-        ...notificationPreferences,
-        [type]: !notificationPreferences[type],
-      }
-
-      await updateNotifications({
-        notifications: newPreferences,
-      })
-
-      setNotificationPreferences(newPreferences)
-
-      const user = JSON.parse(localStorage.getItem("user"))
-      user.notifications = newPreferences
-      localStorage.setItem("user", JSON.stringify(user))
-    } catch (error) {
-      console.error("Error updating notification preferences:", error)
-    }
-  }
-
-  const hasUnread = notifications?.some((n) => !n.read)
-
-  const handleLogout = () => {
-    logout()
-    navigate("/login")
-  }
-
-  const handleMenuItemClick = () => {
-    setOpen((prev) => ({ ...prev, menu: false }))
-  }
+    }));
+  }, []);
 
   return (
     <header className="bg-white border-b border-gray-200 sticky top-0 z-50">
@@ -182,240 +126,140 @@ const Header = ({ school, avatar, notifications: initialNotifications = [] }) =>
               <Menu className="w-5 h-5" />
             </button>
 
-            <Link to="/learner" className="text-xl font-bold text-black hover:text-gray-700 transition-colors">
+            <Link to="/" className="text-xl font-bold text-black hover:text-gray-700 transition-colors">
               {school}
             </Link>
           </div>
 
-          {/* Right Side: Notifications & Avatar Menu */}
+          {/* Middle: Public Navigation Links */}
+          <div className="hidden md:flex items-center space-x-6">
+            <Link
+              to="/"
+              className="text-sm font-medium text-gray-700 hover:text-black transition-colors"
+            >
+              Accueil
+            </Link>
+            <Link
+              to="/formations"
+              className="text-sm font-medium text-gray-700 hover:text-black transition-colors"
+            >
+              Formations
+            </Link>
+            <Link
+              to="/a-propos"
+              className="text-sm font-medium text-gray-700 hover:text-black transition-colors"
+            >
+              À propos
+            </Link>
+            <Link
+              to="/contact"
+              className="text-sm font-medium text-gray-700 hover:text-black transition-colors"
+            >
+              Contact
+            </Link>
+          </div>
+
+          {/* Right Side: Auth/User Menu */}
           <div className="flex items-center space-x-3">
-            {/* Notifications */}
-            <div className="relative header-notifications">
-              <button
-                onClick={() => toggle("notifications")}
-                aria-label="Notifications"
-                className="relative p-2 rounded-lg text-gray-600 hover:text-black hover:bg-gray-100 transition-colors"
-                disabled={loading}
-              >
-                <Bell className="w-5 h-5" />
-                {hasUnread && <span className="absolute top-1.5 right-1.5 w-2 h-2 bg-red-500 rounded-full"></span>}
-              </button>
+            {isAuthenticated ? (
+              <>
+                {/* User Avatar Menu */}
+                <div className="relative header-menu">
+                  <button
+                    onClick={() => toggle("menu")}
+                    className="p-1 rounded-full border-2 border-gray-200 hover:border-gray-300 transition-colors"
+                  >
+                    {isAvatarLoading && <div className="w-8 h-8 rounded-full bg-gray-200 animate-pulse"></div>}
+                    <img
+                      ref={avatarRef}
+                      src={avatarSrc || "/placeholder.svg"}
+                      alt="User avatar"
+                      className={`w-8 h-8 rounded-full object-cover ${isAvatarLoading ? "hidden" : "block"}`}
+                      onLoad={handleAvatarLoad}
+                      onError={handleAvatarError}
+                    />
+                  </button>
 
-              {open.notifications && (
-                <div className="absolute right-0 mt-2 w-80 bg-white rounded-lg border border-gray-200 shadow-lg z-20 max-h-[80vh] overflow-y-auto">
-                  <div className="p-4">
-                    <div className="flex items-center justify-between mb-4">
-                      <h3 className="font-semibold text-black">Notifications</h3>
-                      {hasUnread && (
-                        <span className="text-xs text-gray-500">{notifications.filter((n) => !n.read).length} new</span>
-                      )}
-                    </div>
+                  {open.menu && (
+                    <div className="absolute right-0 mt-2 w-56 bg-white rounded-lg border border-gray-200 shadow-lg z-20">
+                      <div className="p-2">
+                        <div className="px-3 py-2">
+                          <p className="text-sm font-medium text-black">{user?.name}</p>
+                          <p className="text-xs text-gray-500">{user?.email}</p>
+                        </div>
 
-                    {loading ? (
-                      <div className="flex justify-center py-8">
-                        <div className="animate-spin rounded-full h-6 w-6 border-b-2 border-black"></div>
-                      </div>
-                    ) : notifications.length === 0 ? (
-                      <div className="text-center py-8">
-                        <Bell className="w-8 h-8 text-gray-300 mx-auto mb-2" />
-                        <p className="text-sm text-gray-500">No notifications yet</p>
-                        <p className="text-xs text-gray-400 mt-1">We'll notify you when there's something new</p>
-                      </div>
-                    ) : (
-                      <div className="space-y-2 mb-4">
-                        {notifications.map((n) => (
-                          <div
-                            key={n.id}
-                            className={`p-3 rounded-lg cursor-pointer transition-colors border ${
-                              n.read
-                                ? "bg-gray-50 hover:bg-gray-100 border-gray-100"
-                                : "bg-blue-50 hover:bg-blue-100 border-blue-200"
-                            }`}
-                            onClick={() => handleNotificationClick(n.id)}
+                        <div className="mt-2 space-y-1">
+                          <Link
+                            to="/learner"
+                            onClick={() => toggle("menu")}
+                            className="flex items-center gap-3 px-3 py-2 text-sm text-gray-700 hover:bg-gray-50 hover:text-black rounded-lg transition-colors"
                           >
-                            <div className="flex items-start justify-between">
-                              <div className="flex-1 min-w-0">
-                                <h4 className="text-sm font-medium text-black truncate">{n.title}</h4>
-                                <p className="text-sm text-gray-600 mt-1">{n.message}</p>
-                                <p className="text-xs text-gray-400 mt-2">{n.createdAt}</p>
-                              </div>
-                              {!n.read && (
-                                <div className="w-2 h-2 bg-blue-500 rounded-full mt-1 ml-2 flex-shrink-0"></div>
-                              )}
-                            </div>
+                            <Home className="w-4 h-4" />
+                            Dashboard
+                          </Link>
+                          <Link
+                            to="/learner/all-enrolled-courses"
+                            onClick={() => toggle("menu")}
+                            className="flex items-center gap-3 px-3 py-2 text-sm text-gray-700 hover:bg-gray-50 hover:text-black rounded-lg transition-colors"
+                          >
+                            <BookOpen className="w-4 h-4" />
+                            My Courses
+                          </Link>
+                          <Link
+                            to="/learner/suggested-courses"
+                            onClick={() => toggle("menu")}
+                            className="flex items-center gap-3 px-3 py-2 text-sm text-gray-700 hover:bg-gray-50 hover:text-black rounded-lg transition-colors"
+                          >
+                            <Search className="w-4 h-4" />
+                            Browse Courses
+                          </Link>
+                          <Link
+                            to="/contact"
+                            onClick={() => toggle("menu")}
+                            className="flex items-center gap-3 px-3 py-2 text-sm text-gray-700 hover:bg-gray-50 hover:text-black rounded-lg transition-colors"
+                          >
+                            <MessageCircle className="w-4 h-4" />
+                            Contact
+                          </Link>
+                          <Link
+                            to="/learner/settings"
+                            onClick={() => toggle("menu")}
+                            className="flex items-center gap-3 px-3 py-2 text-sm text-gray-700 hover:bg-gray-50 hover:text-black rounded-lg transition-colors"
+                          >
+                            <Settings className="w-4 h-4" />
+                            Settings
+                          </Link>
+                          <div className="border-t border-gray-200 pt-2 mt-2">
+                            <button
+                              onClick={onLogout}
+                              className="flex items-center gap-3 w-full px-3 py-2 text-sm text-red-600 hover:bg-red-50 hover:text-red-700 rounded-lg transition-colors"
+                            >
+                              <LogOut className="w-4 h-4" />
+                              Logout
+                            </button>
                           </div>
-                        ))}
+                        </div>
                       </div>
-                    )}
-
-                    {/* Notification Preferences */}
-                    <div className="pt-4 border-t border-gray-200">
-                      <button
-                        onClick={() => setShowNotificationPrefs(!showNotificationPrefs)}
-                        className="flex items-center justify-between w-full mb-3"
-                      >
-                        <div className="flex items-center gap-2">
-                          <h4 className="text-sm font-medium text-black">Preferences</h4>
-                          <Settings className="w-4 h-4 text-gray-400" />
-                        </div>
-                        {showNotificationPrefs ? (
-                          <ExpandMore className="w-4 h-4 text-gray-400" />
-                        ) : (
-                          <ChevronRight className="w-4 h-4 text-gray-400" />
-                        )}
-                      </button>
-
-                      {showNotificationPrefs && (
-                        <div className="space-y-3">
-                          <div className="flex items-center justify-between">
-                            <div>
-                              <p className="text-sm text-black">Email Notifications</p>
-                              <p className="text-xs text-gray-500">Receive updates via email</p>
-                            </div>
-                            <button
-                              onClick={() => handlePreferenceChange("email")}
-                              className={`relative inline-flex h-5 w-9 items-center rounded-full transition-colors focus:outline-none focus:ring-2 focus:ring-black focus:ring-offset-2 ${
-                                notificationPreferences.email ? "bg-black" : "bg-gray-200"
-                              }`}
-                            >
-                              <span
-                                className={`inline-block h-3 w-3 transform rounded-full bg-white transition-transform ${
-                                  notificationPreferences.email ? "translate-x-5" : "translate-x-1"
-                                }`}
-                              />
-                            </button>
-                          </div>
-
-                          <div className="flex items-center justify-between">
-                            <div>
-                              <p className="text-sm text-black">In-App Notifications</p>
-                              <p className="text-xs text-gray-500">Show notifications in the app</p>
-                            </div>
-                            <button
-                              onClick={() => handlePreferenceChange("app")}
-                              className={`relative inline-flex h-5 w-9 items-center rounded-full transition-colors focus:outline-none focus:ring-2 focus:ring-black focus:ring-offset-2 ${
-                                notificationPreferences.app ? "bg-black" : "bg-gray-200"
-                              }`}
-                            >
-                              <span
-                                className={`inline-block h-3 w-3 transform rounded-full bg-white transition-transform ${
-                                  notificationPreferences.app ? "translate-x-5" : "translate-x-1"
-                                }`}
-                              />
-                            </button>
-                          </div>
-                        </div>
-                      )}
                     </div>
-                  </div>
+                  )}
                 </div>
-              )}
-            </div>
-
-            {/* User Avatar - Consolidated Menu */}
-            <div className="relative header-menu">
-              <button
-                onClick={() => toggle("menu")}
-                className="p-1 rounded-full border-2 border-gray-200 hover:border-gray-300 transition-colors"
-              >
-                {isAvatarLoading && <div className="w-8 h-8 rounded-full bg-gray-200 animate-pulse"></div>}
-                <img
-                  ref={avatarRef}
-                  src={avatarSrc || "/placeholder.svg"}
-                  alt="User avatar"
-                  className={`w-8 h-8 rounded-full object-cover ${isAvatarLoading ? "hidden" : "block"}`}
-                  onLoad={handleAvatarLoad}
-                  onError={handleAvatarError}
-                />
-              </button>
-
-              {open.menu && (
-                <div className="absolute right-0 mt-2 w-56 bg-white rounded-lg border border-gray-200 shadow-lg z-20">
-                  <div className="py-2">
-                    {/* Profile Section */}
-                    <div className="px-4 py-3 border-b border-gray-100">
-                      <p className="text-sm font-medium text-black">Account Menu</p>
-                      <p className="text-xs text-gray-500">Access all features</p>
-                    </div>
-
-                    {/* Navigation Links */}
-                    <div className="py-1">
-                      <Link
-                        to="/learner"
-                        onClick={handleMenuItemClick}
-                        className="flex items-center gap-3 px-4 py-2 text-sm text-gray-700 hover:bg-gray-50 hover:text-black transition-colors"
-                      >
-                        <Home className="w-4 h-4" />
-                        Dashboard
-                      </Link>
-                      <Link
-                        to="all-enrolled-courses"
-                        onClick={handleMenuItemClick}
-                        className="flex items-center gap-3 px-4 py-2 text-sm text-gray-700 hover:bg-gray-50 hover:text-black transition-colors"
-                      >
-                        <BookOpen className="w-4 h-4" />
-                        My Courses
-                      </Link>
-                      <Link
-                        to="suggested-courses"
-                        onClick={handleMenuItemClick}
-                        className="flex items-center gap-3 px-4 py-2 text-sm text-gray-700 hover:bg-gray-50 hover:text-black transition-colors"
-                      >
-                        <Search className="w-4 h-4" />
-                        Browse Courses
-                      </Link>
-                      <Link
-                        to="contact"
-                        onClick={handleMenuItemClick}
-                        className="flex items-center gap-3 px-4 py-2 text-sm text-gray-700 hover:bg-gray-50 hover:text-black transition-colors"
-                      >
-                        <MessageCircle className="w-4 h-4" />
-                        Contact
-                      </Link>
-                    </div>
-
-                    {/* Account Section */}
-                    <div className="border-t border-gray-100 py-1">
-                      <Link
-                        to="/profile"
-                        onClick={handleMenuItemClick}
-                        className="flex items-center gap-3 px-4 py-2 text-sm text-gray-700 hover:bg-gray-50 hover:text-black transition-colors"
-                      >
-                        <User className="w-4 h-4" />
-                        View Profile
-                      </Link>
-                      <Link
-                        to="settings"
-                        onClick={handleMenuItemClick}
-                        className="flex items-center gap-3 px-4 py-2 text-sm text-gray-700 hover:bg-gray-50 hover:text-black transition-colors"
-                      >
-                        <Settings className="w-4 h-4" />
-                        Settings
-                      </Link>
-                      <Link
-                        to="/account"
-                        onClick={handleMenuItemClick}
-                        className="flex items-center gap-3 px-4 py-2 text-sm text-gray-700 hover:bg-gray-50 hover:text-black transition-colors"
-                      >
-                        <Settings className="w-4 h-4" />
-                        Account Settings
-                      </Link>
-                    </div>
-
-                    {/* Logout Section */}
-                    <div className="border-t border-gray-100 py-1">
-                      <button
-                        onClick={handleLogout}
-                        className="flex items-center gap-3 w-full px-4 py-2 text-sm text-red-600 hover:bg-red-50 hover:text-red-700 transition-colors"
-                      >
-                        <LogOut className="w-4 h-4" />
-                        Logout
-                      </button>
-                    </div>
-                  </div>
-                </div>
-              )}
-            </div>
+              </>
+            ) : (
+              <div className="flex items-center space-x-4">
+                <Link
+                  to="/login"
+                  className="text-sm font-medium text-gray-700 hover:text-black transition-colors"
+                >
+                  Se connecter
+                </Link>
+                <Link
+                  to="/register"
+                  className="text-sm font-medium bg-black text-white px-4 py-2 rounded-lg hover:bg-gray-800 transition-colors"
+                >
+                  S'inscrire
+                </Link>
+              </div>
+            )}
           </div>
         </div>
       </div>
@@ -424,55 +268,111 @@ const Header = ({ school, avatar, notifications: initialNotifications = [] }) =>
       {open.mobileMenu && (
         <div className="md:hidden border-t border-gray-200 bg-white">
           <div className="px-4 py-2 space-y-1">
+            {/* Public Links */}
             <Link
-              to="/learner"
+              to="/"
               onClick={() => toggle("mobileMenu")}
               className="flex items-center gap-3 px-3 py-2 text-sm text-gray-700 hover:bg-gray-50 hover:text-black rounded-lg transition-colors"
             >
-              <Home className="w-4 h-4" />
-              Dashboard
+              Accueil
             </Link>
             <Link
-              to="/learner/all-enrolled-courses"
+              to="/formations"
               onClick={() => toggle("mobileMenu")}
               className="flex items-center gap-3 px-3 py-2 text-sm text-gray-700 hover:bg-gray-50 hover:text-black rounded-lg transition-colors"
             >
-              <BookOpen className="w-4 h-4" />
-              My Courses
+              Formations
             </Link>
             <Link
-              to="/learner/suggested-courses"
+              to="/a-propos"
               onClick={() => toggle("mobileMenu")}
               className="flex items-center gap-3 px-3 py-2 text-sm text-gray-700 hover:bg-gray-50 hover:text-black rounded-lg transition-colors"
             >
-              <Search className="w-4 h-4" />
-              Browse Courses
+              À propos
             </Link>
             <Link
-              to="/learner/contact"
+              to="/contact"
               onClick={() => toggle("mobileMenu")}
               className="flex items-center gap-3 px-3 py-2 text-sm text-gray-700 hover:bg-gray-50 hover:text-black rounded-lg transition-colors"
             >
-              <MessageCircle className="w-4 h-4" />
               Contact
             </Link>
-            <Link
-              to="/learner/settings"
-              onClick={() => toggle("mobileMenu")}
-              className="flex items-center gap-3 px-3 py-2 text-sm text-gray-700 hover:bg-gray-50 hover:text-black rounded-lg transition-colors"
-            >
-              <Settings className="w-4 h-4" />
-              Settings
-            </Link>
-            <div className="border-t border-gray-200 pt-2 mt-2">
-              <button
-                onClick={handleLogout}
-                className="flex items-center gap-3 w-full px-3 py-2 text-sm text-red-600 hover:bg-red-50 hover:text-red-700 rounded-lg transition-colors"
-              >
-                <LogOut className="w-4 h-4" />
-                Logout
-              </button>
-            </div>
+
+            {/* Auth Links */}
+            {isAuthenticated ? (
+              <>
+                <div className="border-t border-gray-200 pt-2 mt-2">
+                  <Link
+                    to="/learner"
+                    onClick={() => toggle("mobileMenu")}
+                    className="flex items-center gap-3 px-3 py-2 text-sm text-gray-700 hover:bg-gray-50 hover:text-black rounded-lg transition-colors"
+                  >
+                    <Home className="w-4 h-4" />
+                    Dashboard
+                  </Link>
+                  <Link
+                    to="/learner/all-enrolled-courses"
+                    onClick={() => toggle("mobileMenu")}
+                    className="flex items-center gap-3 px-3 py-2 text-sm text-gray-700 hover:bg-gray-50 hover:text-black rounded-lg transition-colors"
+                  >
+                    <BookOpen className="w-4 h-4" />
+                    My Courses
+                  </Link>
+                  <Link
+                    to="/learner/suggested-courses"
+                    onClick={() => toggle("mobileMenu")}
+                    className="flex items-center gap-3 px-3 py-2 text-sm text-gray-700 hover:bg-gray-50 hover:text-black rounded-lg transition-colors"
+                  >
+                    <Search className="w-4 h-4" />
+                    Browse Courses
+                  </Link>
+                  <Link
+                    to="/learner/contact"
+                    onClick={() => toggle("mobileMenu")}
+                    className="flex items-center gap-3 px-3 py-2 text-sm text-gray-700 hover:bg-gray-50 hover:text-black rounded-lg transition-colors"
+                  >
+                    <MessageCircle className="w-4 h-4" />
+                    Contact
+                  </Link>
+                  <Link
+                    to="/learner/settings"
+                    onClick={() => toggle("mobileMenu")}
+                    className="flex items-center gap-3 px-3 py-2 text-sm text-gray-700 hover:bg-gray-50 hover:text-black rounded-lg transition-colors"
+                  >
+                    <Settings className="w-4 h-4" />
+                    Settings
+                  </Link>
+                  <div className="border-t border-gray-200 pt-2 mt-2">
+                    <button
+                      onClick={onLogout}
+                      className="flex items-center gap-3 w-full px-3 py-2 text-sm text-red-600 hover:bg-red-50 hover:text-red-700 rounded-lg transition-colors"
+                    >
+                      <LogOut className="w-4 h-4" />
+                      Logout
+                    </button>
+                  </div>
+                </div>
+              </>
+            ) : (
+              <>
+                <div className="border-t border-gray-200 pt-2 mt-2">
+                  <Link
+                    to="/auth/login"
+                    onClick={() => toggle("mobileMenu")}
+                    className="flex items-center gap-3 px-3 py-2 text-sm text-gray-700 hover:bg-gray-50 hover:text-black rounded-lg transition-colors"
+                  >
+                    Se connecter
+                  </Link>
+                  <Link
+                    to="/auth/register"
+                    onClick={() => toggle("mobileMenu")}
+                    className="flex items-center gap-3 px-3 py-2 text-sm text-gray-700 hover:bg-gray-50 hover:text-black rounded-lg transition-colors"
+                  >
+                    S'inscrire
+                  </Link>
+                </div>
+              </>
+            )}
           </div>
         </div>
       )}

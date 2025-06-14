@@ -16,14 +16,7 @@ const PublicRoutes = {
             index: true,
             element: <WelcomePage />,
         },
-        {
-            path: 'login',
-            element: <Login />,
-        },
-        {
-            path: 'register',
-            element: <Register />,
-        },
+        
         {
             path: 'formations',
             element: <FormationsPage />,
@@ -40,10 +33,17 @@ const PublicRoutes = {
             path: 'instructor-profile',
             element: <CompleteProfileInstructor />,
         },
-        {
-            path: 'learner-profile',
-            element: <CompleteProfileLearner />,
+    
+      {
+            path: 'login',
+            element: <Login />,
         },
+        {
+            path: 'register',
+            element: <Register />,
+        },
+
+        
         {
             path: '*',
             element: <NotFoundPage />,

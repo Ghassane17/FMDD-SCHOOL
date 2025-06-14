@@ -1,50 +1,64 @@
 import React, { useEffect, useState } from 'react';
 import { Box, CssBaseline } from '@mui/material';
 import { Outlet, useNavigate } from 'react-router-dom';
-import { getLearnerDashboard } from '../services/api.js';
 import Header from '../components/Learner/Header.jsx';
 import Footer from '../components/Footer.jsx';
 
 const CourseLayout = () => {
-    const [dashboardData, setDashboardData] = useState(null);
-    const [currentLearner, setCurrentLearner] = useState(null);
-    const [error, setError] = useState('');
+    const [currentUser, setCurrentUser] = useState(null);
     const navigate = useNavigate();
 
-    // Utilisation de la variable d'environnement Vite
-    const apiBaseUrl = import.meta.env.VITE_BACKEND_URL;
+    const checkAuth = () => {
+        try {
+            const userData = localStorage.getItem("user");
+            const token = localStorage.getItem("token");
+            console.log("Checking auth - User data:", userData);
+            console.log("Checking auth - Token:", token);
+            
+            if (userData && token) {
+                const parsedUser = JSON.parse(userData);
+                console.log("Setting current user:", parsedUser);
+                setCurrentUser(parsedUser);
+            } else {
+                console.log("No user data or token found");
+                setCurrentUser(null);
+            }
+        } catch (error) {
+            console.error("Error checking auth:", error);
+            setCurrentUser(null);
+        }
+    };
 
     useEffect(() => {
-        const user = JSON.parse(localStorage.getItem('user'));
-        if (!user || user.role !== 'learner') {
-            setError('Please log in as a learner.');
-            setTimeout(() => navigate('/login'), 2000);
-            return;
-        }
-        setCurrentLearner(user);
+        checkAuth();
 
-        const fetchDashboard = async () => {
-            try {
-                // Par exemple, si getLearnerDashboard accepte une URL de base
-                const response = await getLearnerDashboard(apiBaseUrl, true);
-                setDashboardData(response.data);
-            } catch (err) {
-                setError('Failed to load data.');
-            } 
+        // Listen for storage changes
+        const handleStorageChange = (e) => {
+            if (e.key === "user" || e.key === "token") {
+                console.log("Storage changed:", e.key);
+                checkAuth();
+            }
         };
-        fetchDashboard();
-    }, [navigate, apiBaseUrl]);
 
-    if (error) return <Box color="error.main">{error}</Box>;
+        window.addEventListener("storage", handleStorageChange);
+        return () => window.removeEventListener("storage", handleStorageChange);
+    }, []);
+
+    const handleLogout = () => {
+        localStorage.removeItem("user");
+        localStorage.removeItem("token");
+        setCurrentUser(null);
+        navigate("/");
+    };
 
     return (
         <Box sx={{ minHeight: '100vh' }}>
             <CssBaseline />
             <Header
                 school='FMDD SCHOOL'
-                userName={currentLearner?.username || 'Learner'}
-                avatar={currentLearner?.avatar }
-                notifications={currentLearner?.notifications || []}
+                isAuthenticated={!!currentUser}
+                user={currentUser}
+                onLogout={handleLogout}
             />
             <Box component="main" sx={{ mt: '10px', minHeight: 'calc(100vh - 64px)' }}>
                 <Outlet />

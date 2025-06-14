@@ -99,9 +99,9 @@ const Register = () => {
 
             // Multistep redirect based on role
             if (user.role === 'learner') {
-                setTimeout(() => navigate('/learner-profile'), 1500);
+                setTimeout(() => navigate('/learner/learner-profile'), 1500);
             } else if (user.role === 'instructor') {
-                setTimeout(() => navigate('/instructor-profile'), 1500);
+                setTimeout(() => navigate('/instructor/instructor-profile'), 1500);
             } else {
                 setTimeout(() => navigate('/login'), 1500);
             }

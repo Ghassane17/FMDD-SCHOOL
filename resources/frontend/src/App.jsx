@@ -5,7 +5,8 @@ import LearnerRoutes from './routes/LearnerRoutes.jsx';
 import PublicRoutes from './routes/PublicRoutes.jsx';
 import ProtectedRoute from './components/ProtectedRoute.jsx';
 import ErrorBoundary from './components/ErrorBoundary.jsx';
-
+import Login    from './pages/Login.jsx';
+import Register from './pages/Register.jsx';
 const router = createBrowserRouter([
     {
         path: '/admin',
@@ -30,6 +31,7 @@ const router = createBrowserRouter([
         ...PublicRoutes,
         errorElement: <ErrorBoundary />,
     },
+  
 ]);
 
 const App = () => <RouterProvider router={router} />;

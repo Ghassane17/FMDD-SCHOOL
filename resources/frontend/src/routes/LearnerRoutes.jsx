@@ -13,15 +13,20 @@ import LearnerCourseLayout from "@/Layouts/LearnerCourseLayout.jsx";
 import CourseLearnerLayout from "@/Layouts/LearnerCourseLayout.jsx";
 import AccountSettings from '../components/formateurs/AccountSettings.jsx';
 import LearnerSettingsPage from '../components/Learner/LearnerSettingsPage.jsx';
-
+import CompleteProfileLearner from '../pages/CompleteProfileLearner.jsx'
 // Make sure the routes are in the correct order
 const LearnerRoutes = {
     element: <CourseLayout />,
     errorElement: <ErrorBoundary />,
     children: [
+    
         {
             index: true,
             element: <LearnerDashboardPage />,
+        },
+        {
+            path: 'learner-profile',
+            element: <CompleteProfileLearner />,
         },
         {
             path: 'all-enrolled-courses',
@@ -35,10 +40,7 @@ const LearnerRoutes = {
             path: 'suggested-courses',
             element: <SuggestedCourses />,
         },
-        {
-            path: 'contact',
-            element: <Contact />,
-        },
+       
         // Specific routes first
 
         // Then the enrollment page (no module ID)

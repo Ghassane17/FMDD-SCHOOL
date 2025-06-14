@@ -6,6 +6,7 @@ import Contact from '../pages/Contact.jsx';
 import InstructorLayout from '../Layouts/InstructorLayout.jsx';
 import UpdateCourse from '../components/formateurs/UpdateCourse.jsx';
 import ManageCourse from '../components/formateurs/ManageCourse.jsx';
+import CompleteProfileInstructor from '../pages/CompleteProfileInstructor.jsx'
 const InstructorRoutes = {
     element : <InstructorLayout />,
     errorElement: <ErrorBoundary />,
@@ -13,6 +14,10 @@ const InstructorRoutes = {
         {
           index: true,
           element: <FormateursPage />,
+      },
+         {
+            path: 'instructor-profile',
+            element: <CompleteProfileInstructor />,
         },
         {
           path: "dashboard",

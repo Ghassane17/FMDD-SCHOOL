@@ -164,7 +164,7 @@ export default function Hero() {
           
           <Button
             component="a"
-            href="#join"
+            href="/register"
             variant="outlined"
             sx={{
               color: '#fff',
