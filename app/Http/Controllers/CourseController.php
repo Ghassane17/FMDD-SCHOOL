@@ -149,72 +149,51 @@ class CourseController extends Controller
         }
     }
 
-    public function enrollNow($id): JsonResponse
+    public function enrollNow($courseId)
     {
         try {
-            // Validate the ID
-            $id = filter_var($id, FILTER_VALIDATE_INT);
-            if (!$id) {
-                return response()->json(['message' => 'Invalid course ID'], 400);
-            }
+            DB::beginTransaction();
 
-            // Ensure user is authenticated
-            $user = Auth::user();
-            if (!$user) {
-                return response()->json(['message' => 'Unauthorized'], 401);
-            }
+            $user = auth()->user();
+            $course = Course::findOrFail($courseId);
 
-            Log::info('Backend: Starting course enrollment process', [
-                'course_id' => $id,
-                'user_id' => $user->id
-            ]);
-
-            // Get the learner profile
+            // Get the learner record
             $learner = Learner::where('user_id', $user->id)->first();
             if (!$learner) {
-                return response()->json(['message' => 'Learner profile not found'], 404);
+                return response()->json([
+                    'message' => 'Profil apprenant non trouvé.'
+                ], 404);
             }
-
-            // Find the course
-            $course = Course::findOrFail($id);
 
             // Check if already enrolled
-            if ($learner->courses()->where('course_id', $id)->exists()) {
-                Log::warning('Backend: User already enrolled in course', [
-                    'course_id' => $id,
-                    'learner_id' => $learner->id
-                ]);
-                return response()->json(['message' => 'Already enrolled'], 400);
+            if ($course->learners()->where('learner_id', $learner->id)->exists()) {
+                return response()->json([
+                    'message' => 'Vous êtes déjà inscrit à ce cours.'
+                ], 400);
             }
 
-            // Enroll the learner and update courses_enrolled count
-            DB::transaction(function () use ($learner, $id, $course) {
-                // Ensure all modules are marked as not completed
-                $course->modules()->update(['is_completed' => false]);
-
-                // Attach with initial progress of 0
-                $learner->courses()->attach($id, [
-                    'progress' => 0,
-                    'last_accessed' => now()
-                ]);
-
-                $learner->increment('courses_enrolled');
-            });
-
-            Log::info('Backend: Successfully enrolled in course', [
-                'course_id' => $id,
-                'learner_id' => $learner->id,
-                'courses_enrolled' => $learner->courses_enrolled
+            // Attach learner to course with initial values
+            $course->learners()->attach($learner->id, [
+                'progress' => 0,
+                'last_accessed' => now(),
+                'tentatives' => 0
             ]);
 
-            return response()->json(['message' => 'Enrolled successfully']);
+            DB::commit();
+
+            return response()->json([
+                'message' => 'Inscription réussie!'
+            ]);
         } catch (\Exception $e) {
+            DB::rollBack();
             Log::error('Backend: Failed to enroll in course', [
-                'course_id' => $id,
+                'course_id' => $courseId,
                 'error' => $e->getMessage(),
                 'trace' => $e->getTraceAsString()
             ]);
-            return response()->json(['message' => 'Failed to enroll in course'], 500);
+            return response()->json([
+                'message' => 'Une erreur est survenue lors de l\'inscription.'
+            ], 500);
         }
     }
 
@@ -255,6 +234,7 @@ class CourseController extends Controller
                     ->from('course_learner')
                     ->where('learner_id', $learner->id);
             })
+                ->where('is_published', true)
                 ->with(['instructor.user' => function ($query) {
                     $query->select('id', 'username');
                 }])

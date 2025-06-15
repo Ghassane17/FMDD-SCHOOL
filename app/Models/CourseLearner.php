@@ -15,14 +15,16 @@ class CourseLearner extends Pivot
         'course_id' => 'int',
         'learner_id' => 'int',
         'progress' => 'int',
-        'last_accessed' => 'datetime'
+        'last_accessed' => 'datetime',
+        'tentatives' => 'int'
     ];
 
     protected $fillable = [
         'course_id',
         'learner_id',
         'progress',
-        'last_accessed'
+        'last_accessed',
+        'tentatives'
     ];
 
 

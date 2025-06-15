@@ -57,6 +57,7 @@ Route::middleware('auth:sanctum')->group(function () {
     // Exam routes (specific)
     Route::get('/courses/{course}/exam', [ExamController::class, 'getExam']);
     Route::post('/courses/{course}/exam', [ExamController::class, 'submitExam']);
+    Route::post('/courses/{course}/start-exam', [ExamController::class, 'startExam']);
 
 
     // course creation

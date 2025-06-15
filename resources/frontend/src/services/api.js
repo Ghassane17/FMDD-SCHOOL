@@ -727,6 +727,18 @@ export const updateNotifications = async data => {
     }
 };
 
+export const startExam = async (courseId) => {
+    try {
+        if (!getToken()) {
+            throw new Error('Vous devez être connecté.');
+        }
 
+        const response = await api.post(`/courses/${courseId}/start-exam`);
+        return response.data;
+    } catch (error) {
+        console.error('❌ startExam Error:', error.response || error);
+        throw error;
+    }
+};
 
 export default api;

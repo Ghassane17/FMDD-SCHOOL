@@ -15,125 +15,72 @@ use Illuminate\Validation\ValidationException;
 
 class ExamController extends Controller
 {
-    public function getExam(Course $course): JsonResponse
+    public function getExam(Course $course)
     {
-        try {
-            $learner = Auth::user()?->learner;
-            if (!$learner) {
-                Log::warning('No learner profile for user', ['user_id' => Auth::id()]);
-                return response()->json([
-                    'success' => false,
-                    'message' => 'Profil apprenant introuvable.',
-                ], 403);
-            }
+        $user = auth()->user();
+        $learner = Learner::where('user_id', $user->id)->first();
 
-            if (!$course->learners()->where('learner_id', $learner->id)->exists()) {
-                Log::warning('Unauthorized exam access', [
-                    'user_id' => Auth::id(),
-                    'course_id' => $course->id,
-                ]);
-                return response()->json([
-                    'success' => false,
-                    'message' => 'Vous devez être inscrit au cours.',
-                ], 403);
-            }
-
-            $exam = $course->exam()->with('questions')->first();
-            if (!$exam) {
-                Log::warning('No exam found for course', ['course_id' => $course->id]);
-                return response()->json([
-                    'success' => false,
-                    'message' => 'Aucun examen final trouvé.',
-                ], 404);
-            }
-
-            if ($exam->questions->isEmpty()) {
-                Log::warning('No questions available.', ['exam_id' => $exam->id]);
-                return response()->json([
-                    'success' => false,
-                    'message' => 'No questions available for this exam.',
-                ], 404);
-            }
-
-            return response()->json([
-                'success' => true,
-                'data' => [
-                    'exam' => [
-                        'id' => $exam->id,
-                        'title' => $exam->title,
-                        'instructions' => $exam->instructions,
-                        'duration_min' => $exam->duration_min,
-                        'passing_score' => $exam->passing_score,
-                        'questions' => $exam->questions->map(function ($question) {
-                            // Log raw question data for debugging
-                            Log::info('Raw exam question data', [
-                                'question_id' => $question->id,
-                                'options' => $question->options,
-                                'options_type' => gettype($question->options),
-                                'correct_index' => $question->correct_index,
-                            ]);
-
-                            // Initialize options
-                            $options = $question->options;
-
-                            // Check if options is a string (possible double-encoded JSON)
-                            if (is_string($options)) {
-                                // Attempt to decode the string
-                                $decodedOptions = json_decode($options, true);
-                                if (json_last_error() === JSON_ERROR_NONE && is_array($decodedOptions)) {
-                                    $options = $decodedOptions;
-                                    Log::info('Successfully decoded string options for exam question', [
-                                        'question_id' => $question->id,
-                                        'decoded_options' => $options,
-                                    ]);
-                                } else {
-                                    Log::warning('Failed to decode options string for exam question', [
-                                        'question_id' => $question->id,
-                                        'options' => $options,
-                                        'json_error' => json_last_error_msg(),
-                                    ]);
-                                    $options = [];
-                                }
-                            } elseif (!is_array($options)) {
-                                // If options is neither a string nor an array, log warning and set to empty array
-                                Log::warning('Invalid options format for exam question', [
-                                    'question_id' => $question->id,
-                                    'options' => $options,
-                                    'options_type' => gettype($question->options),
-                                ]);
-                                $options = [];
-                            }
-
-                            // Map options to the required format (consistent with quiz questions)
-                            $formattedOptions = array_map(function ($opt, $index) {
-                                return [
-                                    'id' => $index,
-                                    'text' => is_array($opt) ? ($opt['text'] ?? $opt) : ($opt ?? 'Invalid option'),
-                                ];
-                            }, $options, array_keys($options));
-
-                            return [
-                                'id' => $question->id,
-                                'question' => $question->question_text,
-                                'options' => $formattedOptions,
-                                'correct_index' => $question->correct_index ?? null,
-                            ];
-                        })->toArray(),
-                    ],
-                ],
-            ]);
-        } catch (\Throwable $e) {
-            Log::error('Error retrieving exam:', [
-                'course_id' => $course->id,
-                'error' => $e->getMessage(),
-                'trace' => $e->getTraceAsString(),
-            ]);
+        if (!$learner) {
             return response()->json([
                 'success' => false,
-                'message' => 'Erreur serveur.',
-            ], 500);
+                'message' => 'Profil apprenant non trouvé.'
+            ], 404);
         }
+
+        $courseLearner = $course->learners()->where('learner_id', $learner->id)->first();
+
+        if (!$courseLearner) {
+            return response()->json([
+                'success' => false,
+                'message' => 'Vous n\'êtes pas inscrit à ce cours.'
+            ], 403);
+        }
+
+        // Get the exam with its questions
+        $exam = $course->exam()->with('questions')->first();
+
+        if (!$exam) {
+            return response()->json([
+                'success' => false,
+                'message' => 'Aucun examen disponible pour ce cours.'
+            ], 404);
+        }
+
+        // Format questions with consistent option structure
+        $formattedQuestions = $exam->questions->map(function ($question) {
+            $options = is_array($question->options) ? $question->options : json_decode($question->options, true);
+
+            // Convert options to consistent format
+            $formattedOptions = array_map(function ($option, $index) {
+                return [
+                    'id' => $index,
+                    'text' => is_array($option) ? ($option['text'] ?? $option) : $option
+                ];
+            }, $options, array_keys($options));
+
+            return [
+                'id' => $question->id,
+                'exam_id' => $question->exam_id,
+                'question_text' => $question->question_text,
+                'options' => $formattedOptions,
+                'correct_index' => $question->correct_index,
+                'created_at' => $question->created_at,
+                'updated_at' => $question->updated_at
+            ];
+        });
+
+        return response()->json([
+            'success' => true,
+            'data' => [
+                'questions' => $formattedQuestions,
+                'duration_min' => $exam->duration_min,
+                'max_tentatives' => $exam->max_tentatives ?? 3,
+                'tentatives' => $courseLearner->pivot->tentatives ?? 0,
+                'passing_score' => $exam->passing_score
+            ]
+        ]);
     }
+
     public function submitExam(Request $request, Course $course): JsonResponse
     {
         try {
@@ -296,5 +243,57 @@ class ExamController extends Controller
                 'message' => 'An unexpected error occurred.',
             ], 500);
         }
+    }
+
+    public function startExam(Course $course)
+    {
+        $user = auth()->user();
+        $learner = Learner::where('user_id', $user->id)->first();
+
+        if (!$learner) {
+            return response()->json([
+                'success' => false,
+                'message' => 'Profil apprenant non trouvé.'
+            ], 404);
+        }
+
+        $courseLearner = $course->learners()->where('learner_id', $learner->id)->first();
+
+        if (!$courseLearner) {
+            return response()->json([
+                'success' => false,
+                'message' => 'Vous n\'êtes pas inscrit à ce cours.'
+            ], 403);
+        }
+
+        // Get exam to check max tentatives
+        $exam = $course->exam()->first();
+        if (!$exam) {
+            return response()->json([
+                'success' => false,
+                'message' => 'Aucun examen disponible pour ce cours.'
+            ], 404);
+        }
+
+        // Check if max tentatives reached
+        $currentTentatives = $courseLearner->pivot->tentatives ?? 0;
+        $maxTentatives = $exam->max_tentatives ?? 3;
+
+        if ($currentTentatives >= $maxTentatives) {
+            return response()->json([
+                'success' => false,
+                'message' => 'Vous avez atteint le nombre maximum de tentatives pour cet examen.'
+            ], 403);
+        }
+
+        // Increment tentatives
+        $course->learners()->updateExistingPivot($learner->id, [
+            'tentatives' => $currentTentatives + 1
+        ]);
+
+        return response()->json([
+            'success' => true,
+            'message' => 'Examen démarré avec succès.'
+        ]);
     }
 }

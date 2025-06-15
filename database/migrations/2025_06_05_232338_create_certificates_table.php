@@ -16,10 +16,9 @@ return new class extends Migration
             $table->foreignId('learner_id')->constrained('learners')->cascadeOnDelete();
             $table->foreignId('course_id')->constrained('courses')->cascadeOnDelete();
             $table->timestamp('issued_at')->nullable();
+            $table->string('certificate_code')->nullable();
             $table->string("url_path");
             $table->timestamps();
-
-
         });
     }
 

@@ -18,6 +18,7 @@ return new class extends Migration
             $table->text('instructions')->nullable();
             $table->integer('duration_min')->default(60);
             $table->tinyInteger('passing_score')->unsigned()->default(70);
+            $table->integer('max_tentatives')->default(2);
             $table->timestamps();
         });
 

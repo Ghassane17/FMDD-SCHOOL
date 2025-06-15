@@ -198,6 +198,7 @@ class CourseInstructorController extends Controller
                     'instructions'  => $request->exam['instructions'] ?? null,
                     'duration_min'  => $request->exam['duration_min'],
                     'passing_score' => $request->exam['passing_score'],
+                    'max_tentatives' => $request->exam['max_tentatives'] ?? 3 // Default to 3 if not set
                 ]);
 
                 foreach ($request->exam['questions'] as $q) {
@@ -547,7 +548,7 @@ class CourseInstructorController extends Controller
                     ->store("courses/{$course->id}/thumbnail", 'public');
                 $course->course_thumbnail = '/storage/' . $path;
             }
-            
+
             $updateData = [
                 'title' => $validator->validated()['title'],
                 'description' => $validator->validated()['description'],
@@ -559,17 +560,17 @@ class CourseInstructorController extends Controller
 
             // Handle thumbnail upload if a new file is provided
             if ($request->hasFile('course_thumbnail')) {
-                            // Delete old thumbnail if it exists
+                // Delete old thumbnail if it exists
                 if ($course->course_thumbnail) {
                     $oldPath = str_replace('/storage/', '', $course->course_thumbnail);
                     if (Storage::disk('public')->exists($oldPath)) {
                         Storage::disk('public')->delete($oldPath);
                     }
                 }
-            
+
                 // Store new thumbnail
                 $path = $request->file('course_thumbnail')
-                         ->store("courses/{$course->id}/thumbnail", 'public');
+                    ->store("courses/{$course->id}/thumbnail", 'public');
                 $updateData['course_thumbnail'] = '/storage/' . $path;
             }
 
@@ -580,7 +581,6 @@ class CourseInstructorController extends Controller
                 'message' => 'Course overview updated successfully',
                 'course' => $course
             ], 200);
-
         } catch (\Exception $e) {
             Log::error('Error in editCourseOverview', [
                 'course_id' => $courseId,
@@ -710,7 +710,6 @@ class CourseInstructorController extends Controller
                     }
 
                     $resource->save();
-
                 } else {
                     // Handle new resource creation
                     // Handle new file uploads
@@ -733,8 +732,7 @@ class CourseInstructorController extends Controller
                                 $url = 'https://' . $url;
                             }
                         }
-                    }
-                    else {
+                    } else {
                         continue; // Skip invalid type
                     }
 
@@ -751,7 +749,6 @@ class CourseInstructorController extends Controller
             return response()->json([
                 'message' => 'Course resources updated successfully'
             ], 200);
-
         } catch (\Exception $e) {
             Log::error('Error in editCourseResources', [
                 'course_id' => $courseId,
@@ -805,6 +802,7 @@ class CourseInstructorController extends Controller
                 'instructions' => $request->input('exam.instructions'),
                 'duration_min' => $request->input('exam.duration_min'),
                 'passing_score' => $request->input('exam.passing_score'),
+                'max_tentatives' => $request->input('exam.max_tentatives', 3) // Default to 3 if not set
             ]);
 
             $course->update([
@@ -815,8 +813,6 @@ class CourseInstructorController extends Controller
                 'message' => 'Course exam updated successfully',
                 'exam' => $exam
             ], 200);
-            
-
         } catch (\Exception $e) {
             Log::error('Error in editCourseExam', [
                 'course_id' => $courseId,
@@ -836,39 +832,39 @@ class CourseInstructorController extends Controller
         if (!$user || $user->role !== 'instructor') {
             return response()->json(['message' => 'Unauthorized'], 403);
         }
-    
+
         $instructor = Instructor::where('user_id', $user->id)->first();
         if (!$instructor) {
             return response()->json(['message' => 'Instructor profile not found'], 404);
         }
-    
+
         try {
             DB::beginTransaction();
-    
+
             // Log the incoming request data
             Log::info('EditCourseModules Request Data:', [
                 'course_id' => $courseId,
                 'request_data' => $request->all(),
                 'files' => $request->allFiles()
             ]);
-    
+
             $course = Course::find($courseId);
             if (!$course) {
                 DB::rollBack();
                 return response()->json(['message' => 'Course not found'], 404);
             }
-    
+
             if ($course->instructor_id !== $instructor->id) {
                 DB::rollBack();
                 return response()->json(['message' => 'Unauthorized'], 403);
             }
-    
+
             // Update course duration
             if ($request->has('duration_min')) {
                 $course->duration_min = $request->input('duration_min');
                 $course->save();
             }
-    
+
             // Get the list of module IDs from the request (only existing ones)
             $requestModuleIds = [];
             $modules = $request->input('modules', []);
@@ -885,7 +881,7 @@ class CourseInstructorController extends Controller
                     }
                 }
             }
-    
+
             // Delete old modules that are not in the request's input
             $existingModules = Module::where('course_id', $course->id)->get();
             foreach ($existingModules as $module) {
@@ -904,7 +900,7 @@ class CourseInstructorController extends Controller
                     $module->delete();
                 }
             }
-    
+
             // Process modules from the request
             foreach ($modules as $index => $moduleData) {
                 try {
@@ -935,19 +931,19 @@ class CourseInstructorController extends Controller
                         $module->title = $moduleData['title'];
                         $module->order = $moduleData['order'] ?? $index + 1;
                         $module->duration = $moduleData['duration_min'] ?? null;
-    
+
                         // Handle different module types
                         switch ($module->type) {
                             case 'text':
                                 $module->text_content = $moduleData['text_content'] ?? null;
                                 break;
-    
+
                             case 'quiz':
                                 // Replace all quiz questions
                                 QuizQuestion::where('module_id', $module->id)->delete();
                                 $this->createQuizQuestions($module->id, $moduleData['quiz_questions'] ?? []);
                                 break;
-    
+
                             case 'pdf':
                             case 'video':
                             case 'image':
@@ -967,9 +963,8 @@ class CourseInstructorController extends Controller
                                 }
                                 break;
                         }
-    
+
                         $module->save();
-    
                     } else {
                         // Handle new module creation
                         $newModuleData = [
@@ -979,15 +974,15 @@ class CourseInstructorController extends Controller
                             'order' => $moduleData['order'] ?? $index + 1,
                             'duration' => $moduleData['duration_min'] ?? null,
                         ];
-    
+
                         // Add type-specific data
                         if ($moduleData['type'] === 'text') {
                             $newModuleData['text_content'] = $moduleData['text_content'] ?? null;
                         }
-    
+
                         // Create the module first
                         $newModule = Module::create($newModuleData);
-    
+
                         // Handle file upload for new modules
                         if (in_array($moduleData['type'], ['pdf', 'image', 'video'])) {
                             if ($request->hasFile("modules.{$index}.file")) {
@@ -998,13 +993,12 @@ class CourseInstructorController extends Controller
                                 $newModule->save();
                             }
                         }
-    
+
                         // Handle quiz questions for new modules
                         if ($moduleData['type'] === 'quiz') {
                             $this->createQuizQuestions($newModule->id, $moduleData['quiz_questions'] ?? []);
                         }
                     }
-    
                 } catch (\Exception $e) {
                     Log::error('Error processing module:', [
                         'module_index' => $index,
@@ -1016,17 +1010,16 @@ class CourseInstructorController extends Controller
                     throw $e;
                 }
             }
-    
+
             DB::commit();
-            
+
             // Return updated course with modules
             $updatedCourse = Course::with(['modules.quizQuestions'])->find($courseId);
-            
+
             return response()->json([
                 'message' => 'Modules updated successfully',
                 'course' => $updatedCourse
             ], 200);
-    
         } catch (\Exception $e) {
             DB::rollBack();
             Log::error('Error in editCourseModules', [
@@ -1035,14 +1028,14 @@ class CourseInstructorController extends Controller
                 'trace' => $e->getTraceAsString(),
                 'request_data' => $request->all()
             ]);
-            
+
             return response()->json([
                 'message' => 'Failed to update modules',
                 'error' => $e->getMessage()
             ], 500);
         }
     }
-    
+
     /**
      * Helper method to create quiz questions
      */
@@ -1051,12 +1044,12 @@ class CourseInstructorController extends Controller
         if (!is_array($questionsData) || empty($questionsData)) {
             return;
         }
-    
+
         foreach ($questionsData as $questionData) {
             if (empty($questionData['question'])) {
                 continue;
             }
-    
+
             // Handle options - ensure it's an array
             $options = [];
             if (isset($questionData['options'])) {
@@ -1067,7 +1060,7 @@ class CourseInstructorController extends Controller
                     $options = is_array($decodedOptions) ? $decodedOptions : [];
                 }
             }
-    
+
             QuizQuestion::create([
                 'module_id' => $moduleId,
                 'question' => $questionData['question'],
@@ -1076,5 +1069,4 @@ class CourseInstructorController extends Controller
             ]);
         }
     }
-    
 }

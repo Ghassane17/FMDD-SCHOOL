@@ -20,6 +20,7 @@ return new class extends Migration
             $table->timestamp('last_accessed')->nullable(); // Dernière activité (affichée dans l'UI)
             $table->timestamps(); // created_at et updated_at conservés
 
+            $table->integer('tentatives')->default(0);
             //exam et certificats
             $table->boolean('exam_success')->default(false);
             $table->boolean('certificate_generated')->default(false);

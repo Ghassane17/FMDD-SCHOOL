@@ -22,12 +22,14 @@ class Exam extends Model
         'instructions',
         'duration_min',
         'passing_score',
+        'max_tentatives'
     ];
 
- protected $casts = [
-    'duration_min' => 'integer',
-    'passing_score' => 'integer',
-];
+    protected $casts = [
+        'duration_min' => 'integer',
+        'passing_score' => 'integer',
+        'max_tentatives' => 'integer'
+    ];
 
     /**
      * Get the course that owns the exam.

@@ -16,7 +16,9 @@ import {
   ExpandMore,
   ChevronRight,
 } from "@mui/icons-material"
+import { ChevronDown, ChevronUp } from "lucide-react"
 import NotesPanel from "../components/LearnerCourse/NotesPanel"
+import { toast } from "react-hot-toast"
 
 const EnrollmentPage = () => {
   const { courseId } = useParams()
@@ -32,6 +34,18 @@ const EnrollmentPage = () => {
   const [avatarError, setAvatarError] = useState(false)
   const [comments, setComments] = useState([])
   const [progress, setProgress] = useState(0)
+  const [showAllComments, setShowAllComments] = useState(false)
+
+  // Add refreshComments function
+  const refreshComments = async () => {
+    try {
+      const commentsData = await ShowCourseComments(courseId)
+      setComments(commentsData || [])
+    } catch (err) {
+      console.error("❌ Error refreshing comments:", err)
+      toast.error("Failed to refresh comments")
+    }
+  }
 
   // Add this useEffect to monitor progress changes
   useEffect(() => {
@@ -88,26 +102,21 @@ const EnrollmentPage = () => {
   }, [courseId])
 
   const handleEnroll = async () => {
-    setIsEnrolling(true)
-    setError("")
     try {
+      setLoading(true)
       const response = await enrollNow(courseId)
-      console.log("🚀 Enroll Response:", response)
-      if (!response.message || response.message !== "Enrolled successfully") {
-        throw new Error("Unexpected enrollment response")
+      
+      if (!response?.message) {
+        throw new Error('Unexpected enrollment response')
       }
-      setIsEnrolled(true)
+
+      toast.success(response.message)
       navigate(`/learner/courses/${courseId}/1`)
-    } catch (err) {
-      console.error("❌ Enroll Error:", err)
-      if (err.response?.status === 401) {
-        navigate("/login", { state: { from: `/courses/${courseId}` } })
-      } else {
-        setError(err.response?.data?.message || "Failed to enroll in the course.")
-        setTimeout(() => setError(""), 5000)
-      }
+    } catch (error) {
+      console.error('❌ Enroll Error:', error)
+      toast.error(error.response?.data?.message || error.message || 'Failed to enroll in course')
     } finally {
-      setIsEnrolling(false)
+      setLoading(false)
     }
   }
 
@@ -380,52 +389,81 @@ const handleThumbnailError = (e) => {
             </div>
 
             <div className="bg-white rounded-lg border border-gray-200 p-8 mt-6">
-<h2 className="text-2xl font-bold text-gray-900 mb-6">
-  Évaluations de la formation 
-<span className="text-blue-500">      {course.title}
-  </span>
-</h2>
- 
-  {comments.length === 0 ? (
-    <div className="text-center py-8">
-      <p className="text-gray-500">Aucune évaluation sur la formation pour le moment</p>
-    </div>
-  ) : (
-    <div className="space-y-6">
-      {comments.map((comment) => (
-        <div key={comment.id} className="border-b border-gray-100 pb-6 last:border-b-0 last:pb-0">
-          <div className="flex items-start space-x-4">
-            <img 
-              src={`${API_URL}${comment.user.avatar}`}
-              alt={comment.user.username}
-              className="w-10 h-10 rounded-full object-cover"
-              onError={(e) => {
-                e.target.src = `${API_URL}${comment.user.avatar}`
-              }}
-            />
-            <div className="flex-1">
-              <div className="flex items-center justify-between">
-                <h4 className="font-medium text-gray-900">{comment.user.username}</h4>
-                <div className="flex items-center space-x-1">
-                  <Star className="text-yellow-400 w-4 h-4" />
-                  <span className="text-sm text-gray-600">{comment.rating}</span>
+              <h2 className="text-2xl font-bold text-gray-900 mb-6">
+                Évaluations de la formation 
+                <span className="text-blue-500"> {course.title}</span>
+              </h2>
+             
+              {comments.length === 0 ? (
+                <div className="text-center py-8">
+                  <p className="text-gray-500">Aucune évaluation sur la formation pour le moment</p>
                 </div>
-              </div>
-              <p className="text-gray-600 mt-1">{comment.text}</p>
-              <p className="text-sm text-gray-400 mt-2">
-                {new Date(comment.created_at).toLocaleDateString('en-US', {
-                  year: 'numeric',
-                  month: 'long',
-                  day: 'numeric'
-                })}
-              </p>
+              ) : (
+                <div className="relative">
+                  <div className={`space-y-6 ${!showAllComments ? 'max-h-[500px] overflow-hidden' : ''}`}>
+                    {comments
+                      .sort(() => Math.random() - 0.5) // Randomize comments
+                      .slice(0, showAllComments ? undefined : 5) // Show only 5 if not showing all
+                      .map((comment) => (
+                        <div key={comment.id} className="border-b border-gray-100 pb-6 last:border-b-0 last:pb-0">
+                          <div className="flex items-start space-x-4">
+                            <img 
+                              src={`${API_URL}${comment.user.avatar}`}
+                              alt={comment.user.username}
+                              className="w-10 h-10 rounded-full object-cover"
+                              onError={(e) => {
+                                e.target.src = `${API_URL}${comment.user.avatar}`
+                              }}
+                            />
+                            <div className="flex-1">
+                              <div className="flex items-center justify-between">
+                                <h4 className="font-medium text-gray-900">{comment.user.username}</h4>
+                                <div className="flex items-center space-x-1">
+                                  <Star className="text-yellow-400 w-4 h-4" />
+                                  <span className="text-sm text-gray-600">{comment.rating}</span>
+                                </div>
+                              </div>
+                              <p className="text-gray-600 mt-1">{comment.text}</p>
+                              <p className="text-sm text-gray-400 mt-2">
+                                {new Date(comment.created_at).toLocaleDateString('en-US', {
+                                  year: 'numeric',
+                                  month: 'long',
+                                  day: 'numeric'
+                                })}
+                              </p>
+                            </div>
+                          </div>
+                        </div>
+                    ))}
+                  </div>
+                  
+                  {!showAllComments && comments.length > 5 && (
+                    <div className="absolute bottom-0 left-0 right-0 h-32 bg-gradient-to-t from-white to-transparent pointer-events-none" />
+                  )}
+                  
+                  {comments.length > 5 && (
+                    <div className="text-center mt-6">
+                      <button
+                        onClick={() => setShowAllComments(!showAllComments)}
+                        className="inline-flex items-center px-4 py-2 border border-gray-300 text-sm font-medium rounded-md text-gray-700 bg-white hover:bg-gray-50 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-blue-500"
+                      >
+                        {showAllComments ? (
+                          <>
+                            Voir moins
+                            <ChevronUp className="ml-2 h-4 w-4" />
+                          </>
+                        ) : (
+                          <>
+                            Voir plus ({comments.length - 5} autres)
+                            <ChevronDown className="ml-2 h-4 w-4" />
+                          </>
+                        )}
+                      </button>
+                    </div>
+                  )}
+                </div>
+              )}
             </div>
-          </div>
-        </div>
-      ))}
-    </div>
-  )}
-</div>
 
             {/* Notes Panel */}
             
@@ -449,7 +487,8 @@ const handleThumbnailError = (e) => {
           notes={course.userNotes || ""}
           onSaveNotes={(notes, rating) => {
             console.log("Notes saved:", notes, "Rating:", rating)
-            // You can update the course state here if needed
+            // Refresh comments after successful submission
+            refreshComments()
           }}
         />
       </div>
@@ -567,12 +606,12 @@ const handleThumbnailError = (e) => {
                         <PlayArrow className="w-5 h-5" />
                         <span>Continue la formation</span>
                       </button>
-                      <button
+                     {/*  <button
                         onClick={handleLeaveCourse}
                         className="w-full py-3 px-4 border border-red-300 text-red-700 rounded-lg hover:bg-red-50 transition-colors font-medium"
                       >
                         Quitter la formation
-                      </button>
+                      </button> */}
                     </div>
                   </div>
                 ) : (
