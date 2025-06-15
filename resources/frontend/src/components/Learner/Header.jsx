@@ -153,9 +153,9 @@ const Header = ({ school, isAuthenticated, user, onLogout }) => {
               <Menu className="w-5 h-5" />
             </button>
 
-            <Link to="/" className="text-xl font-bold text-black hover:text-gray-700 transition-colors">
+            <span  className="text-xl font-bold text-black hover:text-gray-700 transition-colors">
               {school}
-            </Link>
+            </span>
           </div>
 
           {/* Middle: Public Navigation Links */}

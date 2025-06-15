@@ -5,6 +5,7 @@ namespace App\Models;
 
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\Eloquent\Factories\HasFactory;
+use Carbon\Carbon;
 
 class Certificate extends Model
 {
@@ -18,7 +19,11 @@ class Certificate extends Model
         'issued_at'
     ];
 
-    protected $dates = ['issued_at'];
+    protected $casts = [
+        'issued_at' => 'datetime',
+        'created_at' => 'datetime',
+        'updated_at' => 'datetime'
+    ];
 
     public function learner()
     {

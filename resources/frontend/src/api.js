@@ -3,7 +3,8 @@ export const downloadCertificate = async (certificateId) => {
         const response = await axios.get(`/api/certificates/${certificateId}/download`, {
             responseType: 'blob',
             headers: {
-                'Accept': 'application/pdf'
+                'Accept': 'application/pdf',
+                'Content-Type': 'application/pdf'
             }
         });
 
@@ -17,6 +18,7 @@ export const downloadCertificate = async (certificateId) => {
         const link = document.createElement('a');
         link.href = fileURL;
         link.setAttribute('download', `certificate-${certificateId}.pdf`);
+        link.style.display = 'none';
         
         // Append to html link element page
         document.body.appendChild(link);
@@ -25,8 +27,10 @@ export const downloadCertificate = async (certificateId) => {
         link.click();
         
         // Clean up and remove the link
-        link.parentNode.removeChild(link);
-        window.URL.revokeObjectURL(fileURL);
+        setTimeout(() => {
+            document.body.removeChild(link);
+            window.URL.revokeObjectURL(fileURL);
+        }, 100);
         
         return true;
     } catch (error) {
