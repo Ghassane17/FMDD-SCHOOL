@@ -133,9 +133,10 @@ export const updateInstructorBankAccount = async (bankInfo) => {
 /**
  * Create a new course
  * @param {FormData} courseData - The course data including files
+ * @param {Function} onProgress - Optional callback function to track upload progress
  * @returns {Promise} Promise object containing created course data
  */
-export const createCourse = async (courseData) => {
+export const createCourse = async (courseData, onProgress = null) => {
     try {
         const token = localStorage.getItem('token');
         if (!token) {
@@ -155,6 +156,11 @@ export const createCourse = async (courseData) => {
             onUploadProgress: (progressEvent) => {
                 const percentCompleted = Math.round((progressEvent.loaded * 100) / progressEvent.total);
                 console.log(`Upload Progress: ${percentCompleted}%`);
+
+                // Call the progress callback if provided
+                if (onProgress && typeof onProgress === 'function') {
+                    onProgress(percentCompleted);
+                }
             }
         });
 
@@ -391,12 +397,17 @@ export const updateCourseResources = async (courseId, resourcesData) => {
                 // Add each resource property
                 formData.append(`resources[${index}][name]`, resource.name);
                 formData.append(`resources[${index}][type]`, resource.type);
-                
+
+                // Add resource ID if it exists (for existing resources)
+                if (resource.id) {
+                    formData.append(`resources[${index}][id]`, resource.id);
+                }
+
                 // Handle file uploads
                 if (['pdf', 'video', 'image'].includes(resource.type) && resource.file) {
                     formData.append(`resources[${index}][file]`, resource.file);
                 }
-                
+
                 // Handle URLs for links and other types
                 if (['link', 'other'].includes(resource.type) && resource.url) {
                     formData.append(`resources[${index}][url]`, resource.url);
@@ -596,6 +607,68 @@ export const deleteCommentReply = async (replyId) => {
         return response.data;
     } catch (error) {
         console.error('Error deleting comment reply:', error);
+        throw error;
+    }
+};
+
+// ─── Notifications functions ──────────────────────────────────────────
+
+export const getNotifications = async () => {
+    try {
+        const response = await api.get('/instructor/notifications');
+        return response.data;
+    } catch (error) {
+        console.error('Error fetching notifications:', error);
+        throw error;
+    }
+};
+
+export const getNavbarNotifications = async () => {
+    try {
+        const response = await api.get('/instructor/navbar-notifications');
+        return response.data;
+    } catch (error) {
+        console.error('Error fetching navbar notifications:', error);
+        throw error;
+    }
+};
+
+export const markNotificationAsRead = async (notificationId) => {
+    try {
+        const response = await api.patch(`/instructor/notifications/${notificationId}/read`);
+        return response.data;
+    } catch (error) {
+        console.error('Error marking notification as read:', error);
+        throw error;
+    }
+};
+
+export const markAllNotificationsAsRead = async () => {
+    try {
+        const response = await api.patch('/instructor/notifications/mark-all-read');
+        return response.data;
+    } catch (error) {
+        console.error('Error marking all notifications as read:', error);
+        throw error;
+    }
+};
+
+export const deleteNotification = async (notificationId) => {
+    try {
+        const response = await api.delete(`/instructor/notifications/${notificationId}`);
+        return response.data;
+    } catch (error) {
+        console.error('Error deleting notification:', error);
+        throw error;
+    }
+};
+
+export const deleteAllNotifications = async () => {
+    try {
+        const response = await api.delete('/instructor/notifications');
+        return response.data;
+    } catch (error) {
+        console.error('Error deleting all notifications:', error);
         throw error;
     }
 };

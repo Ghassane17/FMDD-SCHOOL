@@ -10,7 +10,7 @@ use Illuminate\Support\Facades\Log;
 use Illuminate\Support\Facades\Hash;
 use Illuminate\Validation\Rule;
 use Illuminate\Support\Facades\Storage;
-
+use App\Models\Notification;
 
 class InstructorController extends Controller
 {
@@ -44,6 +44,7 @@ class InstructorController extends Controller
                     'email'  => $user->email,
                     'avatar' => $user->avatar,
                     'bio'    => $user->bio,
+                    'role'   => $user->role,
                 ],
                 'skills'         => $instructor->skills ?? [],
                 'languages'      => $instructor->languages ?? [],
@@ -383,5 +384,110 @@ class InstructorController extends Controller
                 'error' => $e->getMessage()
             ], 500);
         }
+    }
+
+    //get navbar notifications (5 last notifications)
+    public function getNavbarNotifications()
+    {
+        $user = Auth::user();
+        if (!$user || $user->role !== 'instructor') {
+            return response()->json(['message' => 'Unauthorized'], 403);
+        }
+        // get 5 last notifications
+        $notifications = Notification::where('user_id', $user->id)->orderBy('created_at', 'desc')->take(5)->get();
+        // format the notifications
+        $formattedNotifications = [];
+        foreach ($notifications as $notification) {
+            $formattedNotifications[] = [
+                'id' => $notification->id,
+                'text' => $notification->text,
+                'date' => $notification->created_at->format('d M Y'),
+                'type' => $notification->type,
+                'data' => $notification->data,
+                'read' => $notification->read,
+            ];
+        }
+        return response()->json(['notifications' => $formattedNotifications], 200);
+    }
+
+    //get notifications (all notifications)
+    public function getNotifications()
+    {
+        $user = Auth::user();
+        if (!$user || $user->role !== 'instructor') {
+            return response()->json(['message' => 'Unauthorized'], 403);
+        }
+        $notifications = Notification::where('user_id', $user->id)->orderBy('created_at', 'desc')->get();
+        // format the notifications
+        $formattedNotifications = [];
+        foreach ($notifications as $notification) {
+            $formattedNotifications[] = [
+                'id' => $notification->id,
+                'text' => $notification->text,
+                'date' => $notification->created_at->format('d M Y | H:i'),
+                'type' => $notification->type,
+                'data' => $notification->data,
+                'read' => $notification->read,
+            ];
+        }
+        return response()->json(['notifications' => $formattedNotifications], 200);
+    }
+
+    // Mark notification as read
+    public function markNotificationAsRead($notificationId)
+    {
+        $user = Auth::user();
+        if (!$user || $user->role !== 'instructor') {
+            return response()->json(['message' => 'Unauthorized'], 403);
+        }
+
+        $notification = Notification::where('user_id', $user->id)->where('id', $notificationId)->first();
+        if (!$notification) {
+            return response()->json(['message' => 'Notification not found'], 404);
+        }
+
+        $notification->update(['read' => true]);
+        return response()->json(['message' => 'Notification marked as read'], 200);
+    }
+
+    // Mark all notifications as read
+    public function markAllNotificationsAsRead()
+    {
+        $user = Auth::user();
+        if (!$user || $user->role !== 'instructor') {
+            return response()->json(['message' => 'Unauthorized'], 403);
+        }
+
+        Notification::where('user_id', $user->id)->update(['read' => true]);
+        return response()->json(['message' => 'All notifications marked as read'], 200);
+    }
+
+    // Delete notification
+    public function deleteNotification($notificationId)
+    {
+        $user = Auth::user();
+        if (!$user || $user->role !== 'instructor') {
+            return response()->json(['message' => 'Unauthorized'], 403);
+        }
+
+        $notification = Notification::where('user_id', $user->id)->where('id', $notificationId)->first();
+        if (!$notification) {
+            return response()->json(['message' => 'Notification not found'], 404);
+        }
+
+        $notification->delete();
+        return response()->json(['message' => 'Notification deleted'], 200);
+    }
+
+    // Delete all notifications
+    public function deleteAllNotifications()
+    {
+        $user = Auth::user();
+        if (!$user || $user->role !== 'instructor') {
+            return response()->json(['message' => 'Unauthorized'], 403);
+        }
+
+        Notification::where('user_id', $user->id)->delete();
+        return response()->json(['message' => 'All notifications deleted'], 200);
     }
 }

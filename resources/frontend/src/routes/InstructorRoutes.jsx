@@ -7,6 +7,8 @@ import InstructorLayout from '../Layouts/InstructorLayout.jsx';
 import UpdateCourse from '../components/formateurs/UpdateCourse.jsx';
 import ManageCourse from '../components/formateurs/ManageCourse.jsx';
 import CompleteProfileInstructor from '../pages/CompleteProfileInstructor.jsx'
+import Notifications from '../components/formateurs/Notifications.jsx'
+import InstructorDashboard from '../components/formateurs/InstructorDashboard.jsx'
 const InstructorRoutes = {
     element : <InstructorLayout />,
     errorElement: <ErrorBoundary />,
@@ -21,7 +23,11 @@ const InstructorRoutes = {
         },
         {
           path: "dashboard",
-          element: <FormateursPage />,
+          element: <InstructorDashboard />,
+        },
+        {
+          path: "dashboard/:tab",
+          element: <InstructorDashboard />,
         },
         {
           path: "create-course",
@@ -40,6 +46,10 @@ const InstructorRoutes = {
           element: <ManageCourse />,
         },
         {
+          path: 'notifications',
+          element: <Notifications />,
+        },
+        {
           path: '*',
           element: <NotFoundPage />,
         },
@@ -47,3 +57,4 @@ const InstructorRoutes = {
 }
 
 export default InstructorRoutes;
+

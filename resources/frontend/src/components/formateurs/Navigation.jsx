@@ -1,7 +1,10 @@
 import React from 'react';
+import { useNavigate } from 'react-router-dom';
 import { BookOpen, Calendar, CreditCard, Inbox, Settings, Users } from 'lucide-react';
 
 const Navigation = ({ activeTab, setActiveTab }) => {
+  const navigate = useNavigate();
+
   const menuItems = [
     { id: 'profile', label: 'Profil', icon: <Users className="w-5 h-5" /> },
     { id: 'courses', label: 'Mes Cours', icon: <BookOpen className="w-5 h-5" /> },
@@ -10,6 +13,12 @@ const Navigation = ({ activeTab, setActiveTab }) => {
     { id: 'payments', label: 'Paiements', icon: <CreditCard className="w-5 h-5" /> },
     { id: 'settings', label: 'Paramètres', icon: <Settings className="w-5 h-5" /> }
   ];
+
+  const handleTabClick = (tabId) => {
+    console.log('Navigation: Clicking tab:', tabId);
+    setActiveTab(tabId);
+    navigate(`/instructor/dashboard/${tabId}`);
+  };
   
   return (
     <div className="bg-white shadow rounded-2xl mb-6 px-2 py-3">
@@ -22,7 +31,7 @@ const Navigation = ({ activeTab, setActiveTab }) => {
                 ? 'bg-gradient-to-r from-indigo-600 to-blue-500 text-white shadow'
                 : 'bg-gray-100 text-gray-600 hover:bg-indigo-50 hover:text-indigo-700'}
             `}
-            onClick={() => setActiveTab(item.id)}
+            onClick={() => handleTabClick(item.id)}
           >
             {item.icon}
             <span className="ml-2 whitespace-nowrap">{item.label}</span>

@@ -104,6 +104,14 @@ Route::middleware('auth:sanctum')->group(function () {
     Route::get('/download-resource', [DownloadController::class, 'downloadResource']);
     Route::get('/courses/{courseId}/comments', [CommentController::class, 'showCourseComments']);
 
+    // Notifications routes
+    Route::get('/instructor/notifications', [InstructorController::class, 'getNotifications'])->name('instructor.getNotifications');
+    Route::get('/instructor/navbar-notifications', [InstructorController::class, 'getNavbarNotifications'])->name('instructor.getNavbarNotifications');
+    Route::patch('/instructor/notifications/{notificationId}/read', [InstructorController::class, 'markNotificationAsRead'])->name('instructor.markNotificationAsRead');
+    Route::patch('/instructor/notifications/mark-all-read', [InstructorController::class, 'markAllNotificationsAsRead'])->name('instructor.markAllNotificationsAsRead');
+    Route::delete('/instructor/notifications/{notificationId}', [InstructorController::class, 'deleteNotification'])->name('instructor.deleteNotification');
+    Route::delete('/instructor/notifications', [InstructorController::class, 'deleteAllNotifications'])->name('instructor.deleteAllNotifications');
+
     // Certificate routes
     Route::get('/certificates/{certificateId}/download', [CertificateController::class, 'download'])
         ->middleware('auth:sanctum')

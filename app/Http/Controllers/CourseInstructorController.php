@@ -616,14 +616,39 @@ class CourseInstructorController extends Controller
                 return response()->json(['message' => 'Unauthorized'], 403);
             }
 
-            // Get existing resources from database
-            $existingResources = Resource::where('course_id', $course->id)->get();
-            $existingResourceIds = [];
-            $resourcesToKeep = [];
-
-            // Process incoming resources
+            // Get the list of resource IDs from the request (only existing ones)
+            $requestResourceIds = [];
             $resourcesData = $request->input('resources', []);
 
+            foreach ($resourcesData as $resourceData) {
+                if (isset($resourceData['id']) && !empty($resourceData['id'])) {
+                    // Check if this ID actually exists in the database
+                    $existingResource = Resource::where('id', $resourceData['id'])
+                        ->where('course_id', $course->id)
+                        ->first();
+
+                    if ($existingResource) {
+                        $requestResourceIds[] = (int)$resourceData['id'];
+                    }
+                }
+            }
+
+            // Delete old resources that are not in the request's input
+            $existingResources = Resource::where('course_id', $course->id)->get();
+            foreach ($existingResources as $resource) {
+                if (!in_array($resource->id, $requestResourceIds)) {
+                    // Delete file from storage if it's a file-based resource
+                    if (in_array($resource->type, ['pdf', 'video', 'image']) && $resource->url) {
+                        $filePath = str_replace('/storage/', '', $resource->url);
+                        if (Storage::disk('public')->exists($filePath)) {
+                            Storage::disk('public')->delete($filePath);
+                        }
+                    }
+                    $resource->delete();
+                }
+            }
+
+            // Process resources from the request
             foreach ($resourcesData as $index => $resourceData) {
                 $name = $resourceData['name'] ?? '';
                 $type = $resourceData['type'] ?? '';
@@ -635,60 +660,92 @@ class CourseInstructorController extends Controller
                     continue;
                 }
 
-                // Check if this is an existing resource (has ID and URL is a string, not a File)
-                if ($id && is_string($url) && !$request->hasFile("resources.{$index}.file")) {
-                    // This is an existing resource - keep it
-                    $existingResourceIds[] = $id;
-                    $resourcesToKeep[] = $id;
-                    continue;
+                // Determine if this is an existing resource or new one
+                // Check if resource ID exists and if it actually exists in the database
+                $isExistingResource = false;
+                $resource = null;
+
+                if ($id) {
+                    $resource = Resource::where('id', $id)
+                        ->where('course_id', $course->id)
+                        ->first();
+
+                    // Only treat as existing if the resource actually exists in database
+                    $isExistingResource = ($resource !== null);
                 }
 
-                // Handle new file uploads
-                if (in_array($type, ['pdf', 'video', 'image'])) {
-                    if ($request->hasFile("resources.{$index}.file")) {
-                        $file = $request->file("resources.{$index}.file");
-                        $path = $file->store("courses/{$course->id}/resources", 'public');
-                        $url = '/storage/' . $path;
+                if ($isExistingResource) {
+                    // Handle existing resource modification
+                    // $resource is already retrieved above
+
+                    // Update basic resource properties
+                    $resource->name = $name;
+                    $resource->type = $type;
+
+                    // Handle file update if new file is provided for file-based resources
+                    if (in_array($type, ['pdf', 'video', 'image'])) {
+                        if ($request->hasFile("resources.{$index}.file")) {
+                            // Delete old file
+                            if ($resource->url) {
+                                $oldPath = str_replace('/storage/', '', $resource->url);
+                                if (Storage::disk('public')->exists($oldPath)) {
+                                    Storage::disk('public')->delete($oldPath);
+                                }
+                            }
+
+                            // Store new file
+                            $file = $request->file("resources.{$index}.file");
+                            $path = $file->store("courses/{$course->id}/resources", 'public');
+                            $resource->url = '/storage/' . $path;
+                        }
+                        // If no new file provided, keep existing URL
                     } else {
-                        continue; // Skip if file is missing for file-type resource
+                        // For link/other types, update URL
+                        if ($type === 'link' && !empty($url)) {
+                            if (!preg_match('/^https?:\/\//', $url)) {
+                                $url = 'https://' . $url;
+                            }
+                        }
+                        $resource->url = $url;
                     }
-                }
-                // Handle URL-based resources
-                elseif (in_array($type, ['link', 'other'])) {
-                    if (empty($url)) {
-                        continue; // Skip if URL is missing for link-type resource
-                    }
-                }
-                else {
-                    continue; // Skip invalid type
-                }
 
-                // Create new resource record
-                if ($type === 'link') {
-                    if (!preg_match('/^https?:\/\//', $url)) {
-                        $url = 'https://' . $url;
-                    }
-                }
-                Resource::create([
-                    'course_id' => $course->id,
-                    'name' => $name,
-                    'type' => $type,
-                    'url' => $url,
-                ]);
-            }
+                    $resource->save();
 
-            // Delete resources that are no longer in the request
-            $resourcesToDelete = $existingResources->whereNotIn('id', $resourcesToKeep);
-            foreach ($resourcesToDelete as $resource) {
-                // Delete file from storage if it's a file-based resource
-                if (in_array($resource->type, ['pdf', 'video', 'image']) && $resource->url) {
-                    $filePath = str_replace('/storage/', '', $resource->url);
-                    if (Storage::disk('public')->exists($filePath)) {
-                        Storage::disk('public')->delete($filePath);
+                } else {
+                    // Handle new resource creation
+                    // Handle new file uploads
+                    if (in_array($type, ['pdf', 'video', 'image'])) {
+                        if ($request->hasFile("resources.{$index}.file")) {
+                            $file = $request->file("resources.{$index}.file");
+                            $path = $file->store("courses/{$course->id}/resources", 'public');
+                            $url = '/storage/' . $path;
+                        } else {
+                            continue; // Skip if file is missing for file-type resource
+                        }
                     }
+                    // Handle URL-based resources
+                    elseif (in_array($type, ['link', 'other'])) {
+                        if (empty($url)) {
+                            continue; // Skip if URL is missing for link-type resource
+                        }
+                        if ($type === 'link') {
+                            if (!preg_match('/^https?:\/\//', $url)) {
+                                $url = 'https://' . $url;
+                            }
+                        }
+                    }
+                    else {
+                        continue; // Skip invalid type
+                    }
+
+                    // Create new resource record
+                    Resource::create([
+                        'course_id' => $course->id,
+                        'name' => $name,
+                        'type' => $type,
+                        'url' => $url,
+                    ]);
                 }
-                // Delete from database
-                $resource->delete();
             }
 
             return response()->json([
@@ -812,13 +869,20 @@ class CourseInstructorController extends Controller
                 $course->save();
             }
     
-            // Get the list of module IDs from the request
+            // Get the list of module IDs from the request (only existing ones)
             $requestModuleIds = [];
             $modules = $request->input('modules', []);
-            
+
             foreach ($modules as $moduleData) {
                 if (isset($moduleData['id']) && !empty($moduleData['id'])) {
-                    $requestModuleIds[] = (int)$moduleData['id'];
+                    // Check if this ID actually exists in the database
+                    $existingModule = Module::where('id', $moduleData['id'])
+                        ->where('course_id', $course->id)
+                        ->first();
+
+                    if ($existingModule) {
+                        $requestModuleIds[] = (int)$moduleData['id'];
+                    }
                 }
             }
     
@@ -826,19 +890,17 @@ class CourseInstructorController extends Controller
             $existingModules = Module::where('course_id', $course->id)->get();
             foreach ($existingModules as $module) {
                 if (!in_array($module->id, $requestModuleIds)) {
-                    // Delete associated files
-                    if (in_array($module->type, ['pdf', 'video', 'image']) && $module->file_path) {
-                        $filePath = str_replace('/storage/', '', $module->file_path);
-                        if (Storage::disk('public')->exists($filePath)) {
-                            Storage::disk('public')->delete($filePath);
-                        }
+                    // Delete entire module folder
+                    $moduleFolderPath = "courses/{$course->id}/modules/{$module->id}";
+                    if (Storage::disk('public')->exists($moduleFolderPath)) {
+                        Storage::disk('public')->deleteDirectory($moduleFolderPath);
                     }
-                    
+
                     // Delete quiz questions
                     if ($module->type === 'quiz') {
                         QuizQuestion::where('module_id', $module->id)->delete();
                     }
-                    
+
                     $module->delete();
                 }
             }
@@ -850,20 +912,25 @@ class CourseInstructorController extends Controller
                     if (empty($moduleData['title']) || empty($moduleData['type'])) {
                         throw new \Exception("Missing required fields for module at index {$index}");
                     }
-    
+
                     // Determine if this is an existing module or new one
-                    $isExistingModule = isset($moduleData['id']) && !empty($moduleData['id']);
-                    
-                    if ($isExistingModule) {
-                        // Handle existing module modification
+                    // Check if module ID exists and if it actually exists in the database
+                    $isExistingModule = false;
+                    $module = null;
+
+                    if (isset($moduleData['id']) && !empty($moduleData['id'])) {
                         $module = Module::where('id', $moduleData['id'])
                             ->where('course_id', $course->id)
                             ->first();
-    
-                        if (!$module) {
-                            throw new \Exception("Module with ID {$moduleData['id']} not found");
-                        }
-    
+
+                        // Only treat as existing if the module actually exists in database
+                        $isExistingModule = ($module !== null);
+                    }
+
+                    if ($isExistingModule) {
+                        // Handle existing module modification
+                        // $module is already retrieved above
+
                         // Update basic module properties
                         $module->title = $moduleData['title'];
                         $module->order = $moduleData['order'] ?? $index + 1;
@@ -886,14 +953,12 @@ class CourseInstructorController extends Controller
                             case 'image':
                                 // Handle file update if new file is provided
                                 if ($request->hasFile("modules.{$index}.file")) {
-                                    // Delete old file
-                                    if ($module->file_path) {
-                                        $oldPath = str_replace('/storage/', '', $module->file_path);
-                                        if (Storage::disk('public')->exists($oldPath)) {
-                                            Storage::disk('public')->delete($oldPath);
-                                        }
+                                    // Delete entire module folder (contains old files)
+                                    $moduleFolderPath = "courses/{$course->id}/modules/{$module->id}";
+                                    if (Storage::disk('public')->exists($moduleFolderPath)) {
+                                        Storage::disk('public')->deleteDirectory($moduleFolderPath);
                                     }
-                                    
+
                                     // Store new file
                                     $file = $request->file("modules.{$index}.file");
                                     $fileName = time() . '_' . $file->getClientOriginalName();
