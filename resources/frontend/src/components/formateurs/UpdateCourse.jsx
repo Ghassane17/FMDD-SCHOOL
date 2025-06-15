@@ -1639,20 +1639,20 @@ const UpdateCourse = () => {
                           <button
                             onClick={() => moveModule(index, -1)}
                             disabled={index === 0}
-                            className="p-2 text-gray-400 hover:text-gray-600 disabled:opacity-30"
+                            className="p-2 text-gray-400 hover:text-gray-600 disabled:opacity-30 cursor-pointer"
                           >
                             <ArrowUp className="h-4 w-4" />
                           </button>
                           <button
                             onClick={() => moveModule(index, 1)}
                             disabled={index === course.modules.length - 1}
-                            className="p-2 text-gray-400 hover:text-gray-600 disabled:opacity-30"
+                            className="p-2 text-gray-400 hover:text-gray-600 disabled:opacity-30 cursor-pointer"
                           >
                             <ArrowDown className="h-4 w-4" />
                           </button>
                           <button
                             onClick={() => toggleModuleExpansion(module.id)}
-                            className="p-2 text-gray-400 hover:text-gray-600"
+                            className="p-2 text-gray-400 hover:text-gray-600 cursor-pointer"
                           >
                             {expandedModules[module.id] ? (
                               <ChevronUp className="h-5 w-5" />
@@ -1661,17 +1661,19 @@ const UpdateCourse = () => {
                             )}
                           </button>
                           <button
-                            onClick={() => setEditingSection(`module-${module.id}`)}
-                            className="p-2 text-blue-600 hover:text-blue-800"
+                            onClick={() => {
+                              setEditingSection(`module-${module.id}`)
+                              toggleModuleExpansion(module.id)
+                            }}
+                            className="px-4 py-2 text-white bg-blue-600 rounded-lg hover:bg-blue-700 flex items-center space-x-2 cursor-pointer"
                           >
                             <Edit3 className="h-4 w-4" />
                           </button>
                           <button
                             onClick={() => deleteModule(module.id)}
-                            className="p-2 text-red-600 hover:text-red-800"
+                            className="px-4 py-2 bg-red-600 text-white rounded-lg hover:bg-red-700 flex items-center space-x-2 cursor-pointer"
                           >
                             <Trash2 className="h-4 w-4" />
-                            <span>Supprimer</span>
                           </button>
                         </div>
                       </div>
@@ -2327,8 +2329,6 @@ const UpdateCourse = () => {
                   <span>Ajouter une ressource</span>
                 </button>
               </div>
-              <p className="text-sm text-red-500">Veuillez supprimer les ressources existantes de type (pdf, video, image) avant d'ajouter de nouvelles ressources</p>
-
 
               {/* Add Resource Form */}
               {editingSection === "add-resource" && (
@@ -2476,7 +2476,7 @@ const UpdateCourse = () => {
                           <div className="flex items-center space-x-2">
                             <button
                               onClick={() => handleRemoveResource(resource.id)}
-                              className="px-4 py-2 bg-red-600 text-white rounded-lg hover:bg-red-700 flex items-center space-x-2"
+                              className="px-4 py-2 bg-red-600 text-white rounded-lg hover:bg-red-700 flex items-center space-x-2 cursor-pointer"
                             >
                               <Trash2 className="h-4 w-4" />
                               <span>Supprimer</span>

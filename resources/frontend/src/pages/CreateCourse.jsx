@@ -20,6 +20,7 @@ import { createCourse } from "../services/api_instructor"
 import { toast } from "react-hot-toast"
 import ReactQuill from "react-quill"
 import "react-quill/dist/quill.snow.css"
+import { Progress } from "../components/ui/progress"
 
 // Course Creation Page
 const CreateCourse = () => {
@@ -46,6 +47,10 @@ const CreateCourse = () => {
 
   // Add new state for validation errors
   const [validationErrors, setValidationErrors] = useState({})
+
+  // Add state for upload progress
+  const [uploadProgress, setUploadProgress] = useState(0)
+  const [isUploading, setIsUploading] = useState(false)
 
   // Load initial data from navigation state
   useEffect(() => {
@@ -621,11 +626,16 @@ const CreateCourse = () => {
         formData.append(`exam[questions][${index}][correctAnswer]`, question.correctAnswer)
       })
 
+      // Set uploading state
+      setIsUploading(true)
+      setUploadProgress(0)
+
       // Show loading state with progress
       const loadingToast = toast.loading("Création du cours en cours... (0%)")
 
       // Create a progress tracking function
       const updateProgress = (progress) => {
+        setUploadProgress(progress)
         toast.loading(`Création du cours en cours... (${progress}%)`, { id: loadingToast })
       }
 
@@ -637,10 +647,18 @@ const CreateCourse = () => {
       toast.dismiss(loadingToast)
       toast.success("Cours créé avec succès!")
 
+      // Reset upload state
+      setIsUploading(false)
+      setUploadProgress(0)
+
       // Navigate to instructor dashboard or course page
       navigate("/instructor/dashboard")
     } catch (error) {
       console.error("Error creating course:", error)
+
+      // Reset upload state on error
+      setIsUploading(false)
+      setUploadProgress(0)
 
       // Show error message with more specific details
       let errorMessage = "Une erreur est survenue lors de la création du cours"
@@ -2024,11 +2042,31 @@ const CreateCourse = () => {
               </div>
             </div>
 
+            {/* Upload Progress Bar */}
+            {isUploading && (
+              <div className="mb-6 p-4 bg-blue-50 rounded-lg border border-blue-200">
+                <div className="flex items-center justify-between mb-2">
+                  <span className="text-sm font-medium text-blue-700">Téléchargement en cours...</span>
+                  <span className="text-sm font-medium text-blue-700">{uploadProgress}%</span>
+                </div>
+                <Progress
+                  value={uploadProgress}
+                  className="h-3 bg-blue-100"
+                />
+                <p className="text-xs text-blue-600 mt-2">
+                  Veuillez patienter pendant que nous téléchargeons vos fichiers et créons votre cours.
+                </p>
+              </div>
+            )}
+
             <div className="flex justify-between">
               <button
                 type="button"
                 onClick={handlePrevStep}
-                className="px-4 py-2 border border-gray-300 text-gray-700 rounded-lg hover:bg-gray-50 flex items-center"
+                disabled={isUploading}
+                className={`px-4 py-2 border border-gray-300 text-gray-700 rounded-lg hover:bg-gray-50 flex items-center ${
+                  isUploading ? 'opacity-50 cursor-not-allowed' : ''
+                }`}
               >
                 <ArrowLeft className="mr-2 h-4 w-4" />
                 Précédent
@@ -2036,10 +2074,22 @@ const CreateCourse = () => {
               <button
                 type="button"
                 onClick={handlePublishCourse}
-                className="px-6 py-3 bg-blue-600 text-white rounded-lg hover:bg-blue-700 flex items-center font-medium"
+                disabled={isUploading}
+                className={`px-6 py-3 bg-blue-600 text-white rounded-lg hover:bg-blue-700 flex items-center font-medium ${
+                  isUploading ? 'opacity-50 cursor-not-allowed bg-blue-400' : ''
+                }`}
               >
-                Publier le cours
-                <Check className="ml-2 h-5 w-5" />
+                {isUploading ? (
+                  <>
+                    <div className="animate-spin rounded-full h-4 w-4 border-b-2 border-white mr-2"></div>
+                    Téléchargement...
+                  </>
+                ) : (
+                  <>
+                    Publier le cours
+                    <Check className="ml-2 h-5 w-5" />
+                  </>
+                )}
               </button>
             </div>
           </div>

@@ -153,7 +153,7 @@ const Header = ({ school, isAuthenticated, user, onLogout }) => {
               <Menu className="w-5 h-5" />
             </button>
 
-            <span  className="text-xl font-bold text-black hover:text-gray-700 transition-colors">
+            <span  className="text-xl font-bold text-black hover:text-gray-700 transition-colors cursor-pointer" onClick={() => navigate("/")}>
               {school}
             </span>
           </div>
@@ -194,7 +194,7 @@ const Header = ({ school, isAuthenticated, user, onLogout }) => {
                 <div className="relative header-menu">
                   <button
                     onClick={() => toggle("menu")}
-                    className="p-1 rounded-full border-2 border-gray-200 hover:border-gray-300 transition-colors"
+                    className="p-1 rounded-full border-2 border-gray-200 hover:border-gray-300 transition-colors cursor-pointer"
                   >
                     {isAvatarLoading && <div className="w-8 h-8 rounded-full bg-gray-200 animate-pulse"></div>}
                     <img
@@ -279,7 +279,7 @@ const Header = ({ school, isAuthenticated, user, onLogout }) => {
                           <div className="border-t border-gray-200 pt-2 mt-2">
                       <button
                               onClick={onLogout}
-                              className="flex items-center gap-3 w-full px-3 py-2 text-sm text-red-600 hover:bg-red-50 hover:text-red-700 rounded-lg transition-colors"
+                              className="flex items-center gap-3 w-full px-3 py-2 text-sm text-red-600 hover:bg-red-50 hover:text-red-700 rounded-lg transition-colors cursor-pointer"
                       >
                         <LogOut className="w-4 h-4" />
                         Logout
@@ -294,7 +294,7 @@ const Header = ({ school, isAuthenticated, user, onLogout }) => {
               <div className="relative">
                 <button
                   onClick={() => toggle("notifications")}
-                  className="p-2 rounded-full hover:bg-gray-100 transition-colors relative notifications-button"
+                  className="p-2 rounded-full hover:bg-gray-100 transition-colors relative notifications-button cursor-pointer"
                 >
                   <Bell className="w-5 h-5 text-gray-600" />
                   {notifications.slice(0, 5).some(notification => !notification.read) && (
@@ -464,7 +464,7 @@ const Header = ({ school, isAuthenticated, user, onLogout }) => {
             <div className="border-t border-gray-200 pt-2 mt-2">
               <button
                       onClick={onLogout}
-                className="flex items-center gap-3 w-full px-3 py-2 text-sm text-red-600 hover:bg-red-50 hover:text-red-700 rounded-lg transition-colors"
+                className="flex items-center gap-3 w-full px-3 py-2 text-sm text-red-600 hover:bg-red-50 hover:text-red-700 rounded-lg transition-colors cursor-pointer"
               >
                 <LogOut className="w-4 h-4" />
                 Logout
