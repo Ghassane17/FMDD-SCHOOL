@@ -32,6 +32,8 @@ import {
 } from "lucide-react"
 import { getAllContentCourse, updateCourseOverview, updateCourseResources, updateCourseExam, updateCourseModules } from "../../services/api_instructor"
 import { toast } from "react-hot-toast"
+import ReactQuill from "react-quill"
+import "react-quill/dist/quill.snow.css"
 const backend_url = import.meta.env.VITE_BACKEND_URL
 
 // Helper to get the correct course thumbnail URL
@@ -1240,13 +1242,29 @@ const UpdateCourse = () => {
                     {newModule.type === "text" && (
                       <div>
                         <label className="block text-sm font-medium text-gray-700 mb-2">Content</label>
-                        <textarea
-                          rows={6}
-                          value={newModule.text_content}
-                          onChange={(e) => handleModuleChange("text_content", e.target.value)}
-                          className={`w-full border ${moduleErrors.content ? "border-red-500" : "border-gray-300"} rounded-lg px-3 py-2 focus:ring-2 focus:ring-blue-500 focus:border-transparent`}
-                          placeholder="Enter module content"
-                        />
+                        <div className={`${moduleErrors.content ? "border-red-500" : ""}`}>
+                          <ReactQuill
+                            value={newModule.text_content}
+                            onChange={(content) => handleModuleChange("text_content", content)}
+                            className="bg-white"
+                            placeholder="Enter module content..."
+                            theme="snow"
+                            modules={{
+                              toolbar: [
+                                [{ 'header': [1, 2, 3, false] }],
+                                ['bold', 'italic', 'underline', 'strike'],
+                                [{ 'list': 'ordered'}, { 'list': 'bullet' }],
+                                ['blockquote', 'code-block'],
+                                ['link'],
+                                ['clean']
+                              ],
+                            }}
+                            formats={[
+                              'header', 'bold', 'italic', 'underline', 'strike',
+                              'list', 'bullet', 'blockquote', 'code-block', 'link'
+                            ]}
+                          />
+                        </div>
                         {moduleErrors.content && <p className="mt-1 text-sm text-red-600">{moduleErrors.content}</p>}
                       </div>
                     )}
@@ -1718,19 +1736,34 @@ const UpdateCourse = () => {
                             {module.type === "text" && (
                               <div>
                                 <label className="block text-sm font-medium text-gray-700 mb-2">Content</label>
-                                <textarea
-                                  rows={4}
+                                <ReactQuill
                                   value={module.text_content}
-                                  onChange={(e) => {
+                                  onChange={(content) => {
                                     setCourse((prev) => ({
                                       ...prev,
                                       modules: prev.modules.map((m) =>
-                                        m.id === module.id ? { ...m, text_content: e.target.value } : m,
+                                        m.id === module.id ? { ...m, text_content: content } : m,
                                       ),
                                     }))
                                     // Don't mark as changed until save button is clicked
                                   }}
-                                  className="w-full border border-gray-300 rounded-lg px-3 py-2 focus:ring-2 focus:ring-blue-500 focus:border-transparent"
+                                  className="bg-white"
+                                  placeholder="Enter module content..."
+                                  theme="snow"
+                                  modules={{
+                                    toolbar: [
+                                      [{ 'header': [1, 2, 3, false] }],
+                                      ['bold', 'italic', 'underline', 'strike'],
+                                      [{ 'list': 'ordered'}, { 'list': 'bullet' }],
+                                      ['blockquote', 'code-block'],
+                                      ['link'],
+                                      ['clean']
+                                    ],
+                                  }}
+                                  formats={[
+                                    'header', 'bold', 'italic', 'underline', 'strike',
+                                    'list', 'bullet', 'blockquote', 'code-block', 'link'
+                                  ]}
                                 />
                               </div>
                             )}
@@ -1959,9 +1992,10 @@ const UpdateCourse = () => {
                         ) : (
                           <div>
                             {module.type === "text" && (
-                              <div className="prose max-w-none">
-                                <p>{module.text_content}</p>
-                              </div>
+                              <div
+                                className="prose max-w-none"
+                                dangerouslySetInnerHTML={{ __html: module.text_content }}
+                              />
                             )}
                             {module.type === "video" && module.file_path && (
                               <div className="flex items-center space-x-4">
@@ -2607,32 +2641,32 @@ const UpdateCourse = () => {
 
       {/* Delete Confirmation Modal */}
       {deleteModal.show && (
-        <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50">
-          <div className="bg-white rounded-lg p-6 max-w-md w-full">
-            <div className="flex items-center justify-between mb-4">
-              <h3 className="text-lg font-semibold">Confirm Deletion</h3>
+        <div className="fixed inset-0 bg-opacity-60 backdrop-blur-sm flex items-center justify-center z-50 p-4">
+          <div className="bg-white rounded-xl p-6 max-w-md w-full shadow-2xl max-w-2xl w-full max-h-[85vh]">
+            <div className="flex items-center justify-between mb-4 ">
+              <h3 className="text-lg font-semibold">Confirmation de la suppression</h3>
               <button
                 onClick={() => setDeleteModal({ show: false, type: "", id: null, name: "" })}
                 className="text-gray-500 hover:text-gray-700"
               >
-                <X className="h-5 w-5" />
+                <X className="h-5 w-5 hover:text-gray-700 transition-colors cursor-pointer" />
               </button>
             </div>
             <p className="text-gray-600 mb-6">
-              Are you sure you want to delete {deleteModal.name}? This action cannot be undone.
+              Êtes-vous sûr de vouloir supprimer {deleteModal.name} ? Cette action ne peut pas être annulée.
             </p>
             <div className="flex justify-end space-x-4">
               <button
                 onClick={() => setDeleteModal({ show: false, type: "", id: null, name: "" })}
-                className="px-4 py-2 border border-gray-300 text-gray-700 rounded-lg hover:bg-gray-50"
+                className="px-4 py-2 border border-gray-300 text-gray-700 rounded-lg hover:bg-gray-50 hover:shadow-lg cursor-pointer"
               >
-                Cancel
+                Annuler
               </button>
               <button
                 onClick={confirmDelete}
-                className="px-4 py-2 bg-red-600 text-white rounded-lg hover:bg-red-700"
+                className="px-4 py-2 bg-red-600 text-white rounded-lg hover:bg-red-700 hover:scale-105 duration-300 hover:shadow-lg cursor-pointer"
               >
-                Delete
+                Supprimer
               </button>
             </div>
           </div>

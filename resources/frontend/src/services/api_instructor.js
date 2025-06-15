@@ -599,3 +599,65 @@ export const deleteCommentReply = async (replyId) => {
         throw error;
     }
 };
+
+// ─── Notifications functions ──────────────────────────────────────────
+
+export const getNotifications = async () => {
+    try {
+        const response = await api.get('/instructor/notifications');
+        return response.data;
+    } catch (error) {
+        console.error('Error fetching notifications:', error);
+        throw error;
+    }
+};
+
+export const getNavbarNotifications = async () => {
+    try {
+        const response = await api.get('/instructor/navbar-notifications');
+        return response.data;
+    } catch (error) {
+        console.error('Error fetching navbar notifications:', error);
+        throw error;
+    }
+};
+
+export const markNotificationAsRead = async (notificationId) => {
+    try {
+        const response = await api.patch(`/instructor/notifications/${notificationId}/read`);
+        return response.data;
+    } catch (error) {
+        console.error('Error marking notification as read:', error);
+        throw error;
+    }
+};
+
+export const markAllNotificationsAsRead = async () => {
+    try {
+        const response = await api.patch('/instructor/notifications/mark-all-read');
+        return response.data;
+    } catch (error) {
+        console.error('Error marking all notifications as read:', error);
+        throw error;
+    }
+};
+
+export const deleteNotification = async (notificationId) => {
+    try {
+        const response = await api.delete(`/instructor/notifications/${notificationId}`);
+        return response.data;
+    } catch (error) {
+        console.error('Error deleting notification:', error);
+        throw error;
+    }
+};
+
+export const deleteAllNotifications = async () => {
+    try {
+        const response = await api.delete('/instructor/notifications');
+        return response.data;
+    } catch (error) {
+        console.error('Error deleting all notifications:', error);
+        throw error;
+    }
+};

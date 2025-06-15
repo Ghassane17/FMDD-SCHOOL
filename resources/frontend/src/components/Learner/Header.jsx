@@ -1,9 +1,10 @@
 "use client"
 
 import { Link, useNavigate } from "react-router-dom"
-import { LogOut, Menu, Settings, User, BookOpen, Search, MessageCircle, Home } from "lucide-react"
+import { LogOut, Menu, Settings, User, BookOpen, Search, MessageCircle, Home, Bell } from "lucide-react"
 import { FaUserCircle } from "react-icons/fa"
 import { useState, useEffect, useRef, useCallback } from "react"
+import { getNavbarNotifications } from "../../services/api_instructor"
 
 const API_URL = import.meta.env.VITE_BACKEND_URL 
 
@@ -13,11 +14,30 @@ const Header = ({ school, isAuthenticated, user, onLogout }) => {
   const [open, setOpen] = useState({
     menu: false,
     mobileMenu: false,
+    notifications: false,
   })
+  const [notifications, setNotifications] = useState([])
   const [isAvatarLoading, setIsAvatarLoading] = useState(true)
   const [avatarSrc, setAvatarSrc] = useState(null)
   const avatarRef = useRef(null)
   const navigate = useNavigate()
+
+  // Fetch notifications when component mounts for instructors
+  useEffect(() => {
+    const fetchNotifications = async () => {
+      if (user?.role === "instructor") {
+        try {
+          const response = await getNavbarNotifications();
+          setNotifications(response.notifications || []);
+          console.log("Notifications:", response.notifications);
+        } catch (error) {
+          console.error("Error fetching notifications:", error);
+        }
+      }
+    };
+
+    fetchNotifications();
+  }, [user?.role]); // Only re-run if user role changes
 
   // Initialize avatar source
   useEffect(() => {
@@ -86,7 +106,14 @@ const Header = ({ school, isAuthenticated, user, onLogout }) => {
         setOpen((prev) => ({
           ...prev,
           menu: false,
-        
+        }));
+      }
+
+      // Close notifications when clicking anywhere outside the notifications dropdown
+      if (!event.target.closest(".notifications-dropdown") && !event.target.closest(".notifications-button")) {
+        setOpen((prev) => ({
+          ...prev,
+          notifications: false,
         }));
       }
     };
@@ -164,16 +191,16 @@ const Header = ({ school, isAuthenticated, user, onLogout }) => {
             {isAuthenticated ? (
               <>
                 {/* User Avatar Menu */}
-            <div className="relative header-menu">
-              <button
-                onClick={() => toggle("menu")}
-                className="p-1 rounded-full border-2 border-gray-200 hover:border-gray-300 transition-colors"
-              >
-                {isAvatarLoading && <div className="w-8 h-8 rounded-full bg-gray-200 animate-pulse"></div>}
-                <img
-                  ref={avatarRef}
-                  src={avatarSrc || "/placeholder.svg"}
-                  alt="User avatar"
+                <div className="relative header-menu">
+                  <button
+                    onClick={() => toggle("menu")}
+                    className="p-1 rounded-full border-2 border-gray-200 hover:border-gray-300 transition-colors"
+                  >
+                    {isAvatarLoading && <div className="w-8 h-8 rounded-full bg-gray-200 animate-pulse"></div>}
+                    <img
+                      ref={avatarRef}
+                      src={avatarSrc || "/placeholder.svg"}
+                      alt="User avatar"
                   className={`w-8 h-8 rounded-full object-cover ${isAvatarLoading ? "hidden" : "block"}`}
                   onLoad={handleAvatarLoad}
                   onError={handleAvatarError}
@@ -197,22 +224,30 @@ const Header = ({ school, isAuthenticated, user, onLogout }) => {
                         <Home className="w-4 h-4" />
                         Dashboard
                       </Link>
-                      <Link
+                      { user.role === "learner" && <Link
                             to="/learner/all-enrolled-courses"
                             onClick={() => toggle("menu")}
                             className="flex items-center gap-3 px-3 py-2 text-sm text-gray-700 hover:bg-gray-50 hover:text-black rounded-lg transition-colors"
                       >
                         <BookOpen className="w-4 h-4" />
                         My Courses
-                      </Link>
-                      <Link
+                      </Link>}
+                      { user.role === "instructor" && <Link
+                            to="/instructor/dashboard/courses"
+                            onClick={() => toggle("menu")}
+                            className="flex items-center gap-3 px-3 py-2 text-sm text-gray-700 hover:bg-gray-50 hover:text-black rounded-lg transition-colors"
+                      >
+                        <BookOpen className="w-4 h-4" />
+                        My Courses
+                      </Link>}
+                      { user.role === "learner" && <Link
                             to="/learner/suggested-courses"
                             onClick={() => toggle("menu")}
                             className="flex items-center gap-3 px-3 py-2 text-sm text-gray-700 hover:bg-gray-50 hover:text-black rounded-lg transition-colors"
                       >
                         <Search className="w-4 h-4" />
                         Browse Courses
-                      </Link>
+                      </Link>}
                       <Link
                             to="/contact"
                             onClick={() => toggle("menu")}
@@ -221,6 +256,7 @@ const Header = ({ school, isAuthenticated, user, onLogout }) => {
                         <MessageCircle className="w-4 h-4" />
                         Contact
                       </Link>
+                      { user.role === "learner" &&
                       <Link
                             to="/learner/settings"
                             onClick={() => toggle("menu")}
@@ -229,6 +265,17 @@ const Header = ({ school, isAuthenticated, user, onLogout }) => {
                         <Settings className="w-4 h-4" />
                         Settings
                       </Link>
+                      }
+                      { user.role === "instructor" &&
+                      <Link
+                            to="/instructor/dashboard/settings"
+                            onClick={() => toggle("menu")}
+                            className="flex items-center gap-3 px-3 py-2 text-sm text-gray-700 hover:bg-gray-50 hover:text-black rounded-lg transition-colors"
+                      >
+                        <Settings className="w-4 h-4" />
+                        Settings
+                      </Link>
+                      }
                           <div className="border-t border-gray-200 pt-2 mt-2">
                       <button
                               onClick={onLogout}
@@ -243,6 +290,70 @@ const Header = ({ school, isAuthenticated, user, onLogout }) => {
                 </div>
               )}
             </div>
+            {user.role === "instructor" && (
+              <div className="relative">
+                <button
+                  onClick={() => toggle("notifications")}
+                  className="p-2 rounded-full hover:bg-gray-100 transition-colors relative notifications-button"
+                >
+                  <Bell className="w-5 h-5 text-gray-600" />
+                  {notifications.slice(0, 5).some(notification => !notification.read) && (
+                    <span className="absolute top-0 right-0 w-2 h-2 bg-red-500 rounded-full"></span>
+                  )}
+                </button>
+
+                {open.notifications && (
+                  <div className="absolute right-0 mt-2 w-80 bg-white rounded-lg border border-gray-200 shadow-lg z-20 notifications-dropdown">
+                    <div className="p-4">
+                      <h3 className="text-lg font-semibold mb-3">Notifications</h3>
+                      {notifications.length > 0 ? (
+                        <>
+                          <div className="space-y-2 max-h-96 overflow-y-auto">
+                            {notifications.slice(0, 5).map((notification, index) => (
+                              <div
+                                key={index}
+                                className={`p-3 hover:bg-gray-50 rounded-lg transition-colors border-l-4 ${
+                                  !notification.read
+                                    ? 'border-blue-500 bg-blue-50'
+                                    : 'border-gray-200 bg-white'
+                                }`}
+                              >
+                                <div className="flex items-center justify-between mb-1">
+                                  <h4 className="text-sm font-semibold text-gray-900 capitalize">
+                                    {notification.type.replace(/_/g, ' ')}
+                                  </h4>
+                                  <div className="flex items-center gap-2">
+                                    <span className="text-xs text-gray-500">{notification.date}</span>
+                                    {!notification.read && (
+                                      <div className="w-2 h-2 bg-blue-500 rounded-full"></div>
+                                    )}
+                                  </div>
+                                </div>
+                                <p className="text-sm text-gray-600 line-clamp-1">
+                                  {notification.message || notification.text}
+                                </p>
+                              </div>
+                            ))}
+                          </div>
+                          <div className="mt-3 pt-3 border-t border-gray-200">
+                            <Link
+                              to="/instructor/notifications"
+                              onClick={() => toggle("notifications")}
+                              className="text-sm text-blue-600 hover:text-blue-800 transition-colors"
+                            >
+                              Voir toutes les notifications →
+                            </Link>
+                          </div>
+                        </>
+                      ) : (
+                        <p className="text-sm text-gray-500">Aucune notification</p>
+                      )}
+                    </div>
+                  </div>
+                )}
+              </div>
+            )}
+
               </>
             ) : (
               <div className="flex items-center space-x-4">
@@ -310,14 +421,14 @@ const Header = ({ school, isAuthenticated, user, onLogout }) => {
               <Home className="w-4 h-4" />
               Dashboard
             </Link>
-            <Link
+            { user.role === "learner" && <Link
               to="/learner/all-enrolled-courses"
               onClick={() => toggle("mobileMenu")}
               className="flex items-center gap-3 px-3 py-2 text-sm text-gray-700 hover:bg-gray-50 hover:text-black rounded-lg transition-colors"
             >
               <BookOpen className="w-4 h-4" />
               My Courses
-            </Link>
+            </Link>}
             <Link
               to="/learner/suggested-courses"
               onClick={() => toggle("mobileMenu")}
@@ -334,6 +445,14 @@ const Header = ({ school, isAuthenticated, user, onLogout }) => {
               <MessageCircle className="w-4 h-4" />
               Contact
             </Link>
+            { user.role === "instructor" && <Link
+              to="/instructor/notifications"
+              onClick={() => toggle("mobileMenu")}
+              className="flex items-center gap-3 px-3 py-2 text-sm text-gray-700 hover:bg-gray-50 hover:text-black rounded-lg transition-colors"
+            >
+              <Bell className="w-4 h-4" />
+              Notifications
+            </Link>}
             <Link
               to="/learner/settings"
               onClick={() => toggle("mobileMenu")}
@@ -381,3 +500,4 @@ const Header = ({ school, isAuthenticated, user, onLogout }) => {
 }
 
 export default Header
+

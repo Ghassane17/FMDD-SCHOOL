@@ -1,4 +1,5 @@
 import React, { useState, useEffect } from 'react';
+import { useParams, useSearchParams } from 'react-router-dom';
 import { Bell, BookOpen, Calendar, CreditCard, Inbox, Settings, Star, Users } from 'lucide-react';
 import Navigation from './Navigation';
 import ProfileHeader from './ProfileHeader';
@@ -14,7 +15,20 @@ import { getInstructorDashboard } from '../../services/api_instructor';
 const API_URL = import.meta.env.VITE_API_BASE_URL || 'http://localhost:8000';
 
 const InstructorDashboard = () => {
+  const { tab } = useParams();
+  const [searchParams] = useSearchParams();
+  const queryTab = searchParams.get('tab');
   const [activeTab, setActiveTab] = useState('profile');
+
+  // This will update activeTab when the URL parameter changes
+  useEffect(() => {
+    const newTab = tab || queryTab || 'profile';
+    console.log('URL tab parameter:', tab);
+    console.log('Query tab parameter:', queryTab);
+    console.log('Setting active tab to:', newTab);
+    setActiveTab(newTab);
+  }, [tab, queryTab]);
+  
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState(null);
   const [instructorData, setInstructorData] = useState(null);
@@ -117,3 +131,5 @@ const InstructorDashboard = () => {
 };
 
 export default InstructorDashboard;
+
+
