@@ -132,10 +132,12 @@ class CourseController extends Controller
                 })
             ];
 
+
             return response()->json([
                 'course' => $formattedCourse,
                 'is_enrolled' => $isEnrolled,
                 'progress' => (int)($progress),
+
             ]);
         } catch (\Exception $e) {
             Log::error('Error in getCourseDetails', [

@@ -362,8 +362,8 @@ class LearnerController extends Controller
                         'certificate_code' => $certificate->certificate_code,
                         'course_name' => $certificate->course->title,
                         'created_at' => $certificate->created_at,
-                        'download_url' => route('certificates.download', $certificate->id),
-                        'preview_url' => route('certificates.preview', $certificate->id)
+                        'url_path' => $certificate->url_path,
+
                     ];
                 });
 

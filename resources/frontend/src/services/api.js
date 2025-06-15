@@ -289,19 +289,67 @@ export const getEnrolledCourses = async (forceRefresh = false) => {
 };
 
 export const getLearnerSettings = async (forceRefresh = false) => {
+    if (!isAuthenticated()) {
+        console.error('Cannot fetch settings: User not authenticated');
+        throw new Error('Authentication required');
+    }
+
     if (!forceRefresh && settingsCache) {
         console.log('Returning cached settings');
-      console.log(settingsCache)
         return { data: settingsCache };
     }
 
     try {
+        console.log('Fetching learner settings');
         const response = await api.get('/learner/settings');
-        console.log('Fetched learner settings:', response.data);
+        console.log('Settings fetched successfully');
         settingsCache = response.data;
         return response;
     } catch (error) {
-        console.error('Error fetching learner settings:', error);
+        console.error('Failed to fetch learner settings');
+        throw error;
+    }
+};
+
+export const updateLearnerPersonalInfo = async (data) => {
+    try {
+        const response = await api.patch('/learner/personal-info', data);
+        settingsCache = null; // Clear cache after update
+        return response;
+    } catch (error) {
+        console.error('Failed to update personal info');
+        throw error;
+    }
+};
+
+export const updateLearnerPassword = async (data) => {
+    try {
+        const response = await api.patch('/learner/password', data);
+        return response;
+    } catch (error) {
+        console.error('Failed to update password');
+        throw error;
+    }
+};
+
+export const updateLearnerAdditionalInfo = async (data) => {
+    try {
+        const response = await api.patch('/learner/additional-info', data);
+        settingsCache = null; // Clear cache after update
+        return response;
+    } catch (error) {
+        console.error('Failed to update additional info');
+        throw error;
+    }
+};
+
+export const updateLearnerNotifications = async (data) => {
+    try {
+        const response = await api.patch('/learner/notifications', data);
+        settingsCache = null; // Clear cache after update
+        return response;
+    } catch (error) {
+        console.error('Failed to update notifications');
         throw error;
     }
 };
@@ -660,7 +708,7 @@ const handleApiError = error => {
     } else {
         throw new Error(error.message || 'An error occurred');
     }
-};
+    };
 
 export const updateNotifications = async data => {
     try {
@@ -679,38 +727,6 @@ export const updateNotifications = async data => {
     }
 };
 
-export const downloadCertificate = async (certificateId) => {
-    try {
-        const response = await api.get(`/certificates/${certificateId}/download`, {
-           
-        });
 
-        // Create a blob from the PDF Stream
-        const file = new Blob([response.data], { type: 'application/pdf' });
-        
-        // Create a URL for the blob
-        const fileURL = window.URL.createObjectURL(file);
-        
-        // Create a temporary link element
-        const link = document.createElement('a');
-        link.href = fileURL;
-        link.setAttribute('download', `certificate-${certificateId}.pdf`);
-        
-        // Append to html link element page
-        document.body.appendChild(link);
-        
-        // Start download
-        link.click();
-        
-        // Clean up and remove the link
-        link.parentNode.removeChild(link);
-        window.URL.revokeObjectURL(fileURL);
-        
-        return true;
-    } catch (error) {
-        console.error('Error downloading certificate:', error);
-        throw error;
-    }
-}; 
 
 export default api;

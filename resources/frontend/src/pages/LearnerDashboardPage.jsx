@@ -22,9 +22,11 @@ import {
   ChevronRight,
   CardMembership as CardMembershipIcon,
   Download,
+  Preview,
   
 } from "@mui/icons-material"
-import { downloadCertificate } from '../services/api.js'
+
+const BACKEND_URL = import.meta.env.VITE_BACKEND_URL || 'http://localhost:8000'
 
 const LearnerDashboardPage = () => {
   const [dashboard, setDashboard] = useState(null)
@@ -38,6 +40,7 @@ const LearnerDashboardPage = () => {
   const [showSortOptions, setShowSortOptions] = useState(false)
   const [overallProgress, setOverallProgress] = useState(0)
   const [showStats, setShowStats] = useState(true)
+  const [previewCertificate, setPreviewCertificate] = useState(null)
   const navigate = useNavigate()
 
   // Calculate overall progress from enrolled courses
@@ -102,6 +105,17 @@ const LearnerDashboardPage = () => {
     })
   }
 
+  const Preview = (certificateId) => {
+    const certificate = dashboard?.certificates?.find(cert => cert.id === certificateId)
+    if (certificate) {
+      setPreviewCertificate(certificate)
+    }
+  }
+
+  const closePreview = () => {
+    setPreviewCertificate(null)
+  }
+
   const getSortedAvailableCourses = () => {
     const filtered = allCourses.filter((course) => course.title.toLowerCase().includes(searchQuery.toLowerCase()))
 
@@ -162,6 +176,44 @@ const LearnerDashboardPage = () => {
 
   return (
     <div className="min-h-screen bg-white">
+      {/* Certificate Preview Modal */}
+     {/* Certificate Preview Modal - Replace your existing modal with this */}
+{previewCertificate && (
+  <div className="fixed inset-0 z-50 flex items-center justify-center">
+    {/* Blurred Background Overlay */}
+    <div 
+      className="absolute inset-0 bg-black/60"
+      style={{ 
+        backdropFilter: 'blur(12px)', 
+        WebkitBackdropFilter: 'blur(12px)' 
+      }}
+      onClick={closePreview}
+    />
+    
+    {/* Modal Content */}
+    <div className="relative w-[90%] h-[90%] max-w-6xl bg-white rounded-lg shadow-2xl overflow-hidden">
+      {/* Close Button */}
+      <button
+        onClick={closePreview}
+        className="absolute top-4 right-4 z-10 p-2 bg-white/90 backdrop-blur-sm rounded-full shadow-lg hover:bg-white transition-all duration-200"
+      >
+        <span className="sr-only">Close</span>
+        <svg className="w-6 h-6 text-gray-600" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+          <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M6 18L18 6M6 6l12 12" />
+        </svg>
+      </button>
+      
+      {/* Certificate Content */}
+      <iframe
+        src={`${BACKEND_URL}${previewCertificate.url_path}`}
+        className="w-full h-full rounded-lg"
+        title="Certificate Preview"
+        onError={() => console.error('Failed to load certificate')}
+      />
+    </div>
+  </div>
+)}
+
       <div className="w-full px-6 py-8">
         {/* Header Section */}
         <div className="bg-white border border-gray-200 rounded-lg p-8 mb-8">
@@ -442,11 +494,11 @@ Decouvrir nos formations                    </button>
                         </div>
                         <div className="flex space-x-3">
                           <button
-                            onClick={() => downloadCertificate(certificate.id)}
+                            onClick={() => Preview(certificate.id)}
                             className="flex items-center px-4 py-2 bg-blue-600 text-white rounded-md hover:bg-blue-700 transition-colors"
                           >
                             <Download className="w-4 h-4 mr-2" />
-                            Download
+                            Voir pdf
                           </button>
                          
                         </div>

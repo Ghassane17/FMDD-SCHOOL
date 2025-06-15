@@ -71,16 +71,15 @@ class CertificateController extends Controller
             'enable-local-file-access' => true
         ]);
 
-        // Generate filename and path
         $filename = "certificate_{$certificateCode}.pdf";
+
+        // Store in private storage
         $path = 'certificates/' . $filename;
+        Storage::disk('private')->put($path, $pdf->output());
 
-        // Store PDF
-        Storage::put('private/' . $path, $pdf->output());
-
-        // Update certificate with the path
+        // Update certificate with the private path
         $certificate->update([
-            'url_path' => '/storage/' . $path
+            'url_path' => "/private/certificates/" . $filename
         ]);
 
         return $certificate;

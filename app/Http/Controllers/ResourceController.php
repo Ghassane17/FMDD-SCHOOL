@@ -131,6 +131,7 @@ class ResourceController extends Controller
                     ],
                     'currentModule' => $this->formatModuleData($module, $quizQuestions, $resources),
                     'modules' => $allModules,
+
                 ],
             ]);
         } catch (\Exception $e) {
