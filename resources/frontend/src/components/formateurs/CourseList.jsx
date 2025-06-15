@@ -85,8 +85,7 @@ const CourseList = ({ instructorData, backend_url }) => {
     const totalStudents = courses.reduce((sum, course) => sum + (course.students || 0), 0)
     const publishedCourses = courses.filter((course) => course.is_published).length
     const instructorStats = JSON.parse(localStorage.getItem("instructorStats") || "{}")
-    const averageRating = instructorStats.averageRating || 0
-    console.log("averageRating", averageRating)
+    const averageRating = instructorStats.averageRating
 
     return [
       {
@@ -106,7 +105,7 @@ const CourseList = ({ instructorData, backend_url }) => {
       },
       {
         title: "Note Moyenne",
-        value: averageRating.toFixed(1),
+        value: averageRating.toFixed(1) || 0,
         icon: Star,
         color: "from-amber-500 to-orange-600",
         bgColor: "from-amber-50 to-orange-50",
@@ -175,7 +174,7 @@ const CourseList = ({ instructorData, backend_url }) => {
                 <p className="text-gray-600 text-sm font-medium mb-1">{stat.title}</p>
                 <div className="flex items-baseline space-x-2">
                   <p className="text-2xl font-bold text-gray-800">
-                    {stat.value}
+                    {stat.value}{stat.title === "Note Moyenne" ? "/5" : ""}
                     {stat.total && <span className="text-lg text-gray-500">/{stat.total}</span>}
                   </p>
                 </div>
@@ -253,7 +252,7 @@ const CourseList = ({ instructorData, backend_url }) => {
                         <div className="bg-white/90 backdrop-blur-sm rounded-full px-3 py-1">
                           <div className="flex items-center space-x-1">
                             <Star className="h-4 w-4 text-amber-500 fill-current" />
-                            <span className="text-sm font-semibold text-gray-800">{course.rating || 0}</span>
+                            <span className="text-sm font-semibold text-gray-800">{course.rating > 0 ? course.rating.toFixed(1) : 0}/5</span>
                           </div>
                         </div>
                       </div>
