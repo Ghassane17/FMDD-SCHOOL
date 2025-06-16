@@ -11,6 +11,8 @@ use App\Models\Resource;
 use App\Models\QuizQuestion;
 use App\Models\Exam;
 use App\Models\ExamQuestion;
+use App\Models\Comment;
+use App\Models\Notification;
 use Illuminate\Database\Seeder;
 use Illuminate\Support\Facades\Hash;
 
@@ -111,6 +113,7 @@ class GhassaneTestSeeder extends Seeder
                     'is_published' => true,
                     'rating' => 0.00,
                     'duration_min' => $courseData['duration_min'],
+                    'language' => 'Français',
                 ]);
 
                 // Create modules for the course
@@ -253,6 +256,38 @@ class GhassaneTestSeeder extends Seeder
 
                 foreach ($resources as $resource) {
                     Resource::create($resource);
+                }
+
+                // Add course comments
+                $comments = [
+                    [
+                        'course_id' => $course->id,
+                        'user_id' => $learnerUser->id,
+                        'text' => 'Great course! I learned a lot.',
+                        'rating' => 5,
+                    ],
+                ];
+
+                foreach ($comments as $comment) {
+                    Comment::create($comment);
+                }
+
+                // Add Notifications
+                $notifications = [
+                    [
+                        'user_id' => $instructorUser->id,
+                        'type' => 'course_approved',
+                        'text' => 'Your course has been approved.',
+                        'read' => false,
+                        'data' => [
+                            'course_id' => $course->id,
+                            'message' => 'Your course is now live on the platform thank you for your patience.',
+                        ],
+                    ],
+                ];
+
+                foreach ($notifications as $notification) {
+                    Notification::create($notification);
                 }
             }
         }

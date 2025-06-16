@@ -93,6 +93,7 @@ class CourseInstructorController extends Controller
                 'course_thumbnail' => 'required|image|mimes:jpeg,png,jpg,gif,svg|max:5120',
                 'category' => 'required|string|max:255',
                 'duration_min' => 'nullable|integer|min:0',
+                'language' => 'nullable|string|max:255',
 
                 // Modules validation
                 'modules' => 'nullable|array',
@@ -138,6 +139,7 @@ class CourseInstructorController extends Controller
                     'description'     => $validated['description'],
                     'level'           => $validated['level'],
                     'category'        => $validated['category'],
+                    'language'        => $validated['language'] ?? null,
                     'duration_min'    => $validated['duration_min'] + $request->exam['duration_min'] ?? 0,
                     'is_published'    => false,
                 ]);
@@ -438,6 +440,7 @@ class CourseInstructorController extends Controller
                 'course_thumbnail' => $course->course_thumbnail,
                 'level' => $course->level,
                 'category' => $course->category,
+                'language' => $course->language,
                 'rating' => $course->rating,
                 'is_published' => $course->is_published,
                 'duration_min' => $course->duration_min,
@@ -523,6 +526,7 @@ class CourseInstructorController extends Controller
             'level' => 'required|string|in:beginner,intermediate,advanced',
             'category' => 'required|string|max:255',
             'duration_min' => 'required|integer|min:0',
+            'language' => 'nullable|string|max:255',
         ]);
 
         if ($validator->fails()) {
@@ -555,6 +559,7 @@ class CourseInstructorController extends Controller
                 'level' => $validator->validated()['level'],
                 'category' => $validator->validated()['category'],
                 'duration_min' => $validator->validated()['duration_min'],
+                'language' => $validator->validated()['language'] ?? null,
                 'is_published' => 0,
             ];
 

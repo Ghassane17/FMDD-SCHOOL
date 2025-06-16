@@ -19,7 +19,7 @@ return new class extends Migration
             $table->float('rating')->nullable(); // Statique
             $table->boolean('is_published')->default(true); //Going to be used for the admin panel
             $table->integer('duration_min')->nullable();
-            //$table->string('language')->default('fr');
+            $table->string('language')->nullable();
             $table->timestamps();
 
             $table->index('instructor_id');

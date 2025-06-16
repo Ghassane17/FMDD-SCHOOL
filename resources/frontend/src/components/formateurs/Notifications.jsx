@@ -276,7 +276,7 @@ const Notifications = () => {
                                 <button
                                     onClick={handleMarkAllAsRead}
                                     disabled={actionLoading}
-                                    className="flex items-center justify-center gap-2 px-3 sm:px-4 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700 transition-colors disabled:opacity-50 text-sm sm:text-base"
+                                    className="flex items-center justify-center gap-2 px-3 sm:px-4 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700 transition-colors disabled:opacity-50 text-sm sm:text-base cursor-pointer"
                                 >
                                     <CheckCheck className="w-4 h-4" />
                                     <span className="hidden sm:inline">Tout marquer comme lu</span>
@@ -288,7 +288,7 @@ const Notifications = () => {
                                 <button
                                     onClick={handleDeleteAllNotifications}
                                     disabled={actionLoading}
-                                    className="flex items-center justify-center gap-2 px-3 sm:px-4 py-2 bg-red-600 text-white rounded-lg hover:bg-red-700 transition-colors disabled:opacity-50 text-sm sm:text-base"
+                                    className="flex items-center justify-center gap-2 px-3 sm:px-4 py-2 bg-red-600 text-white rounded-lg hover:bg-red-700 transition-colors disabled:opacity-50 text-sm sm:text-base cursor-pointer"
                                 >
                                     <Trash2 className="w-4 h-4" />
                                     <span className="hidden sm:inline">Tout supprimer</span>
@@ -454,7 +454,7 @@ const Notifications = () => {
                                             {hasAdminMessage(notification) && (
                                                 <button
                                                     onClick={() => handleShowMessage(notification)}
-                                                    className="p-1.5 sm:p-2 text-orange-600 hover:bg-orange-50 rounded-lg transition-colors"
+                                                    className="p-1.5 sm:p-2 text-orange-600 hover:bg-orange-50 rounded-lg transition-colors duration-300 hover:scale-105 hover:shadow-lg cursor-pointer"
                                                     title="Voir le message de l'administrateur"
                                                 >
                                                     <MessageSquare className="w-4 h-4" />
@@ -465,7 +465,7 @@ const Notifications = () => {
                                                 <button
                                                     onClick={() => handleMarkAsRead(notification.id)}
                                                     disabled={actionLoading}
-                                                    className="p-1.5 sm:p-2 text-blue-600 hover:bg-blue-50 rounded-lg transition-colors disabled:opacity-50"
+                                                    className="p-1.5 sm:p-2 text-blue-600 hover:bg-blue-50 rounded-lg transition-colors disabled:opacity-50 duration-300 hover:scale-105 hover:shadow-lg cursor-pointer"
                                                     title="Marquer comme lu"
                                                 >
                                                     <Check className="w-4 h-4" />
@@ -475,7 +475,7 @@ const Notifications = () => {
                                             <button
                                                 onClick={() => handleDeleteNotification(notification.id)}
                                                 disabled={actionLoading}
-                                                className="p-1.5 sm:p-2 text-red-600 hover:bg-red-50 rounded-lg transition-colors disabled:opacity-50"
+                                                className="p-1.5 sm:p-2 text-red-600 hover:bg-red-50 rounded-lg transition-colors disabled:opacity-50 duration-300 hover:scale-105 hover:shadow-lg cursor-pointer"
                                                 title="Supprimer"
                                             >
                                                 <Trash2 className="w-4 h-4" />
@@ -531,7 +531,7 @@ const Notifications = () => {
 
                 {/* Message Modal */}
                 {showMessageModal && selectedMessage && (
-                    <div className="fixed inset-0 bg-black bg-opacity-60 backdrop-blur-sm flex items-center justify-center z-50 p-4">
+                    <div className="fixed inset-0 bg-opacity-60 backdrop-blur-sm flex items-center justify-center z-50 p-4">
                         <div className="bg-white rounded-xl shadow-2xl max-w-2xl w-full max-h-[90vh] sm:max-h-[85vh] overflow-y-auto transform transition-all duration-300 scale-100">
                             <div className="p-4 sm:p-6 lg:p-8">
                                 {/* Header */}

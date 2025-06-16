@@ -943,7 +943,7 @@ const UpdateCourse = () => {
                   </div>
                   <div className="flex items-center space-x-2">
                     <Star className="h-4 w-4 fill-current" />
-                    <span>{course.rating}/5</span>
+                    <span>{course.rating || 0}/5</span>
                   </div>
                   <div className="flex items-center space-x-2">
                     {course.is_published ? (
@@ -1059,10 +1059,10 @@ const UpdateCourse = () => {
                         onChange={(e) => handleOverviewChange("language", e.target.value)}
                         className="w-full border border-gray-300 rounded-lg px-3 py-2 focus:ring-2 focus:ring-blue-500 focus:border-transparent"
                       >
-                        <option value="english">English</option>
-                        <option value="french">French</option>
-                        <option value="arabic">Arabic</option>
-                        <option value="spanish">Spanish</option>
+                        <option value="Anglais">Anglais</option>
+                        <option value="Français">Français</option>
+                        <option value="Arabe">Arabe</option>
+                        <option value="Espagnol">Espagnol</option>
                       </select>
                     </div>
                   </div>
@@ -1166,7 +1166,7 @@ const UpdateCourse = () => {
                       <div className="text-sm text-gray-600">Total Duration</div>
                     </div>
                     <div className="text-center">
-                      <div className="text-2xl font-bold text-yellow-600">{course.rating}</div>
+                      <div className="text-2xl font-bold text-yellow-600">{course.rating || 0}</div>
                       <div className="text-sm text-gray-600">Average Rating</div>
                     </div>
                   </div>

@@ -52,6 +52,17 @@ const CreateCourse = () => {
   const [uploadProgress, setUploadProgress] = useState(0)
   const [isUploading, setIsUploading] = useState(false)
 
+  // Add state for category suggestions
+  const [showCategorySuggestions, setShowCategorySuggestions] = useState(false)
+  const [categorySuggestions] = useState([
+    "Développement",
+    "Business",
+    "Design",
+    "Marketing",
+    "Data Science",
+    "Autre"
+  ])
+
   // Load initial data from navigation state
   useEffect(() => {
     if (location.state?.courseData) {
@@ -319,6 +330,32 @@ const CreateCourse = () => {
     }))
   }
 
+  // Handle category input changes
+  const handleCategoryChange = (e) => {
+    const value = e.target.value
+    setCourseData((prevData) => ({
+      ...prevData,
+      category: value,
+    }))
+  }
+
+  // Handle category suggestion selection
+  const handleCategorySuggestionSelect = (suggestion) => {
+    setCourseData((prevData) => ({
+      ...prevData,
+      category: suggestion,
+    }))
+    setShowCategorySuggestions(false)
+  }
+
+  // Filter category suggestions based on input
+  const getFilteredCategorySuggestions = () => {
+    if (!courseData.category) return categorySuggestions
+    return categorySuggestions.filter(suggestion =>
+      suggestion.toLowerCase().includes(courseData.category.toLowerCase())
+    )
+  }
+
   // Handle creating and managing modules
   const [newModule, setNewModule] = useState({
     title: "",
@@ -518,6 +555,7 @@ const CreateCourse = () => {
       formData.append("category", courseData.category)
       formData.append("level", courseData.level)
       formData.append("duration_min", totalDuration)
+      formData.append("language", courseData.language)
 
       // Log the data being sent
       console.log("Course Data:", {
@@ -526,6 +564,7 @@ const CreateCourse = () => {
         category: courseData.category,
         level: courseData.level,
         duration_min: totalDuration,
+        language: courseData.language,
         modulesCount: courseData.modules.length,
         examQuestionsCount: courseData.exam.questions.length,
         resourcesCount: courseData.resources.length,
@@ -855,24 +894,45 @@ const CreateCourse = () => {
               </div>
 
               <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
-                <div className="transform transition-all duration-300 hover:scale-[1.02]">
+                <div className="transform transition-all duration-300 hover:scale-[1.02] relative">
                   <label className="block text-gray-700 mb-2 font-medium">Catégorie</label>
-                  <select
-                    name="category"
-                    value={courseData.category}
-                    onChange={handleGeneralInfoChange}
-                    className={`w-full px-4 py-3 border ${validationErrors.category ? "border-red-500" : "border-gray-300"} rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent transition-all duration-200`}
-                    required
-                    data-error={validationErrors.category}
-                  >
-                    <option value="">Sélectionner une catégorie</option>
-                    <option value="development">Développement</option>
-                    <option value="business">Business</option>
-                    <option value="design">Design</option>
-                    <option value="marketing">Marketing</option>
-                    <option value="datascience">Data Science</option>
-                    <option value="other">Autre</option>
-                  </select>
+                  <div className="relative">
+                    <input
+                      type="text"
+                      name="category"
+                      value={courseData.category}
+                      onChange={handleCategoryChange}
+                      onFocus={() => setShowCategorySuggestions(true)}
+                      onBlur={() => {
+                        // Delay hiding suggestions to allow for clicks
+                        setTimeout(() => setShowCategorySuggestions(false), 200)
+                      }}
+                      className={`w-full px-4 py-3 border ${validationErrors.category ? "border-red-500" : "border-gray-300"} rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent transition-all duration-200`}
+                      placeholder="Tapez ou sélectionnez une catégorie"
+                      required
+                      data-error={validationErrors.category}
+                    />
+
+                    {/* Category Suggestions Dropdown */}
+                    {showCategorySuggestions && (
+                      <div className="absolute z-10 w-full mt-1 bg-white border border-gray-300 rounded-lg shadow-lg max-h-48 overflow-y-auto">
+                        {getFilteredCategorySuggestions().map((suggestion, index) => (
+                          <div
+                            key={index}
+                            onClick={() => handleCategorySuggestionSelect(suggestion)}
+                            className="px-4 py-3 hover:bg-blue-50 cursor-pointer transition-colors duration-150 border-b border-gray-100 last:border-b-0"
+                          >
+                            {suggestion}
+                          </div>
+                        ))}
+                        {getFilteredCategorySuggestions().length === 0 && (
+                          <div className="px-4 py-3 text-gray-500 text-sm">
+                            Aucune suggestion trouvée
+                          </div>
+                        )}
+                      </div>
+                    )}
+                  </div>
                   {validationErrors.category && <ErrorMessage message={validationErrors.category} />}
                 </div>
 
@@ -887,10 +947,10 @@ const CreateCourse = () => {
                     data-error={validationErrors.language}
                   >
                     <option value="">Sélectionner une langue</option>
-                    <option value="ar">Arabe</option>
-                    <option value="fr">Français</option>
-                    <option value="en">Anglais</option>
-                    <option value="es">Espagnol</option>
+                    <option value="Arabe">Arabe</option>
+                    <option value="Français">Français</option>
+                    <option value="Anglais">Anglais</option>
+                    <option value="Espagnol">Espagnol</option>
                   </select>
                   {validationErrors.language && <ErrorMessage message={validationErrors.language} />}
                 </div>
