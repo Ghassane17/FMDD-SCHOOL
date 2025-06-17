@@ -152,48 +152,59 @@ class CourseController extends Controller
     public function enrollNow($courseId)
     {
         try {
-            DB::beginTransaction();
+            $user = Auth::user();
+            if (!$user) {
+                Log::error('No authenticated user for enrollment', ['course_id' => $courseId]);
+                return response()->json(['message' => 'Unauthenticated'], 401);
+            }
 
-            $user = auth()->user();
-            $course = Course::findOrFail($courseId);
+            if ($user->role !== 'learner') {
+                Log::warning('Unauthorized role for enrollment', ['user_id' => $user->id, 'role' => $user->role]);
+                return response()->json(['message' => 'Unauthorized'], 403);
+            }
 
-            // Get the learner record
             $learner = Learner::where('user_id', $user->id)->first();
             if (!$learner) {
-                return response()->json([
-                    'message' => 'Profil apprenant non trouvé.'
-                ], 404);
+                Log::error('Learner profile not found', ['user_id' => $user->id]);
+                return response()->json(['message' => 'Learner profile not found'], 404);
+            }
+
+            $course = Course::find($courseId);
+            if (!$course) {
+                Log::error('Course not found', ['course_id' => $courseId]);
+                return response()->json(['message' => 'Course not found'], 404);
             }
 
             // Check if already enrolled
-            if ($course->learners()->where('learner_id', $learner->id)->exists()) {
-                return response()->json([
-                    'message' => 'Vous êtes déjà inscrit à ce cours.'
-                ], 400);
+            if ($learner->courses()->where('course_id', $courseId)->exists()) {
+                Log::info('Already enrolled in course', ['learner_id' => $learner->id, 'course_id' => $courseId]);
+                return response()->json(['message' => 'Already enrolled in this course'], 400);
             }
 
-            // Attach learner to course with initial values
-            $course->learners()->attach($learner->id, [
+            // Enroll in course with initial values
+            $learner->courses()->attach($courseId, [
                 'progress' => 0,
                 'last_accessed' => now(),
-                'tentatives' => 0
+                'tentatives' => 0,
+                'completed_modules' => json_encode([]) // Initialize with empty array
             ]);
 
-            DB::commit();
+            Log::info('Successfully enrolled in course', [
+                'learner_id' => $learner->id,
+                'course_id' => $courseId
+            ]);
 
             return response()->json([
-                'message' => 'Inscription réussie!'
-            ]);
+                'message' => 'Successfully enrolled in course',
+                'course' => $course
+            ], 200);
         } catch (\Exception $e) {
-            DB::rollBack();
-            Log::error('Backend: Failed to enroll in course', [
+            Log::error('Failed to enroll in course', [
                 'course_id' => $courseId,
                 'error' => $e->getMessage(),
                 'trace' => $e->getTraceAsString()
             ]);
-            return response()->json([
-                'message' => 'Une erreur est survenue lors de l\'inscription.'
-            ], 500);
+            return response()->json(['message' => 'Failed to enroll in course'], 500);
         }
     }
 
@@ -282,7 +293,7 @@ class CourseController extends Controller
     /**
      * Remove the learner from the course
      */
-    public function leave(Course $course): JsonResponse
+    /*  public function leave(Course $course): JsonResponse
     {
         try {
             $learner = Auth::user()->learner;
@@ -333,5 +344,5 @@ class CourseController extends Controller
             ]);
             return response()->json(['message' => 'Failed to leave the course'], 500);
         }
-    }
+    } */
 }

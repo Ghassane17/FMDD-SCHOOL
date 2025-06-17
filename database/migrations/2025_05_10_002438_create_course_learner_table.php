@@ -31,7 +31,7 @@ return new class extends Migration
             $table->primary(['course_id', 'learner_id']);
             $table->index('learner_id');
             $table->index('course_id'); // Optimisation pour les requêtes instructeurs
-
+            $table->json('completed_modules');
         });
     }
 

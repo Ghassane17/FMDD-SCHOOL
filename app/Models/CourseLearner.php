@@ -16,7 +16,8 @@ class CourseLearner extends Pivot
         'learner_id' => 'int',
         'progress' => 'int',
         'last_accessed' => 'datetime',
-        'tentatives' => 'int'
+        'tentatives' => 'int',
+        'completed_modules' => 'array'
     ];
 
     protected $fillable = [
@@ -24,7 +25,8 @@ class CourseLearner extends Pivot
         'learner_id',
         'progress',
         'last_accessed',
-        'tentatives'
+        'tentatives',
+        'completed_modules'
     ];
 
 

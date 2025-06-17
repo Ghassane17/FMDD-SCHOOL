@@ -22,7 +22,7 @@ Route::post('/login', [LoginController::class, 'login'])->name('login');
 Route::post('/logout', [LoginController::class, 'logout'])->middleware('auth:sanctum')->name('logout');
 
 Route::post('/contact', [PublicController::class, 'contact'])->name('contact');
-
+Route::get('/formations', [PublicController::class, 'formations']);
 
 
 // Protected Routes
@@ -51,8 +51,8 @@ Route::middleware('auth:sanctum')->group(function () {
     Route::post('/courses/{course}/comments', [CommentController::class, 'store']);
     Route::put('/courses/{course}', [ResourceController::class, 'updateCourseRating']);
     Route::post('/courses/{id}/enroll', [CourseController::class, 'enrollNow']);
-    Route::delete('/courses/{course}/leave', [CourseController::class, 'leave']);
-
+    /*     Route::delete('/courses/{course}/leave', [CourseController::class, 'leave']);
+ */
 
     // Exam routes (specific)
     Route::get('/courses/{course}/exam', [ExamController::class, 'getExam']);

@@ -327,7 +327,7 @@ class LearnerController extends Controller
 
         try {
             $learner = Learner::with(['courses' => function ($query) {
-                $query->select('courses.id', 'courses.title', 'courses.description', 'courses.course_thumbnail', 'courses.level', 'courses.rating', 'course_learner.progress', 'course_learner.last_accessed')
+                $query->select('courses.id', 'courses.title', 'courses.description', 'courses.course_thumbnail', 'courses.level', 'courses.rating', 'course_learner.progress', 'course_learner.last_accessed', 'course_learner.completed_modules')
                     ->withCount('learners as students_count');
             }])->where('user_id', $user->id)->first();
 
@@ -363,7 +363,6 @@ class LearnerController extends Controller
                         'course_name' => $certificate->course->title,
                         'created_at' => $certificate->created_at,
                         'url_path' => $certificate->url_path,
-
                     ];
                 });
 
@@ -373,7 +372,6 @@ class LearnerController extends Controller
                 'courses_completed' => $completedCourses,
                 'certificates' => $certificates,
                 'last_connection' => $learner->last_connection,
-
                 'user' => [
                     'name' => $user->username,
                     'avatar' => $user->avatar,
@@ -391,6 +389,7 @@ class LearnerController extends Controller
                         'level' => $course->level,
                         'students' => $course->students_count,
                         'rating' => $course->rating,
+                        'completed_modules' => $course->pivot->completed_modules ?? []
                     ];
                 }),
             ], 200);
@@ -599,17 +598,14 @@ class LearnerController extends Controller
 
         // Get enrolled courses with progress
         $enrolledCourses = $user->learner->courses()
-            ->with(['modules', 'modules.userProgress' => function ($query) use ($user) {
-                $query->where('user_id', $user->id);
-            }])
+            ->with(['modules'])
             ->get()
             ->map(function ($course) use ($user) {
                 $totalModules = $course->modules->count();
-                $completedModules = $course->modules->filter(function ($module) {
-                    return $module->userProgress->isNotEmpty() && $module->userProgress->first()->is_completed;
-                })->count();
+                $completedModules = $course->pivot->completed_modules ?? [];
+                $completedModulesCount = is_array($completedModules) ? count($completedModules) : 0;
 
-                $progress = $totalModules > 0 ? round(($completedModules / $totalModules) * 100) : 0;
+                $progress = $totalModules > 0 ? round(($completedModulesCount / $totalModules) * 100) : 0;
 
                 return [
                     'id' => $course->id,

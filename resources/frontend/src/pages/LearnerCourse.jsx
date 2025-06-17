@@ -1,4 +1,4 @@
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { toast } from 'react-hot-toast';
 import CourseContent from '../components/LearnerCourse/CourseContent';
@@ -23,12 +23,21 @@ const LearnerCourse = () => {
         currentModuleIndex,
         setCurrentModule,
         setModules,
+        progress,
     } = useCourseContext();
 
     // Local state for course content
     const [notes, setNotes] = useState('');
     const [loading, setLoading] = useState(false);
     const [isFocused, setIsFocused] = useState(false);
+    const [completedModules, setCompletedModules] = useState([]);
+
+    // Update completed modules when course data changes
+    useEffect(() => {
+        if (courseData?.pivot?.completed_modules) {
+            setCompletedModules(courseData.pivot.completed_modules);
+        }
+    }, [courseData]);
 
     // Toggle focus mode
     const toggleFocusMode = () => {
@@ -104,7 +113,15 @@ const LearnerCourse = () => {
             console.log('Frontend: Module completion response:', response);
 
             if (response.success) {
-                // Update the current module's completion status
+                // Update completed modules array
+                setCompletedModules(prev => {
+                    if (!prev.includes(moduleId)) {
+                        return [...prev, moduleId];
+                    }
+                    return prev;
+                });
+
+                // Update the current module
                 setCurrentModule(prev => {
                     if (!prev) return null;
                     return {
@@ -160,6 +177,7 @@ const LearnerCourse = () => {
                     onModuleComplete={handleModuleComplete}
                     isFocused={isFocused}
                     onToggleFocus={toggleFocusMode}
+                    completedModules={completedModules}
                 />
             </div>
         </div>

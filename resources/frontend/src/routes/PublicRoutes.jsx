@@ -8,18 +8,31 @@ import Login from '../pages/Login.jsx';
 import Register from '../pages/Register.jsx';
 import CompleteProfileInstructor from '../pages/CompleteProfileInstructor.jsx';
 import CompleteProfileLearner from "@/pages/CompleteProfileLearner.jsx";
+import { getPublicCourses } from '../services/api.js';
 
+const loader = async () => {
+  try {
+    const response = await getPublicCourses();
+    // Access the courses array from the response
+    return response.courses || [];
+  } catch (error) {
+    console.error('Error loading courses:', error);
+    return [];
+  }
+};
 const PublicRoutes = {
     element: <MainLayout />,
     children: [
         {
             index: true,
             element: <WelcomePage />,
+            loader
         },
         
         {
             path: 'formations',
             element: <FormationsPage />,
+            loader
         },
         {
             path: 'a-propos',

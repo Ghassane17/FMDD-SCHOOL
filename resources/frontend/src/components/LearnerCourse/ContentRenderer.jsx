@@ -67,14 +67,28 @@ const ContentRenderer = ({ type, textContent, filePath, quizQuestions = [], reso
     useEffect(() => {
         if (type === 'quiz' && quizQuestions.length > 0) {
             const currentQuestion = quizQuestions[currentQuestionIndex];
-            const shuffledOptions = shuffleArray([...currentQuestion.options]);
-            setRandomizedOptions(shuffledOptions);
             
-            // Store the correct answer text for later comparison
-            const correctAnswerText = currentQuestion.options[currentQuestion.correct_option].text;
+            // Create array of option indices
+            const optionIndices = currentQuestion.options.map((_, index) => index);
+            
+            // Shuffle the indices
+            const shuffledIndices = shuffleArray(optionIndices);
+            
+            // Create new options array with shuffled order
+            const shuffledOptions = shuffledIndices.map((originalIndex) => ({
+                ...currentQuestion.options[originalIndex],
+                originalIndex // Store original index to track correct answer
+            }));
+
+            // Find the new index of the correct answer
+            const correctAnswerNewIndex = shuffledOptions.findIndex(
+                option => option.originalIndex === currentQuestion.correct_option
+            );
+
+            setRandomizedOptions(shuffledOptions);
             setCorrectAnswerMap(prev => ({
                 ...prev,
-                [currentQuestionIndex]: correctAnswerText
+                [currentQuestionIndex]: correctAnswerNewIndex
             }));
             
             setSelectedAnswer(null);
@@ -154,47 +168,41 @@ const ContentRenderer = ({ type, textContent, filePath, quizQuestions = [], reso
     }, [getAuthToken]);
 
     // Handle quiz answer selection
-    const handleAnswerSelect = (text) => {
-        setSelectedAnswer(text);
+    const handleAnswerSelect = (optionIndex) => {
+        setSelectedAnswer(optionIndex);
         setAnswers(prev => ({
             ...prev,
-            [currentQuestionIndex]: text
+            [currentQuestionIndex]: optionIndex
         }));
     };
 
     // Handle quiz completion
-const handleQuizComplete = async () => {
-    const correctAnswers = Object.entries(answers).reduce((acc, [questionIndex, selectedText]) => {
-        const correctText = correctAnswerMap[questionIndex];
-        return acc + (selectedText === correctText ? 1 : 0);
-    }, 0);
+    const handleQuizComplete = async () => {
+        const correctAnswers = Object.entries(answers).reduce((acc, [questionIndex, selectedIndex]) => {
+            const correctIndex = correctAnswerMap[questionIndex];
+            return acc + (selectedIndex === correctIndex ? 1 : 0);
+        }, 0);
 
-    const finalScore = (correctAnswers / quizQuestions.length) * 100;
-    setQuizScore(finalScore);
-    setQuizCompleted(true);
+        const finalScore = (correctAnswers / quizQuestions.length) * 100;
+        setQuizScore(finalScore);
+        setQuizCompleted(true);
 
-    if (onQuizComplete) {
-        onQuizComplete(finalScore / 100);
-    }
+        if (onQuizComplete) {
+            onQuizComplete(finalScore / 100);
+        }
 
-    try {
-        const response = await markModuleAsCompleted(parseInt(courseId, 10), moduleId);
-        console.log("🚀 Response:", response);
-
-        // Optional: show a toast
-        toast.success(`Quiz completed with ${Math.round(finalScore)}% score!`);
-
-        // Wait 2 seconds then reload the page
-        setTimeout(() => {
-            window.location.reload();
-        }, 2000);
-
-    } catch (error) {
-        console.error("❌ Error marking module as completed:", error);
-        toast.error("Failed to update progress. Please try again.");
-    }
-};
-
+        try {
+            const response = await markModuleAsCompleted(parseInt(courseId, 10), moduleId);
+            console.log("🚀 Response:", response);
+            toast.success(`Quiz completed with ${Math.round(finalScore)}% score!`);
+            setTimeout(() => {
+                window.location.reload();
+            }, 2000);
+        } catch (error) {
+            console.error("❌ Error marking module as completed:", error);
+            toast.error("Failed to update progress. Please try again.");
+        }
+    };
 
     // Reset quiz
     const resetQuiz = () => {
@@ -348,16 +356,16 @@ const handleQuizComplete = async () => {
 
                             <div className="space-y-6">
                                 {quizQuestions.map((question, index) => (
-                                    <div key={index} className="p-6 bg-white rounded-lg shadow">
+                                    <div key={question.id} className="p-6 bg-white rounded-lg shadow">
                                         <p className="text-xl font-medium mb-4">{question.question}</p>
                                         <div className="space-y-3">
-                                            {question.options.map((option, optIndex) => (
+                                            {randomizedOptions.map((option, optIndex) => (
                                                 <div
-                                                    key={optIndex}
+                                                    key={option.id}
                                                     className={`p-4 rounded-lg text-lg ${
-                                                        option.text === correctAnswerMap[index]
+                                                        optIndex === correctAnswerMap[index]
                                                             ? 'bg-green-100 text-green-800'
-                                                            : answers[index] === option.text
+                                                            : answers[index] === optIndex
                                                                 ? 'bg-red-100 text-red-800'
                                                                 : 'bg-gray-50'
                                                     }`}
@@ -393,7 +401,7 @@ const handleQuizComplete = async () => {
                                 <p className="font-medium">
                                     {selectedAnswer === correctAnswerMap[currentQuestionIndex]
                                         ? 'Correct!'
-                                        : `Incorrect. The correct answer is: ${correctAnswerMap[currentQuestionIndex]}`}
+                                        : `Incorrect. The correct answer is: ${randomizedOptions[correctAnswerMap[currentQuestionIndex]].text}`}
                                 </p>
                             </div>
 
@@ -448,10 +456,10 @@ const handleQuizComplete = async () => {
                             <div className="space-y-3">
                                 {randomizedOptions.map((option, index) => (
                                     <button
-                                        key={index}
-                                        onClick={() => handleAnswerSelect(option.text)}
+                                        key={option.id}
+                                        onClick={() => handleAnswerSelect(index)}
                                         className={`w-full p-4 text-left rounded-lg border transition-all ${
-                                            selectedAnswer === option.text
+                                            selectedAnswer === index
                                                 ? 'border-blue-500 bg-blue-50'
                                                 : 'border-gray-200 hover:border-blue-300 hover:bg-blue-50/50'
                                         }`}

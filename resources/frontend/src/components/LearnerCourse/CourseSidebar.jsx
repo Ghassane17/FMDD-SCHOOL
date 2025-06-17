@@ -3,7 +3,7 @@ import PropTypes from 'prop-types';
 import { useNavigate } from 'react-router-dom';
 import { CheckCircle, School, Lock } from '@mui/icons-material';
 
-const CourseSidebar = ({ modules, currentModuleId, progress, isOpen, onModuleSelect, quizProgress, courseId, hasExam }) => {
+const CourseSidebar = ({ modules, currentModuleId, progress, isOpen, onModuleSelect, quizProgress, courseId, hasExam, completedModules = [] }) => {
     const navigate = useNavigate();
     
     // Exam is disabled when progress is less than 100%
@@ -29,23 +29,26 @@ const CourseSidebar = ({ modules, currentModuleId, progress, isOpen, onModuleSel
             <div className="p-4 h-full overflow-y-auto">
                 <h2 className="text-lg font-semibold text-gray-800 mb-4">Modules</h2>
                 <ul className="space-y-2">
-                    {modules.map((module) => (
-                        <li key={module.id}>
-                            <button
-                                onClick={() => onModuleSelect(modules.findIndex(m => m.id === module.id))}
-                                className={`w-full text-left p-3 rounded-lg flex justify-between items-center ${
-                                    currentModuleId === module.id
-                                        ? 'bg-indigo-100 text-indigo-700'
-                                        : 'bg-gray-50 text-gray-700 hover:bg-gray-100'
-                                }`}
-                            >
-                                <span className="text-sm font-medium">{module.title}</span>
-                                {module.is_completed && (
-                                    <CheckCircle className="text-green-500" fontSize="small" />
-                                )}
-                            </button>
-                        </li>
-                    ))}
+                    {modules.map((module) => {
+                        const isCompleted = completedModules.includes(module.id);
+                        return (
+                            <li key={module.id}>
+                                <button
+                                    onClick={() => onModuleSelect(modules.findIndex(m => m.id === module.id))}
+                                    className={`w-full text-left p-3 rounded-lg flex justify-between items-center ${
+                                        currentModuleId === module.id
+                                            ? 'bg-indigo-100 text-indigo-700'
+                                            : 'bg-gray-50 text-gray-700 hover:bg-gray-100'
+                                    }`}
+                                >
+                                    <span className="text-sm font-medium">{module.title}</span>
+                                    {isCompleted && (
+                                        <CheckCircle className="text-green-500" fontSize="small" />
+                                    )}
+                                </button>
+                            </li>
+                        );
+                    })}
                 </ul>
                 {hasExam && (
                     <div className="mt-4">
@@ -68,7 +71,7 @@ const CourseSidebar = ({ modules, currentModuleId, progress, isOpen, onModuleSel
                             </span>
                         </button>
                         {isExamDisabled && (
-                            <p className="mt-2 text-xs text-gray-500 px-3">Vous devez compléter tous les modules ({progress} %) pour accéder à l’examen final.</p>
+                            <p className="mt-2 text-xs text-gray-500 px-3">Vous devez compléter tous les modules ({progress} %) pour accéder à l'examen final.</p>
                         )}
                     </div>
                 )}
@@ -95,6 +98,7 @@ CourseSidebar.propTypes = {
     quizProgress: PropTypes.object,
     courseId: PropTypes.number.isRequired,
     hasExam: PropTypes.bool.isRequired,
+    completedModules: PropTypes.arrayOf(PropTypes.number),
 };
 
 export default CourseSidebar;

@@ -9,6 +9,16 @@ const dureeTransition = 500; // 0.5 seconde de transition
 
 export default function Hero() {
   const [indexMot, setIndexMot] = useState(0);
+  const [scrollY, setScrollY] = useState(0);
+
+  useEffect(() => {
+    const handleScroll = () => {
+      setScrollY(window.scrollY);
+    };
+
+    window.addEventListener('scroll', handleScroll);
+    return () => window.removeEventListener('scroll', handleScroll);
+  }, []);
 
   useEffect(() => {
     const timer = setTimeout(() => {
@@ -16,6 +26,10 @@ export default function Hero() {
     }, dureeAffichage);
     return () => clearTimeout(timer);
   }, [indexMot]);
+
+  // Calculate blur and opacity based on scroll position
+  const blurAmount = Math.min(scrollY * 0.02, 10); // Max blur of 10px
+  const opacity = Math.max(1 - scrollY * 0.002, 0.3); // Min opacity of 0.3
 
   return (
     <Box
@@ -47,11 +61,12 @@ export default function Hero() {
           height: '100%',
           objectFit: 'cover',
           zIndex: -1,
-          filter: 'brightness(0.7)',
+          filter: `brightness(0.7) blur(${blurAmount}px)`,
+          transition: 'filter 0.3s ease-out',
         }}
       />
       
-      {/* Gradient overlay */}
+      {/* Gradient overlay with dynamic opacity */}
       <Box
         sx={{
           position: 'absolute',
@@ -61,10 +76,12 @@ export default function Hero() {
           height: '100%',
           background: 'linear-gradient(to bottom, rgba(15, 118, 110, 0.8), rgba(30, 64, 175, 0.9))',
           zIndex: -1,
+          opacity: opacity,
+          transition: 'opacity 0.3s ease-out',
         }}
       />
 
-      <Container maxWidth="md">
+      <Container maxWidth="md" sx={{ opacity: opacity, transition: 'opacity 0.3s ease-out' }}>
         <Typography
           component="h1"
           variant="h1"
@@ -139,28 +156,28 @@ export default function Hero() {
           }}
         >
           <Link to="/login"> 
-            
-          <Button
-            component="a"
-            href="#login"
-            variant="contained"
-            sx={{
-              backgroundColor: '#1e40af',
-              color: '#fff',
-              borderRadius: 8,
-              px: 4,
-              py: 1.5,
-              fontSize: '1rem',
-              fontWeight: 600,
-              transition: 'transform 0.2s ease-in-out, background-color 0.3s',
-              '&:hover': {
-                backgroundColor: '#173287',
-                transform: 'scale(1.05)',
-              },
-            }}
-          >
-           Se connecter
-          </Button></Link> 
+            <Button
+              component="a"
+              href="#login"
+              variant="contained"
+              sx={{
+                backgroundColor: '#1e40af',
+                color: '#fff',
+                borderRadius: 8,
+                px: 4,
+                py: 1.5,
+                fontSize: '1rem',
+                fontWeight: 600,
+                transition: 'transform 0.2s ease-in-out, background-color 0.3s',
+                '&:hover': {
+                  backgroundColor: '#173287',
+                  transform: 'scale(1.05)',
+                },
+              }}
+            >
+              Se connecter
+            </Button>
+          </Link> 
           
           <Button
             component="a"

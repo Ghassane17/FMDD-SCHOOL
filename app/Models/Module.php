@@ -18,13 +18,13 @@ class Module extends Model
 
         'order',
         'duration',
-        'is_completed'
+
     ];
 
     protected $casts = [
         'order' => 'integer',
         'duration' => 'integer',
-        'is_completed' => 'boolean'
+
     ];
 
     /**
@@ -35,9 +35,9 @@ class Module extends Model
         return $this->belongsTo(Course::class);
     }
 
-    public function resources(): HasMany
+    public function resources()
     {
-        return $this->hasMany(CourseIndex::class); // that relation was made to return course dashboard elements and it doesnt have a relation with the course Recourses
+        return $this->course->resources();
     }
 
     /**

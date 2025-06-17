@@ -28,6 +28,7 @@ import {
 } from "lucide-react"
 import ContentRenderer from "./ContentRenderer"
 import { downloadResource } from "../../services/api.js"
+import { toast } from "react-hot-toast"
 
 // File type configuration
 const FILE_TYPES = {
@@ -259,6 +260,7 @@ const CourseContent = ({
   onModuleComplete,
   isFocused,
   onToggleFocus,
+  completedModules = [],
 }) => {
   const [downloadingResources, setDownloadingResources] = useState(new Set())
   const [previewResource, setPreviewResource] = useState(null)
@@ -274,27 +276,34 @@ const CourseContent = ({
     )
   }
 
+  // Check if current module is completed
+  const isModuleCompleted = completedModules.includes(currentModule?.id);
+
   const handleDownloadResource = async (resourceId, resource) => {
-    // Check if it's a direct URL or link type first
-    if (isDirectUrl(resource) || resource.type === 'link' || resource.type === 'url') {
-      const url = formatUrl(resource.url || resource.name);
-      console.log('🔗 Opening external link:', url);
-      window.open(url, '_blank', 'noopener,noreferrer');
-      return;
-    }
-   
     if (downloadingResources.has(resourceId)) return;
 
     setDownloadingResources((prev) => new Set(prev).add(resourceId));
 
     try {
-      const baseName = resource.name.replace(/\.[^/.]+$/, "");
-      const extension = TYPE_TO_EXTENSION[resource.type.toLowerCase()] || ".bin";
+      // For link type resources, open in new tab
+      if (resource.type === 'link' || resource.type === 'url') {
+        window.open(resource.url, '_blank', 'noopener,noreferrer');
+        return;
+      }
+
+      // For other resources, download
+      if (!resource.name) {
+        throw new Error('Resource name is required');
+      }
+
+      const baseName = resource.name;
+      const extension = TYPE_TO_EXTENSION[resource.type?.toLowerCase()] || ".bin";
       const fileName = extension ? `${baseName}${extension}` : baseName;
 
       await downloadResource(resourceId, fileName);
     } catch (error) {
       console.error("Download failed:", error);
+      toast.error(error.message || "Failed to download resource");
     } finally {
       setDownloadingResources((prev) => {
         const newSet = new Set(prev);
@@ -361,8 +370,7 @@ const CourseContent = ({
           <div className="flex-1">
             <h1 className="text-4xl font-bold text-black mb-4">{currentModule.title}</h1>
             <div className="flex items-center gap-4 text-base text-gray-600">
-              
-              {currentModule.is_completed && (
+              {isModuleCompleted && (
                 <div className="flex items-center gap-2 text-green-600">
                   <CheckCircle className="w-5 h-5" />
                   <span>Completed</span>
@@ -372,7 +380,7 @@ const CourseContent = ({
           </div>
 
           <div className="flex items-center gap-4">
-            {!currentModule.is_completed && (
+            {!isModuleCompleted && (
               <button
                 onClick={() => {
                   if (typeof onModuleComplete === "function") {
@@ -382,7 +390,7 @@ const CourseContent = ({
                 className="flex items-center gap-2 px-6 py-3 bg-green-600 text-white rounded-lg hover:bg-green-700 transition-colors text-base"
               >
                 <CheckCircle className="w-5 h-5" />
-                J’ai terminé ce module
+                J'ai terminé ce module
               </button>
             )}
             <button
@@ -569,6 +577,7 @@ CourseContent.propTypes = {
   onModuleComplete: PropTypes.func.isRequired,
   isFocused: PropTypes.bool,
   onToggleFocus: PropTypes.func.isRequired,
+  completedModules: PropTypes.arrayOf(PropTypes.number),
 }
 
 export default CourseContent

@@ -1,8 +1,9 @@
 import React from 'react';
 import Slider from 'react-slick';
-import { trainerData } from '../../data/trainerData.js';
 import 'slick-carousel/slick/slick.css';
 import 'slick-carousel/slick/slick-theme.css';
+import { useNavigate } from 'react-router-dom';
+import CourseCard from '../Learner/CourseCard.jsx';
 
 // Custom arrow components for the slider
 const NextArrow = ({ onClick }) => (
@@ -39,13 +40,25 @@ const PrevArrow = ({ onClick }) => (
   </button>
 );
 
-export default function PopularCourses() {
+export default function PopularCourses({ courses }) {
+  const navigate = useNavigate();
+
+  const handleCardClick = (courseId) => {
+    // Check if user is logged in
+    const isLoggedIn = localStorage.getItem('token');
+    if (!isLoggedIn) {
+      navigate('/login');
+      return;
+    }
+    navigate(`/learner/courses/${courseId}`);
+  };
+
   // Slider settings
   const settings = {
     dots: false,
     infinite: true,
     speed: 500,
-    slidesToShow: 4,
+    slidesToShow: Math.min(4, courses.length),
     slidesToScroll: 1,
     nextArrow: <NextArrow />,
     prevArrow: <PrevArrow />,
@@ -53,13 +66,13 @@ export default function PopularCourses() {
       {
         breakpoint: 1280,
         settings: {
-          slidesToShow: 3,
+          slidesToShow: Math.min(3, courses.length),
         },
       },
       {
         breakpoint: 1024,
         settings: {
-          slidesToShow: 2,
+          slidesToShow: Math.min(2, courses.length),
         },
       },
       {
@@ -75,29 +88,32 @@ export default function PopularCourses() {
     <div className="py-8 md:py-12 bg-gray-100">
       <div className="max-w-7xl mx-auto px-4">
         <h2 className="text-3xl md:text-4xl font-bold text-blue-800 text-center mb-8">
-          Nos Formations
+          Formations Populaires
         </h2>
 
-        <Slider {...settings}>
-          {trainerData.courses.map((course) => (
-            <div key={course.id} className="px-2">
-              <div className="bg-white rounded-lg shadow-md overflow-hidden w-full">
-                <img
-                  src={course.image}
-                  alt={course.title}
-                  className="w-full h-40 object-cover"
+        {courses && courses.length > 0 ? (
+          <Slider {...settings}>
+            {courses.map((course) => (
+              <div key={course.id} className="px-2">
+                <CourseCard
+                  id={course.id}
+                  title={course.title}
+                  description={course.description}
+                  image={course.course_thumbnail}
+                  level={course.level}
+                  students={course.students}
+                  rating={course.rating}
+                  instructor={course.instructor?.username}
+                  onClick={() => handleCardClick(course.id)}
                 />
-                <div className="p-4">
-                  <h3 className="text-lg font-semibold text-gray-800">{course.title}</h3>
-                  <p className="text-sm text-gray-600">{course.level}</p>
-                  <p className="text-sm text-gray-500 mt-2">
-                    {course.students} étudiants • Note: {course.rating}
-                  </p>
-                </div>
               </div>
-            </div>
-          ))}
-        </Slider>
+            ))}
+          </Slider>
+        ) : (
+          <div className="text-center py-8">
+            <p className="text-xl text-gray-600">Pas de cours publiés pour ce moment</p>
+          </div>
+        )}
       </div>
     </div>
   );

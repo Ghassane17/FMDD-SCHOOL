@@ -1,305 +1,226 @@
 "use client"
 
-import { useState, useCallback, useRef, useEffect } from "react"
-import { Link, useNavigate } from "react-router-dom"
+import { useState, useCallback, useEffect, useRef } from "react"
+import { useNavigate } from "react-router-dom"
 import {
-    Card,
-    CardMedia,
-    CardContent,
-    Typography,
-    LinearProgress,
-    Box,
-    Chip,
-    Stack,
-    Rating,
-    Tooltip,
-    useTheme,
-    useMediaQuery,
-} from "@mui/material"
-import PeopleIcon from "@mui/icons-material/People"
-import AccessTimeIcon from "@mui/icons-material/AccessTime"
+  AccessTime as AccessTimeIcon,
+  People as PeopleIcon,
+  Star as StarIcon,
+  PlayCircle as PlayCircleIcon,
+  CheckCircle as CheckCircleIcon,
+  ArrowForward as ArrowForwardIcon,
+} from "@mui/icons-material"
 
-const API_URL = import.meta.env.VITE_BACKEND_URL 
+const API_URL = import.meta.env.VITE_BACKEND_URL
 
-const CourseCard = ({ id, title, description, progress, lastAccessed, image, level, students, rating }) => {
-    const [isImageLoading, setIsImageLoading] = useState(true)
-    const [imageSrc, setImageSrc] = useState(null)
-    const imageRef = useRef(null)
-    const navigate = useNavigate()
-    const theme = useTheme()
-    const isMobile = useMediaQuery(theme.breakpoints.down('md'))
+const CourseCard = ({
+  id,
+  title,
+  description,
+  progress,
+  lastAccessed,
+  image,
+  level,
+  students,
+  rating,
+  instructor,
+  enrolled = false,
+}) => {
+  const [isImageLoading, setIsImageLoading] = useState(true)
+  const [imageSrc, setImageSrc] = useState(null)
+  const imageRef = useRef(null)
+  const navigate = useNavigate()
 
-    const handleCardClick = () => {
-        // Always navigate to the enrollment page first
-        navigate(`/learner/courses/${id}`)
+  // Initialize image source
+  useEffect(() => {
+    if (!image) {
+      setImageSrc(`${API_URL}/placeholder-course.jpg`)
+      setIsImageLoading(false)
+      return
     }
 
-    // Initialize image source
-    useEffect(() => {
-        if (!image) {
-            setImageSrc(`${API_URL}`)
-            setIsImageLoading(false)
-            return
-        }
+    // If image is a full URL, use it directly
+    if (image.startsWith("http")) {
+      setImageSrc(image)
+      return
+    }
 
-        // If image is a full URL, use it directly
-        if (image.startsWith("http")) {
-            setImageSrc(image)
-            return
-        }
+    // If image is a relative path, prepend API_URL
+    setImageSrc(`${API_URL}${image}`)
+  }, [image])
 
-        // If image is a relative path, prepend API_URL
-        setImageSrc(`${API_URL}${image}`)
-    }, [image])
+  // Handle image loading
+  const handleImageLoad = useCallback(() => {
+    setIsImageLoading(false)
+  }, [])
 
-    // Handle image loading
-    const handleImageLoad = useCallback(() => {
-        setIsImageLoading(false)
-    }, [])
+  const handleImageError = useCallback(() => {
+    console.log("Image load error, using fallback")
+    setImageSrc(`${API_URL}/placeholder-course.jpg`)
+    setIsImageLoading(false)
+  }, [])
 
-    const handleImageError = useCallback(() => {
-        console.log("Image load error, using fallback")
-        setImageSrc(`${API_URL}`)
-        setIsImageLoading(false)
-    }, [])
+  const handleCardClick = () => {
+    navigate(`/learner/courses/${id}`)
+  }
 
-    return (
-        <div 
-            onClick={handleCardClick} 
-            className="cursor-pointer bg-white rounded-lg shadow-sm hover:shadow-md transition-shadow duration-200 overflow-hidden border border-gray-200"
-        >
-            <Card
-                className="w-full transition-all duration-300 hover:-translate-y-1 hover:shadow-md"
-                sx={{
-                    height: isMobile ? 'auto' : 280,
-                    display: "flex",
-                    flexDirection: isMobile ? "column" : "row",
-                    border: "1px solid",
-                    borderColor: "divider",
-                    borderRadius: 2,
-                    boxShadow: "0 1px 3px rgba(0,0,0,0.05)",
-                    overflow: "hidden",
-                }}
+  // Determine level styling
+  const getLevelStyle = () => {
+    const levelLower = level?.toLowerCase() || ""
+
+    if (levelLower.includes("débutant") || levelLower.includes("beginner")) {
+      return {
+        bg: "bg-green-100",
+        text: "text-green-800",
+        border: "border-green-200",
+      }
+    } else if (levelLower.includes("intermédiaire") || levelLower.includes("intermediate")) {
+      return {
+        bg: "bg-yellow-100",
+        text: "text-yellow-800",
+        border: "border-yellow-200",
+      }
+    } else if (levelLower.includes("avancé") || levelLower.includes("advanced")) {
+      return {
+        bg: "bg-red-100",
+        text: "text-red-800",
+        border: "border-red-200",
+      }
+    } else {
+      return {
+        bg: "bg-blue-100",
+        text: "text-blue-800",
+        border: "border-blue-200",
+      }
+    }
+  }
+
+  const levelStyle = getLevelStyle()
+
+  return (
+    <div className="group h-full" onClick={handleCardClick}>
+      <div className="bg-white rounded-2xl shadow-md hover:shadow-xl transition-all duration-300 overflow-hidden border border-gray-100 h-full transform group-hover:scale-[1.02] group-hover:-translate-y-1">
+        {/* Image Section */}
+        <div className="relative w-full h-48 overflow-hidden">
+          {isImageLoading && (
+            <div className="absolute inset-0 flex items-center justify-center bg-gray-100">
+              <div className="w-12 h-12 border-4 border-gray-200 border-t-blue-600 rounded-full animate-spin"></div>
+            </div>
+          )}
+          <img
+            ref={imageRef}
+            src={imageSrc || "/placeholder.svg"}
+            alt={title}
+            className={`w-full h-full object-cover transition-transform duration-700 group-hover:scale-110 ${
+              isImageLoading ? "hidden" : "block"
+            }`}
+            onLoad={handleImageLoad}
+            onError={handleImageError}
+          />
+
+          {/* Overlay with play button for enrolled courses */}
+          {enrolled && (
+            <div className="absolute inset-0 bg-black bg-opacity-30 flex items-center justify-center opacity-0 group-hover:opacity-100 transition-opacity duration-300">
+              <div className="w-14 h-14 bg-white rounded-full flex items-center justify-center transform group-hover:scale-110 transition-transform duration-300">
+                <PlayCircleIcon className="text-blue-600 text-3xl" />
+              </div>
+            </div>
+          )}
+
+          {/* Level badge */}
+          {level && (
+            <div
+              className={`absolute top-4 left-4 px-3 py-1 rounded-full text-xs font-medium ${levelStyle.bg} ${levelStyle.text} ${levelStyle.border} border`}
             >
-                {/* Image Section */}
-                <Link 
-                    to={`/learner/courses/${id}`} 
-                    style={{ 
-                        display: "block", 
-                        width: isMobile ? "100%" : "200px", 
-                        height: isMobile ? "200px" : "100%",
-                        flexShrink: 0 
-                    }}
-                >
-                    <Box
-                        sx={{
-                            position: "relative",
-                            width: "100%",
-                            height: "100%",
-                            overflow: "hidden",
-                            bgcolor: "grey.100",
-                        }}
-                    >
-                        {isImageLoading && (
-                            <Box
-                                sx={{
-                                    position: "absolute",
-                                    top: 0,
-                                    left: 0,
-                                    right: 0,
-                                    bottom: 0,
-                                    display: "flex",
-                                    alignItems: "center",
-                                    justifyContent: "center",
-                                    bgcolor: "grey.100",
-                                }}
-                            >
-                                <LinearProgress sx={{ width: "60%" }} />
-                            </Box>
-                        )}
-                        <CardMedia
-                            ref={imageRef}
-                            component="img"
-                            image={imageSrc}
-                            alt={title}
-                            sx={{
-                                position: "absolute",
-                                top: 0,
-                                left: 0,
-                                width: "100%",
-                                height: "100%",
-                                objectFit: "cover",
-                                display: isImageLoading ? "none" : "block",
-                            }}
-                            onLoad={handleImageLoad}
-                            onError={handleImageError}
-                        />
-                    </Box>
-                </Link>
+              {level}
+            </div>
+          )}
 
-                {/* Content Section */}
-                <CardContent
-                    sx={{
-                        flexGrow: 1,
-                        display: "flex",
-                        flexDirection: "column",
-                        p: isMobile ? 2 : 2.5,
-                        "&:last-child": { pb: isMobile ? 2 : 2.5 },
-                    }}
-                >
-                    {/* Top Section - Chips */}
-                    <Stack 
-                        direction="row" 
-                        spacing={1} 
-                        sx={{ 
-                            mb: 1.5,
-                            flexWrap: isMobile ? "wrap" : "nowrap",
-                            gap: isMobile ? 1 : undefined
-                        }}
-                    >
-                        {level && (
-                            <Chip
-                                label={level}
-                                size="small"
-                                sx={{
-                                    bgcolor: level === "débutant" ? "success.50" : level === "intermédiaire" ? "warning.50" : "error.50",
-                                    color: level === "débutant" ? "success.700" : level === "intermédiaire" ? "warning.700" : "error.700",
-                                    borderColor:
-                                        level === "débutant" ? "success.200" : level === "intermédiaire" ? "warning.200" : "error.200",
-                                    border: "1px solid",
-                                    fontWeight: 500,
-                                    fontSize: "0.75rem",
-                                }}
-                            />
-                        )}
-                        <Chip
-                            icon={<PeopleIcon sx={{ fontSize: "0.875rem !important" }} />}
-                            label={`${students || 0} étudiants`}
-                            size="small"
-                            variant="outlined"
-                            sx={{
-                                fontSize: "0.75rem",
-                                color: "text.secondary",
-                                borderColor: "divider",
-                            }}
-                        />
-                    </Stack>
-
-                    {/* Title */}
-                    <Typography
-                        variant="h6"
-                        component="h3"
-                        sx={{
-                            mb: 1,
-                            fontSize: isMobile ? "1rem" : "1.1rem",
-                            fontWeight: 600,
-                            lineHeight: 1.3,
-                            height: isMobile ? "auto" : "2.6em",
-                            overflow: "hidden",
-                            display: "-webkit-box",
-                            WebkitLineClamp: isMobile ? 3 : 2,
-                            WebkitBoxOrient: "vertical",
-                            color: "text.primary",
-                        }}
-                    >
-                        <Link
-                            to={`/learner/courses/${id}`}
-                            style={{ textDecoration: "none", color: "inherit" }}
-                            className="hover:text-blue-600"
-                        >
-                            {title || "Untitled Course"}
-                        </Link>
-                    </Typography>
-
-                    {/* Description */}
-                    {description && (
-                        <Typography
-                            variant="body2"
-                            sx={{
-                                mb: 2,
-                                height: isMobile ? "auto" : "3em",
-                                maxHeight: isMobile ? "4.5em" : "3em",
-                                overflow: "hidden",
-                                display: "-webkit-box",
-                                WebkitLineClamp: isMobile ? 3 : 2,
-                                WebkitBoxOrient: "vertical",
-                                textOverflow: "ellipsis",
-                                color: "text.secondary",
-                                fontSize: "0.875rem",
-                                lineHeight: 1.5,
-                            }}
-                        >
-                            {description}
-                        </Typography>
-                    )}
-
-                    {/* Progress Section */}
-                    {progress !== undefined && (
-                        <Box sx={{ mb: 2 }}>
-                            <Typography variant="body2" color="text.secondary" sx={{ mb: 0.75, fontSize: "0.875rem" }}>
-                                Progression: {progress !== null ? `${progress}%` : "0%"}
-                            </Typography>
-                            <LinearProgress
-                                variant="determinate"
-                                value={progress || 0}
-                                sx={{
-                                    height: 6,
-                                    borderRadius: 3,
-                                    backgroundColor: "rgba(0,0,0,0.05)",
-                                    "& .MuiLinearProgress-bar": {
-                                        borderRadius: 3,
-                                        backgroundColor: progress >= 100 ? "success.main" : "primary.main",
-                                    },
-                                }}
-                            />
-                        </Box>
-                    )}
-
-                    {/* Bottom Section - Rating and Last Accessed */}
-                    <Stack
-                        direction={isMobile ? "column" : "row"}
-                        spacing={isMobile ? 1.5 : 3}
-                        alignItems={isMobile ? "flex-start" : "center"}
-                        sx={{
-                            mt: "auto",
-                            pt: 1.5,
-                            borderTop: "1px solid",
-                            borderColor: "divider",
-                        }}
-                    >
-                        <Tooltip title="Note du cours">
-                            <Box sx={{ display: "flex", alignItems: "center" }}>
-                                <Rating
-                                    value={rating || 0}
-                                    precision={0.5}
-                                    size="small"
-                                    readOnly
-                                    sx={{
-                                        "& .MuiRating-iconFilled": {
-                                            color: "warning.main",
-                                        },
-                                    }}
-                                />
-                                <Typography variant="body2" color="text.secondary" sx={{ ml: 0.5, fontSize: "0.75rem" }}>
-                                    ({rating || 0})
-                                </Typography>
-                            </Box>
-                        </Tooltip>
-                        {lastAccessed && (
-                            <Tooltip title="Dernière consultation">
-                                <Box sx={{ display: "flex", alignItems: "center" }}>
-                                    <AccessTimeIcon fontSize="small" sx={{ mr: 0.5, color: "text.secondary", fontSize: "0.875rem" }} />
-                                    <Typography variant="body2" color="text.secondary" sx={{ fontSize: "0.75rem" }}>
-                                        {lastAccessed ? new Date(lastAccessed).toLocaleDateString() : "Jamais"}
-                                    </Typography>
-                                </Box>
-                            </Tooltip>
-                        )}
-                    </Stack>
-                </CardContent>
-            </Card>
+          {/* Students count badge */}
+          {students !== undefined && (
+            <div className="absolute top-4 right-4 px-3 py-1 rounded-full text-xs font-medium bg-white bg-opacity-90 text-gray-700 border border-gray-200 backdrop-blur-sm flex items-center gap-1">
+              <PeopleIcon className="w-3 h-3" />
+              <span>{students}</span>
+            </div>
+          )}
         </div>
-    )
+
+        {/* Content Section */}
+        <div className="p-6 flex flex-col h-[calc(100%-12rem)]">
+          {/* Title */}
+          <h3 className="text-lg font-semibold text-gray-900 mb-2 line-clamp-2 group-hover:text-blue-600 transition-colors duration-200">
+            {title || "Untitled Course"}
+          </h3>
+
+          {/* Description */}
+          {description && <p className="text-sm text-gray-600 mb-4 line-clamp-2">{description}</p>}
+
+          {/* Progress Section for enrolled courses */}
+          {progress !== undefined && (
+            <div className="mb-4">
+              <div className="flex justify-between items-center mb-1.5">
+                <span className="text-sm text-gray-600">Progression</span>
+                <span className="text-sm font-medium text-blue-600">{progress || 0}%</span>
+              </div>
+              <div className="h-2 bg-gray-100 rounded-full overflow-hidden">
+                <div
+                  className={`h-full rounded-full ${progress >= 100 ? "bg-green-500" : "bg-gradient-to-r from-blue-500 to-purple-500"}`}
+                  style={{ width: `${progress || 0}%` }}
+                ></div>
+              </div>
+            </div>
+          )}
+
+          {/* Instructor (if available) */}
+          {instructor && (
+            <div className="text-sm text-gray-500 mb-4">
+              <span className="font-medium">Instructeur:</span> {instructor}
+            </div>
+          )}
+
+          {/* Bottom Section - Rating and Last Accessed */}
+          <div className="mt-auto pt-4 border-t border-gray-100 flex flex-wrap items-center justify-between gap-2">
+            {/* Rating */}
+            <div className="flex items-center">
+              <div className="flex items-center">
+                {[...Array(5)].map((_, i) => (
+                  <StarIcon
+                    key={i}
+                    className={`w-4 h-4 ${
+                      i < Math.floor(rating || 0)
+                        ? "text-yellow-400"
+                        : i < (rating || 0)
+                          ? "text-yellow-400" // For half stars, we'll just use full for simplicity
+                          : "text-gray-300"
+                    }`}
+                  />
+                ))}
+              </div>
+              <span className="ml-1.5 text-xs text-gray-500">({rating || 0})</span>
+            </div>
+
+            {/* Last Accessed or Status */}
+            {lastAccessed ? (
+              <div className="flex items-center text-xs text-gray-500">
+                <AccessTimeIcon className="w-3.5 h-3.5 mr-1" />
+                <span>{new Date(lastAccessed).toLocaleDateString()}</span>
+              </div>
+            ) : enrolled ? (
+              <div className="flex items-center text-xs text-green-600 font-medium">
+                <CheckCircleIcon className="w-3.5 h-3.5 mr-1" />
+                <span>Inscrit</span>
+              </div>
+            ) : (
+              <div className="flex items-center text-xs text-blue-600 font-medium">
+                <ArrowForwardIcon className="w-3.5 h-3.5 mr-1" />
+                <span>Voir le cours</span>
+              </div>
+            )}
+          </div>
+        </div>
+      </div>
+    </div>
+  )
 }
 
 export default CourseCard

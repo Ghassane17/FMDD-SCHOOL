@@ -165,7 +165,7 @@ export default function RaisonsDeRejoindre() {
             <Button
               variant="contained"
               size="large"
-              href="#inscription"
+              href="register"
               sx={{
                 bgcolor: '#00f7ff',
                 color: '#0f172a',

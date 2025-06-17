@@ -12,6 +12,7 @@ const CourseView = () => {
     const [hasPrevious, setHasPrevious] = useState(false);
     const [hasNext, setHasNext] = useState(false);
     const [notes, setNotes] = useState('');
+    const [completedModules, setCompletedModules] = useState([]);
 
     useEffect(() => {
         const fetchModules = async () => {
@@ -22,6 +23,10 @@ const CourseView = () => {
                     if (response.data.modules.length > 0) {
                         setCurrentModule(response.data.modules[0]);
                         updateNavigationState(response.data.modules[0].id);
+                    }
+                    // Set completed modules from course pivot
+                    if (response.data.course?.pivot?.completed_modules) {
+                        setCompletedModules(response.data.course.pivot.completed_modules);
                     }
                 }
             } catch (error) {
@@ -80,7 +85,15 @@ const CourseView = () => {
             console.log('Frontend: Module completion response:', response);
             
             if (response.success) {
-                // Update the current module's completion status
+                // Update completed modules array
+                setCompletedModules(prev => {
+                    if (!prev.includes(moduleId)) {
+                        return [...prev, moduleId];
+                    }
+                    return prev;
+                });
+
+                // Update the current module
                 setCurrentModule(prev => {
                     if (!prev) return null;
                     return {
@@ -113,6 +126,7 @@ const CourseView = () => {
                 modules={modules}
                 currentModuleId={currentModule?.id}
                 onModuleSelect={handleModuleSelect}
+                completedModules={completedModules}
             />
             <CourseContent
                 currentModule={currentModule}
@@ -125,6 +139,7 @@ const CourseView = () => {
                 onSaveNotes={handleSaveNotes}
                 notes={notes}
                 onModuleComplete={handleModuleComplete}
+                completedModules={completedModules}
             />
         </div>
     );

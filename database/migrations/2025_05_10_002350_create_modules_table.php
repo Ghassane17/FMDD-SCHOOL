@@ -20,7 +20,6 @@ return new class extends Migration
             $table->string('file_path')->nullable();
             $table->integer('order')->default(0);
             $table->integer('duration')->nullable(); // Duration in minutes
-            $table->boolean('is_completed')->default(false);
             $table->timestamps();
         });
     }

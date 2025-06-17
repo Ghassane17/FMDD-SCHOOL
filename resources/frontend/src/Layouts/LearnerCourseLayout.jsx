@@ -44,6 +44,12 @@ const CourseLearnerLayout = () => {
     return Math.round((completedModules / modules.length) * 100)
   }
 
+  // Update progress when modules change
+  useEffect(() => {
+    const newProgress = calculateProgress()
+    setProgress(newProgress)
+  }, [modules])
+
   // Fetch course data
   useEffect(() => {
     const fetchModuleData = async () => {
@@ -66,34 +72,24 @@ const CourseLearnerLayout = () => {
           throw new Error("Invalid course data received from server")
         }
 
-        if (!moduleData.modules || !moduleData.modules.length) {
+        if (!moduleData.all_modules || !moduleData.all_modules.length) {
           console.error("No modules found in course data:", moduleData)
           throw new Error("No modules found in this course")
         }
 
         // Set course data
         setCourseData(moduleData.course)
-        setModules(moduleData.modules)
-        setCurrentModule(moduleData.currentModule)
-        setCurrentModuleIndex(moduleData.modules.findIndex((m) => m.id === Number.parseInt(moduleId, 10)))
+        setModules(moduleData.all_modules)
+        setCurrentModule(moduleData.module)
+        setCurrentModuleIndex(moduleData.all_modules.findIndex((m) => m.id === Number.parseInt(moduleId, 10)))
 
         // Check if exam is available
         const hasExam = moduleData.course.exam !== null
         setHasExam(hasExam)
 
-        // Set progress
-        if (moduleData.course.progress === 0) {
-          console.log("Resetting progress for new enrollment")
-          setProgress(0)
-          const resetModules = moduleData.modules.map((module) => ({
-            ...module,
-            is_completed: false,
-          }))
-          setModules(resetModules)
-        } else {
-          setProgress(moduleData.course.progress)
-        }
-
+        // Set initial progress
+        const initialProgress = moduleData.course.progress || 0
+        setProgress(initialProgress)
         
       } catch (err) {
         console.error("Error fetching module data:", err)
@@ -178,13 +174,13 @@ const CourseLearnerLayout = () => {
               onClick={() => window.location.reload()}
               className="w-full px-4 py-2 bg-black text-white rounded-lg hover:bg-gray-800 transition-colors"
             >
-              Try Again
+              Essayer à nouveau
             </button>
             <button
-              onClick={() => navigate("/learner/courses")}
+              onClick={() => navigate("/learner")}
               className="w-full px-4 py-2 border border-gray-300 text-gray-700 rounded-lg hover:bg-gray-50 transition-colors"
             >
-              Back to Courses
+              Revenir à votre profil
             </button>
           </div>
         </div>
@@ -199,7 +195,7 @@ const CourseLearnerLayout = () => {
         <div className="bg-white border-b border-gray-200 px-8 py-6">
           <div className="flex justify-between items-center mb-4">
             <h1 className="text-3xl font-bold text-black">{courseData?.title || 'Loading...'}</h1>
-            <div className="text-base text-gray-600">Progression: {progress}%</div>
+            <div className="text-base text-gray-600">Progression: {calculateProgress()}%</div>
           </div>
           <CourseHeader courseTitle={courseData?.title || 'Loading...'} toggleSidebar={toggleSidebar} progress={calculateProgress()} />
         </div>

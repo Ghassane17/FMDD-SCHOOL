@@ -579,10 +579,12 @@ export const markModuleAsCompleted = async (courseId, moduleId) => {
         const response = await api.post(`/learner/courses/${courseId}/modules/${moduleId}/complete`);
         console.log('Frontend: Module completion response:', response.data);
 
-        if (!response.data.success) {
-            throw new Error(response.data.message || 'Failed to mark module as completed');
-        }
-        return response.data;
+        // Return success for both new completion and already completed cases
+        return {
+            success: true,
+            message: response.data.message,
+            progress: response.data.progress
+        };
     } catch (error) {
         console.error('Frontend: Failed to mark module as completed:', error.response?.data || error);
         throw error;
@@ -740,5 +742,14 @@ export const startExam = async (courseId) => {
         throw error;
     }
 };
+export const getPublicCourses = async () => {
+    try {
+        const response = await api.get(`/formations`);
+        return response.data;
+    } catch (error) {
+        console.error('Error fetching public courses:', error);
+        throw error;
+    }
+}
 
 export default api;

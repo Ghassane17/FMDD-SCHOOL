@@ -32,7 +32,7 @@ class Learner extends Model
     {
         return $this->belongsToMany(Course::class, 'course_learner')
             ->using(CourseLearner::class)
-            ->withPivot('progress', 'tentatives', 'exam_success', 'certificate_generated', 'last_accessed')
+            ->withPivot('progress', 'tentatives', 'exam_success', 'certificate_generated', 'last_accessed', 'completed_modules')
             ->withTimestamps();
     }
     public function certificates()
