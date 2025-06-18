@@ -746,4 +746,14 @@ export const getPublicCourses = async () => {
     }
 }
 
+export const updateComment = async (courseId, commentId, data) => {
+    const response = await api.put(`/courses/${courseId}/comments/${commentId}`, data);
+    return response.data;
+};
+
+export const deleteComment = async (courseId, commentId) => {
+    const response = await api.delete(`/courses/${courseId}/comments/${commentId}`);
+    return response.data;
+};
+
 export default api;
