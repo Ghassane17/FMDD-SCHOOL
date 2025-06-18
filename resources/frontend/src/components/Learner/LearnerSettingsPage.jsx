@@ -18,7 +18,7 @@ import {
   Bell,
 } from "lucide-react"
 import { Switch } from "@headlessui/react"
-import SkillsForm from "../../components/formateurs/profile-completion-formateur/SkillsForm"
+import InterrestsForm from "../formateurs/profile-completion-formateur/InterrestsForm.jsx"
 import LanguagesForm from "../../components/formateurs/profile-completion-formateur/LanguagesForm"
 import CertificationsForm from "../../components/formateurs/profile-completion-formateur/CertificationsForm"
 import {
@@ -173,7 +173,7 @@ export default function LearnerSettingsPage() {
       errors.bio = "La biographie professionnelle est requise"
     }
 
-    if (formData.phone.trim() && !/^[\+]?[0-9\s\-\(\)]{8,}$/.test(formData.phone.trim())) {
+    if (formData.phone.trim() && !/^[+]?([0-9\s\-()]{8,})$/.test(formData.phone.trim())) {
       errors.phone = "Veuillez entrer un numéro de téléphone valide"
     }
 
@@ -344,14 +344,14 @@ export default function LearnerSettingsPage() {
     try {
       await updateLearnerAdditionalInfo({ fields_of_interest: skillsBuffer })
       setFieldsOfInterest(skillsBuffer)
-      setSkillsSuccess("Compétences mises à jour avec succès")
-      addToast("Compétences mises à jour avec succès", "success")
+      setSkillsSuccess("centres d’intérêt mises à jour avec succès")
+      addToast("centres d’intérêt mises à jour avec succès", "success")
       setTimeout(() => {
         setShowSkillsModal(false)
         setSkillsSuccess(null)
       }, 1200)
     } catch {
-      const errorMessage = "Erreur lors de la mise à jour des compétences"
+      const errorMessage = "Erreur lors de la mise à jour des centres d’intérêt"
       setSkillsError(errorMessage)
       addToast(errorMessage, "error")
     } finally {
@@ -723,7 +723,7 @@ export default function LearnerSettingsPage() {
           <div className="bg-gradient-to-r from-slate-50 to-blue-50 px-6 py-4 border-b border-slate-200">
             <div className="flex items-center gap-3">
               <Award className="h-5 w-5 text-blue-600" />
-              <h2 className="text-xl font-semibold text-slate-800">Compétences & Qualifications</h2>
+              <h2 className="text-xl font-semibold text-slate-800">Vos centres d’intérêt</h2>
             </div>
           </div>
 
@@ -733,7 +733,7 @@ export default function LearnerSettingsPage() {
               <div className="bg-blue-50 rounded-xl p-6 mb-6 flex flex-col h-full">
                 <div className="flex items-center gap-2 mb-2">
                   <Star className="h-5 w-5 text-blue-600" />
-                  <h3 className="font-medium text-blue-800">Compétences</h3>
+                  <h3 className="font-medium text-blue-800">centres d’intérêt</h3>
                   <span className="bg-blue-200 text-blue-800 rounded-full w-6 h-6 flex items-center justify-center text-xs font-medium">
                     {fieldsOfInterest.length}
                   </span>
@@ -762,7 +762,7 @@ export default function LearnerSettingsPage() {
                     className="w-full flex items-center justify-center gap-2 px-4 py-3 bg-blue-100 border border-blue-200 text-blue-700 rounded-xl hover:bg-blue-200 transition-colors duration-200 font-medium"
                   >
                     <Edit3 className="h-4 w-4" />
-                    <span>Gérer les compétences</span>
+                    <span>Gérer les centres d’intérêt</span>
                   </button>
                 </div>
               </div>
@@ -992,7 +992,7 @@ export default function LearnerSettingsPage() {
                 <div className="p-2 bg-white/20 rounded-lg backdrop-blur-sm">
                   <Star className="h-5 w-5 text-white" />
                 </div>
-                <h3 className="text-xl font-semibold text-white">Gérer vos compétences</h3>
+                <h3 className="text-xl font-semibold text-white">Gérer vos centres d’intérêt</h3>
               </div>
               <button
                 onClick={() => setShowSkillsModal(false)}
@@ -1003,7 +1003,7 @@ export default function LearnerSettingsPage() {
             </div>
 
             <div className="p-6">
-              <SkillsForm data={skillsBuffer} updateData={setSkillsBuffer} />
+              <InterrestsForm data={skillsBuffer} updateData={setSkillsBuffer} />
 
               <div className="mt-8 pt-4 border-t border-slate-200">
                 {skillsError && (

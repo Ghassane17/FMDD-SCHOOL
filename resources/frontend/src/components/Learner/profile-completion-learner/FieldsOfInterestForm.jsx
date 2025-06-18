@@ -31,10 +31,27 @@ const FieldsOfInterestForm = ({ data, updateData }) => {
     };
 
     const suggestedFields = [
-        "Web Development", "Mathematics", "Design", "Marketing", "Business",
-        "Languages", "Science", "History", "Art", "Programming",
-        "Data Analysis", "Finance", "Psychology", "Writing", "Photography"
-    ].filter(field => !data.includes(field));
+  "Informatique",              // Computer Science
+  "Développement",         // Web Development
+  "Programmation",             // Programming (JS, Python, etc.)
+  "Science des données",       // Data Science
+  "Intelligence Artificielle", // AI & Machine Learning
+  "Cybersécurité",             // Cybersecurity
+  "Mathématiques",             // Mathematics
+  "Physique",                  // Physics
+  "Chimie",                    // Chemistry
+  "Biologie",                  // Biology
+  "Design Graphique",          // Graphic Design
+  "Marketing Digital",         // Digital Marketing
+  "Entrepreneuriat",           // Entrepreneurship
+  "Finance et Comptabilité",   // Finance & Accounting
+  "Langues étrangères",        // Foreign Languages
+  "Psychologie",               // Psychology
+  "Photographie",              // Photography
+  "Musique",                   // Music
+  "Histoire",                  // History
+  "Écriture Créative"          // Creative Writing
+].filter(field => !data.includes(field));
 
     return (
         <div className="space-y-8">

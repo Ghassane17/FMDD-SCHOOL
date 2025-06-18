@@ -16,6 +16,7 @@ import {
 
 const SuggestedCourses = () => {
   const [courses, setCourses] = useState([])
+  const [recommendedCourses, setRecommendedCourses] = useState([])
   const [loading, setLoading] = useState(true)
   const [error, setError] = useState(null)
   const [sortOption, setSortOption] = useState("rating-desc")
@@ -29,6 +30,7 @@ const SuggestedCourses = () => {
         setLoading(true)
         const response = await getAllCourses()
         setCourses(response.data.courses || [])
+        setRecommendedCourses(response.data.recommendedCourses || [])
       } catch (err) {
         setError(err.message || "Failed to load courses")
       } finally {
@@ -331,50 +333,132 @@ const SuggestedCourses = () => {
           </div>
         )}
 
-        {/* Main Content */}
-        {suggestedCourses.length > 0 ? (
-          <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-6">
-            {suggestedCourses.map((course) => (
-              <div key={course.id} className="transform hover:scale-105 transition-all duration-200">
-                <CourseCard
-                  id={course.id}
-                  title={course.title}
-                  description={course.description}
-                  image={course.course_thumbnail}
-                  level={course.level}
-                  students={course.students || 0}
-                  rating={course.rating || 0}
-                  instructor={course.instructor?.name || "Instructeur"}
-                />
+        {/* Recommended Courses Section */}
+        {recommendedCourses.length > 0 && (
+          <div className="mb-8">
+            <div className="bg-gradient-to-r from-green-900 via-emerald-800 to-teal-900 rounded-2xl p-8 text-white shadow-2xl mb-6">
+              <div className="flex items-center gap-4 mb-6">
+                <div className="w-16 h-16 bg-white/20 rounded-full flex items-center justify-center backdrop-blur-sm">
+                  <RecommendIcon className="w-8 h-8 text-green-400" />
+                </div>
+                <div>
+                  <h2 className="text-3xl font-bold mb-2">Formations Recommandées</h2>
+                  <p className="text-white/80 text-lg">Sélectionnées spécialement pour vous selon vos intérêts et votre progression</p>
+                </div>
               </div>
-            ))}
-          </div>
-        ) : (
-          <div className="bg-white rounded-2xl shadow-xl border border-gray-100 p-12 text-center">
-            <div className="max-w-md mx-auto">
-              <div className="w-24 h-24 bg-gradient-to-br from-purple-100 to-blue-100 rounded-full flex items-center justify-center mx-auto mb-6">
-                <SchoolIcon className="w-12 h-12 text-purple-600" />
+              
+              <div className="flex items-center gap-4 text-sm">
+                <div className="flex items-center gap-2 px-3 py-1 bg-white/20 backdrop-blur-sm rounded-lg">
+                  <TrendingUpIcon className="w-4 h-4 text-green-400" />
+                  <span>{recommendedCourses.length} recommandations</span>
+                </div>
+                <div className="flex items-center gap-2 px-3 py-1 bg-white/20 backdrop-blur-sm rounded-lg">
+                  <StarIcon className="w-4 h-4 text-yellow-400" />
+                  <span>Personnalisées</span>
+                </div>
               </div>
-              <h2 className="text-2xl font-bold text-gray-800 mb-4">
-                {filterLevel !== "all" ? "Aucune formation trouvée" : "Aucune formation suggérée"}
-              </h2>
-              <p className="text-gray-600 mb-8 text-lg leading-relaxed">
-                {filterLevel !== "all"
-                  ? `Aucune formation disponible pour le niveau "${filterLevel}". Essayez un autre filtre.`
-                  : "Aucune formation suggérée disponible pour le moment. Revenez plus tard !"}
-              </p>
-              {filterLevel !== "all" && (
-                <button
-                  onClick={() => setFilterLevel("all")}
-                  className="inline-flex items-center gap-3 px-8 py-4 bg-gradient-to-r from-purple-600 to-blue-600 text-white rounded-xl hover:from-purple-700 hover:to-blue-700 transition-all duration-200 transform hover:scale-105 shadow-lg font-semibold text-lg"
-                >
-                  <FilterListIcon className="w-5 h-5" />
-                  Voir toutes les formations
-                </button>
-              )}
+            </div>
+
+            <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-6">
+              {recommendedCourses.map((course) => (
+                <div key={course.id} className="transform hover:scale-105 transition-all duration-200 relative">
+                  {/* Recommendation Badge */}
+                  <div className="absolute top-4 left-4 z-10">
+                    <div className="bg-gradient-to-r from-green-600 to-emerald-600 text-white px-3 py-1 rounded-full text-xs font-semibold shadow-lg">
+                      Recommandé
+                    </div>
+                  </div>
+                  
+                  <CourseCard
+                    id={course.id}
+                    title={course.title}
+                    description={course.description}
+                    image={course.course_thumbnail}
+                    level={course.level}
+                    students={course.students || 0}
+                    rating={course.rating || 0}
+                    instructor={course.instructor?.name || "Instructeur"}
+                  />
+                  
+                  {/* Recommendation Reasons */}
+                  {course.recommendation_reasons && course.recommendation_reasons.length > 0 && (
+                    <div className="mt-3 p-3 bg-gradient-to-r from-green-50 to-emerald-50 border border-green-200 rounded-xl">
+                      <div className="text-xs font-semibold text-green-800 mb-2">Pourquoi recommandé :</div>
+                      <ul className="text-xs text-green-700 space-y-1">
+                        {course.recommendation_reasons.slice(0, 2).map((reason, index) => (
+                          <li key={index} className="flex items-center gap-2">
+                            <div className="w-1.5 h-1.5 bg-green-500 rounded-full"></div>
+                            {reason}
+                          </li>
+                        ))}
+                      </ul>
+                    </div>
+                  )}
+                </div>
+              ))}
             </div>
           </div>
         )}
+
+        {/* All Courses Section */}
+        <div className="mb-8">
+          <div className="bg-gradient-to-r from-purple-900 via-black to-blue-900 rounded-2xl p-8 text-white shadow-2xl mb-6">
+            <div className="flex items-center gap-4 mb-6">
+              <div className="w-16 h-16 bg-white/20 rounded-full flex items-center justify-center backdrop-blur-sm">
+                <SchoolIcon className="w-8 h-8 text-purple-400" />
+              </div>
+              <div>
+                <h2 className="text-3xl font-bold mb-2">Toutes les Formations</h2>
+                <p className="text-white/80 text-lg">Explorez notre catalogue complet de formations disponibles</p>
+              </div>
+            </div>
+          </div>
+
+          {/* Main Content */}
+          {suggestedCourses.length > 0 ? (
+            <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-6">
+              {suggestedCourses.map((course) => (
+                <div key={course.id} className="transform hover:scale-105 transition-all duration-200">
+                  <CourseCard
+                    id={course.id}
+                    title={course.title}
+                    description={course.description}
+                    image={course.course_thumbnail}
+                    level={course.level}
+                    students={course.students || 0}
+                    rating={course.rating || 0}
+                    instructor={course.instructor?.name || "Instructeur"}
+                  />
+                </div>
+              ))}
+            </div>
+          ) : (
+            <div className="bg-white rounded-2xl shadow-xl border border-gray-100 p-12 text-center">
+              <div className="max-w-md mx-auto">
+                <div className="w-24 h-24 bg-gradient-to-br from-purple-100 to-blue-100 rounded-full flex items-center justify-center mx-auto mb-6">
+                  <SchoolIcon className="w-12 h-12 text-purple-600" />
+                </div>
+                <h2 className="text-2xl font-bold text-gray-800 mb-4">
+                  {filterLevel !== "all" ? "Aucune formation trouvée" : "Aucune formation disponible"}
+                </h2>
+                <p className="text-gray-600 mb-8 text-lg leading-relaxed">
+                  {filterLevel !== "all"
+                    ? `Aucune formation disponible pour le niveau "${filterLevel}". Essayez un autre filtre.`
+                    : "Aucune formation disponible pour le moment. Revenez plus tard !"}
+                </p>
+                {filterLevel !== "all" && (
+                  <button
+                    onClick={() => setFilterLevel("all")}
+                    className="inline-flex items-center gap-3 px-8 py-4 bg-gradient-to-r from-purple-600 to-blue-600 text-white rounded-xl hover:from-purple-700 hover:to-blue-700 transition-all duration-200 transform hover:scale-105 shadow-lg font-semibold text-lg"
+                  >
+                    <FilterListIcon className="w-5 h-5" />
+                    Voir toutes les formations
+                  </button>
+                )}
+              </div>
+            </div>
+          )}
+        </div>
 
         {/* Recommendation Tips */}
         {suggestedCourses.length > 0 && (

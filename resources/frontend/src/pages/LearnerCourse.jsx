@@ -16,14 +16,12 @@ const LearnerCourse = () => {
     const navigate = useNavigate();
     const {
         courseId,
-        moduleId,
         courseData,
         modules,
         currentModule,
         currentModuleIndex,
         setCurrentModule,
         setModules,
-        progress,
     } = useCourseContext();
 
     // Local state for course content
@@ -113,30 +111,10 @@ const LearnerCourse = () => {
             console.log('Frontend: Module completion response:', response);
 
             if (response.success) {
-                // Update completed modules array
-                setCompletedModules(prev => {
-                    if (!prev.includes(moduleId)) {
-                        return [...prev, moduleId];
-                    }
-                    return prev;
-                });
-
-                // Update the current module
-                setCurrentModule(prev => {
-                    if (!prev) return null;
-                    return {
-                        ...prev,
-                        is_completed: true
-                    };
-                });
-
-                // Update the module in the modules list
-                setModules(prev => prev.map(module =>
-                    module.id === moduleId
-                        ? { ...module, is_completed: true }
-                        : module
-                ));
-
+                // Refetch module details to get the latest is_completed state from backend
+                const updatedData = await moduleDetails(parseInt(courseId, 10), moduleId);
+                setCurrentModule(updatedData.currentModule || updatedData.module);
+                setModules(updatedData.all_modules || modules);
                 // Show success message
                 toast.success('Module marked as completed!');
             } else {

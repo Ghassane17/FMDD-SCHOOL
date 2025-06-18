@@ -55,12 +55,26 @@ const CreateCourse = () => {
   // Add state for category suggestions
   const [showCategorySuggestions, setShowCategorySuggestions] = useState(false)
   const [categorySuggestions] = useState([
-    "Développement",
-    "Business",
-    "Design",
-    "Marketing",
-    "Data Science",
-    "Autre"
+     "Informatique",              // Computer Science
+  "Développement Web",         // Web Development
+  "Programmation",             // Programming (JS, Python, etc.)
+  "Science des données",       // Data Science
+  "Intelligence Artificielle", // AI & Machine Learning
+  "Cybersécurité",             // Cybersecurity
+  "Mathématiques",             // Mathematics
+  "Physique",                  // Physics
+  "Chimie",                    // Chemistry
+  "Biologie",                  // Biology
+  "Design Graphique",          // Graphic Design
+  "Marketing Digital",         // Digital Marketing
+  "Entrepreneuriat",           // Entrepreneurship
+  "Finance et Comptabilité",   // Finance & Accounting
+  "Langues étrangères",        // Foreign Languages
+  "Psychologie",               // Psychology
+  "Photographie",              // Photography
+  "Musique",                   // Music
+  "Histoire",                  // History
+  "Écriture Créative" , "autre"
   ])
 
   // Load initial data from navigation state
@@ -84,10 +98,6 @@ const CreateCourse = () => {
     return pages * 10 // 10 minutes per page
   }
 
-  const estimateImageDuration = (images) => {
-    return 5 // 5 minutes per image
-  }
-
   const estimateTextDuration = (text) => {
     const characterCount = text.replace(/<[^>]*>/g, "").length // Remove HTML tags for character count
     return Math.ceil(characterCount / 200) // 200 characters per minute, rounded up
@@ -99,8 +109,6 @@ const CreateCourse = () => {
         return module.content?.questions?.length ? estimateQuizDuration(module.content.questions.length) : 0
       case "pdf":
         return module.pageCount ? estimatePdfDuration(module.pageCount) : 0
-      case "image":
-        return 5 // Fixed 5 minutes for image
       case "text":
         return module.content ? estimateTextDuration(module.content) : 0
       case "video":
@@ -915,12 +923,12 @@ const CreateCourse = () => {
 
                     {/* Category Suggestions Dropdown */}
                     {showCategorySuggestions && (
-                      <div className="absolute z-10 w-full mt-1 bg-white border border-gray-300 rounded-lg shadow-lg max-h-48 overflow-y-auto">
+                      <div className="absolute z-50 w-full mt-1 bg-white border border-gray-300 rounded-lg shadow-lg max-h-48 overflow-y-auto">
                         {getFilteredCategorySuggestions().map((suggestion, index) => (
                           <div
                             key={index}
                             onClick={() => handleCategorySuggestionSelect(suggestion)}
-                            className="px-4 py-3 hover:bg-blue-50 cursor-pointer transition-colors duration-150 border-b border-gray-100 last:border-b-0"
+                            className="px-4 py-3 z-100 hover:bg-blue-50 cursor-pointer transition-colors duration-150 border-b border-gray-100 last:border-b-0"
                           >
                             {suggestion}
                           </div>
@@ -1965,9 +1973,8 @@ const CreateCourse = () => {
           </div>
         )
 
-      case 5:
+      case 5: {
         const totalCourseDuration = courseData.modules.reduce((total, module) => total + (module.duration_min || 0), 0)
-
         return (
           <div className="space-y-6">
             <div className="flex items-center justify-between">
@@ -2154,6 +2161,7 @@ const CreateCourse = () => {
             </div>
           </div>
         )
+      }
 
       default:
         return null

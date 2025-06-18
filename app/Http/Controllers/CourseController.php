@@ -240,7 +240,7 @@ class CourseController extends Controller
             }
 
             // Get all courses except the ones the learner is enrolled in
-            $courses = Course::whereNotIn('id', function ($query) use ($learner) {
+            $allCourses = Course::whereNotIn('id', function ($query) use ($learner) {
                 $query->select('course_id')
                     ->from('course_learner')
                     ->where('learner_id', $learner->id);
@@ -256,6 +256,7 @@ class CourseController extends Controller
                     'course_thumbnail',
                     'level',
                     'rating',
+                    'category',
                     'instructor_id'
                 ])
                 ->get()
@@ -266,6 +267,7 @@ class CourseController extends Controller
                         'description' => $course->description,
                         'course_thumbnail' => $course->course_thumbnail,
                         'level' => $course->level,
+                        'category' => $course->category,
                         'students' => $course->students_count,
                         'rating' => $course->rating,
                         'instructor' => [
@@ -274,12 +276,19 @@ class CourseController extends Controller
                     ];
                 });
 
+            // Get recommended courses based on learner data
+            $recommendedCourses = $this->getRecommendedCourses($learner, $allCourses);
+
             Log::info('Available courses retrieved', [
                 'user_id' => $user->id,
-                'course_count' => $courses->count()
+                'all_courses_count' => $allCourses->count(),
+                'recommended_courses_count' => $recommendedCourses->count()
             ]);
 
-            return response()->json(['courses' => $courses], 200);
+            return response()->json([
+                'courses' => $allCourses,
+                'recommendedCourses' => $recommendedCourses
+            ], 200);
         } catch (\Exception $e) {
             Log::error('Error in getAllCourses', [
                 'user_id' => $user->id,
@@ -288,6 +297,146 @@ class CourseController extends Controller
             ]);
             return response()->json(['message' => 'Internal server error'], 500);
         }
+    }
+
+    /**
+     * Get recommended courses based on learner's enrolled courses, field of interest, and language
+     *
+     * @param Learner $learner
+     * @param \Illuminate\Support\Collection $availableCourses
+     * @return \Illuminate\Support\Collection
+     */
+    private function getRecommendedCourses($learner, $availableCourses)
+    {
+        try {
+            // Get learner's enrolled courses with their categories
+            $enrolledCourses = $learner->courses()
+                ->select('courses.id', 'courses.category', 'courses.level', 'course_learner.progress')
+                ->get();
+
+            // Get learner's field of interest and language
+            $fieldOfInterest = $learner->field_of_interest ?? [];
+            $languages = $learner->languages ?? [];
+
+            // Convert to arrays if they're JSON strings
+            if (is_string($fieldOfInterest)) {
+                $fieldOfInterest = json_decode($fieldOfInterest, true) ?? [];
+            }
+            if (is_string($languages)) {
+                $languages = json_decode($languages, true) ?? [];
+            }
+
+            // Calculate recommendation scores for each available course
+            $coursesWithScores = $availableCourses->map(function ($course) use ($enrolledCourses, $fieldOfInterest, $languages) {
+                $score = 0;
+                $reasons = [];
+
+                // Score based on category match with enrolled courses (weight: 3)
+                $enrolledCategories = $enrolledCourses->pluck('category')->filter()->unique();
+                if ($enrolledCategories->contains($course['category'])) {
+                    $score += 3;
+                    $reasons[] = 'Based on your enrolled courses';
+                }
+
+                // Score based on field of interest match (weight: 4)
+                if (in_array($course['category'], $fieldOfInterest)) {
+                    $score += 4;
+                    $reasons[] = 'Matches your field of interest';
+                }
+
+                // Score based on level progression (weight: 2)
+                $enrolledLevels = $enrolledCourses->pluck('level')->filter()->unique();
+                if ($this->isLevelProgression($enrolledLevels, $course['level'])) {
+                    $score += 2;
+                    $reasons[] = 'Suitable level progression';
+                }
+
+                // Score based on high rating (weight: 1)
+                if ($course['rating'] >= 4.5) {
+                    $score += 1;
+                    $reasons[] = 'Highly rated course';
+                }
+
+                // Score based on popularity (weight: 1)
+                if ($course['students'] >= 100) {
+                    $score += 1;
+                    $reasons[] = 'Popular course';
+                }
+
+                // Score based on language preference (weight: 2)
+                // Note: This would require adding language field to courses table
+                // For now, we'll skip this but leave the structure
+
+                return [
+                    'course' => $course,
+                    'score' => $score,
+                    'reasons' => $reasons
+                ];
+            });
+
+            // Filter courses with scores > 0 and sort by score (highest first)
+            $recommendedCourses = $coursesWithScores
+                ->filter(function ($item) {
+                    return $item['score'] > 0;
+                })
+                ->sortByDesc('score')
+                ->take(10) // Limit to top 10 recommendations
+                ->map(function ($item) {
+                    return array_merge($item['course'], [
+                        'recommendation_reasons' => $item['reasons']
+                    ]);
+                });
+
+            Log::info('Course recommendations generated', [
+                'learner_id' => $learner->id,
+                'enrolled_courses_count' => $enrolledCourses->count(),
+                'field_of_interest' => $fieldOfInterest,
+                'languages' => $languages,
+                'recommendations_count' => $recommendedCourses->count()
+            ]);
+
+            return $recommendedCourses;
+        } catch (\Exception $e) {
+            Log::error('Error generating course recommendations', [
+                'learner_id' => $learner->id,
+                'error' => $e->getMessage(),
+                'trace' => $e->getTraceAsString()
+            ]);
+
+            // Return empty collection if recommendation system fails
+            return collect([]);
+        }
+    }
+
+    /**
+     * Check if a course level represents progression from enrolled levels
+     *
+     * @param \Illuminate\Support\Collection $enrolledLevels
+     * @param string $courseLevel
+     * @return bool
+     */
+    private function isLevelProgression($enrolledLevels, $courseLevel)
+    {
+        $levelHierarchy = [
+            'beginner' => 1,
+            'intermediate' => 2,
+            'advanced' => 3,
+            'expert' => 4
+        ];
+
+        $courseLevelValue = $levelHierarchy[$courseLevel] ?? 0;
+
+        // Check if the course level is appropriate for progression
+        foreach ($enrolledLevels as $enrolledLevel) {
+            $enrolledLevelValue = $levelHierarchy[$enrolledLevel] ?? 0;
+
+            // Recommend courses that are same level or one level higher
+            if ($courseLevelValue >= $enrolledLevelValue && $courseLevelValue <= $enrolledLevelValue + 1) {
+                return true;
+            }
+        }
+
+        return false;
     }
 
     /**

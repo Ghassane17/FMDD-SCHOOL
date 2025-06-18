@@ -49,7 +49,7 @@ class DownloadController extends Controller
                     'course_id' => $resource->course_id,
                     'resource_id' => $resourceId
                 ]);
-                return response()->json(['error' => 'You are not enrolled in this course'], 403);
+                return response()->json(['error' => "vous n'etes pas inscris dans ce cours"], 403);
             }
 
             // Handle external URLs (e.g., links)
