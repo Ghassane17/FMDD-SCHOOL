@@ -11,6 +11,7 @@ use Illuminate\Support\Facades\Hash;
 use Illuminate\Support\Facades\DB;
 use Illuminate\Validation\ValidationException;
 use Illuminate\Support\Facades\Log;
+use Illuminate\Auth\Events\Registered;
 
 class RegisterController extends Controller
 {
@@ -45,7 +46,10 @@ class RegisterController extends Controller
                 'avatar' => $validated['avatar'] ?? null,
                 'bio' => $validated['bio'] ?? null,
                 'phone' => $validated['phone'] ?? null,
+                'email_verified_at' => null,
             ]);
+
+            event(new Registered($user));
 
             // Handle role-specific data
             if ($user->role == 'learner') {
@@ -83,6 +87,7 @@ class RegisterController extends Controller
                     'username' => $user->username,
                     'email' => $user->email,
                     'role' => $user->role,
+                    'message' => 'Utilisateur enregistré avec succès. Un lien de vérification a été envoyé à votre adresse email.',
                 ],
                 'token' => $token,
             ], 201);

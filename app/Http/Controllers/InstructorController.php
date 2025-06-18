@@ -46,6 +46,7 @@ class InstructorController extends Controller
                     'bio'    => $user->bio,
                     'phone'  => $user->phone,
                     'role'   => $user->role,
+                    'email_verified_at' => $user->email_verified_at,
                 ],
                 'skills'         => $instructor->skills ?? [],
                 'languages'      => $instructor->languages ?? [],

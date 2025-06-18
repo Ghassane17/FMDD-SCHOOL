@@ -14,8 +14,18 @@ use App\Http\Controllers\CourseController;
 use App\Http\Controllers\LearnerController;
 use App\Http\Controllers\InstructorController;
 use App\Http\Controllers\CommentReplyController;
+use App\Http\Controllers\Auth\EmailVerificationController;
 // Authentication Routes
 Route::post('/register', [RegisterController::class, 'register'])->name('register');
+
+Route::get('/email/verify/{id}/{hash}', [EmailVerificationController::class, 'verify'])
+    ->middleware(['signed', 'throttle:6,1']) // 'signed' for URL security, 'throttle' to prevent spamming
+    ->name('verification.verify');
+
+Route::post('/email/verification-notification', [EmailVerificationController::class, 'send'])
+    ->middleware('throttle:6,1') // 'throttle' to prevent spamming
+    ->name('verification.send');
+
 Route::patch('/learner/profile', [LearnerController::class, 'profile'])->name('learner.profile');
 Route::post('/instructor/profile', [InstructorController::class, 'profile'])->name('instructor.profile');
 Route::post('/login', [LoginController::class, 'login'])->name('login');

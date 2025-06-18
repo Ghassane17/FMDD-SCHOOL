@@ -181,6 +181,7 @@ class LearnerController extends Controller
                 'data' => [
                     'username' => $user->username,
                     'email' => $user->email,
+                    'email_verified_at' => $user->email_verified_at,
                     'avatar' => $user->avatar,
                     'bio' => $user->bio,
                     'phone' => $user->phone,
@@ -235,6 +236,7 @@ class LearnerController extends Controller
                 'bio',
                 'phone',
                 'role',
+                'email_verified_at',
                 'notifications'
             ]);
 

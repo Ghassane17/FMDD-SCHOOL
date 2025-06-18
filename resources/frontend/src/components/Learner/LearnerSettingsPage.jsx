@@ -16,6 +16,8 @@ import {
   AlertTriangle,
   Info,
   Bell,
+  Mail,
+  RefreshCw,
 } from "lucide-react"
 import { Switch } from "@headlessui/react"
 import SkillsForm from "../../components/formateurs/profile-completion-formateur/SkillsForm"
@@ -28,6 +30,7 @@ import {
   updateLearnerAdditionalInfo,
   updateLearnerNotifications
 } from "../../services/api"
+import axios from 'axios'
 
 const BACKEND_URL = import.meta.env.VITE_BACKEND_URL
 
@@ -73,6 +76,59 @@ export default function LearnerSettingsPage() {
     app: true
   })
 
+  // Email verification state
+  const [emailVerificationLoading, setEmailVerificationLoading] = useState(false)
+  const [emailVerificationSuccess, setEmailVerificationSuccess] = useState(false)
+  const [learnerData, setLearnerData] = useState(null)
+
+  // Helper function to check if email is verified
+  const isEmailVerified = () => {
+    return learnerData?.email_verified_at !== null && learnerData?.email_verified_at !== undefined
+  }
+
+  // Function to resend email verification
+  const handleResendVerification = async () => {
+    if (!learnerData?.email) {
+      setError("Adresse email non trouvée")
+      return
+    }
+
+    setEmailVerificationLoading(true)
+    setError(null)
+    setEmailVerificationSuccess(false)
+
+    try {
+      const token = localStorage.getItem('token')
+      const response = await axios.post(
+        `${import.meta.env.VITE_BACKEND_URL_API}/email/verification-notification`,
+        { email: learnerData.email },
+        {
+          headers: {
+            'Authorization': `Bearer ${token}`,
+            'Content-Type': 'application/json',
+            'Accept': 'application/json',
+          },
+          withCredentials: true,
+        }
+      )
+
+      setEmailVerificationSuccess(true)
+      addToast("Email de vérification envoyé avec succès", "success")
+
+      // Hide success message after 5 seconds
+      setTimeout(() => {
+        setEmailVerificationSuccess(false)
+      }, 5000)
+
+    } catch (err) {
+      const errorMessage = err.response?.data?.message || "Erreur lors de l'envoi de l'email de vérification"
+      setError(errorMessage)
+      addToast(errorMessage, "error")
+    } finally {
+      setEmailVerificationLoading(false)
+    }
+  }
+
   // Helper function to get avatar URL
   const getAvatarUrl = (avatarPath) => {
     if (!avatarPath) return "/placeholder.svg"
@@ -90,18 +146,22 @@ export default function LearnerSettingsPage() {
         const data = response.data
         console.log("data", data)
         localStorage.setItem("user", JSON.stringify(data))
+
+        // Store learner data for email verification
+        setLearnerData(data)
+
         setFormData({
           username: data.username || "",
           email: data.email || "",
           bio: data.bio || "",
           phone: data.phone || "",
         })
-        
+
         setFieldsOfInterest(data.fields_of_interest || [])
         setLanguages(data.languages || [])
         setCertifications(data.certifications || [])
         setNotifications(data.notifications || { email: true, app: true })
-        
+
         // Handle avatar URL
         if (data.avatar) {
           setAvatarPreview(data.avatar)
@@ -581,6 +641,57 @@ export default function LearnerSettingsPage() {
                       <AlertTriangle className="h-4 w-4" />
                       {fieldErrors.email}
                     </p>
+                  )}
+
+                  {/* Email Verification Status */}
+                  {learnerData && (
+                    <div className="mt-2">
+                      {isEmailVerified() ? (
+                        <div className="flex items-center gap-2 text-green-600">
+                          <CheckCircle className="h-4 w-4" />
+                          <span className="text-sm font-medium">Email vérifié</span>
+                        </div>
+                      ) : (
+                        <div className="space-y-3">
+                          <div className="flex items-center gap-2 text-amber-600">
+                            <AlertTriangle className="h-4 w-4" />
+                            <span className="text-sm font-medium">Email non vérifié</span>
+                          </div>
+                          <div className="p-3 bg-amber-50 border border-amber-200 rounded-lg">
+                            <div className="flex items-start gap-3">
+                              <Mail className="h-5 w-5 text-amber-600 flex-shrink-0 mt-0.5" />
+                              <div className="flex-1">
+                                <p className="text-sm text-amber-800 mb-2">
+                                  Votre adresse email n'est pas encore vérifiée. Veuillez vérifier votre boîte de réception et cliquer sur le lien de vérification.
+                                </p>
+                                {emailVerificationSuccess && (
+                                  <div className="mb-2 p-2 bg-green-100 border border-green-300 rounded text-green-800 text-sm">
+                                    ✓ Email de vérification envoyé avec succès ! Vérifiez votre boîte de réception.
+                                  </div>
+                                )}
+                                <button
+                                  onClick={handleResendVerification}
+                                  disabled={emailVerificationLoading}
+                                  className="inline-flex items-center gap-2 px-3 py-1.5 bg-amber-600 hover:bg-amber-700 text-white text-sm font-medium rounded-lg transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
+                                >
+                                  {emailVerificationLoading ? (
+                                    <>
+                                      <div className="h-3 w-3 border-2 border-white border-t-transparent rounded-full animate-spin"></div>
+                                      <span>Envoi...</span>
+                                    </>
+                                  ) : (
+                                    <>
+                                      <RefreshCw className="h-3 w-3" />
+                                      <span>Renvoyer l'email de vérification</span>
+                                    </>
+                                  )}
+                                </button>
+                              </div>
+                            </div>
+                          </div>
+                        </div>
+                      )}
+                    </div>
                   )}
                 </div>
               </div>

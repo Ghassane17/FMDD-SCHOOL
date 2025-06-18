@@ -1,9 +1,9 @@
 "use client"
 
-import { useState } from "react"
+import { useState, useEffect } from "react"
 import { useNavigate } from "react-router-dom"
 import { register, initializeCSRF } from "../services/api.js"
-import { User, Mail, Lock, Phone, FileText, Upload, AlertCircle, CheckCircle, Loader2 } from "lucide-react"
+import { User, Mail, Lock, Phone, FileText, Upload, AlertCircle, CheckCircle, Loader2, Clock } from "lucide-react"
 
 const Register = () => {
   const [formData, setFormData] = useState({
@@ -23,6 +23,37 @@ const Register = () => {
   const navigate = useNavigate()
   const [touched, setTouched] = useState({})
   const [validationErrors, setValidationErrors] = useState({})
+  const [showEmailVerificationMessage, setShowEmailVerificationMessage] = useState(false)
+  const [countdown, setCountdown] = useState(0)
+
+  // Countdown effect for email verification message
+  useEffect(() => {
+    let interval = null
+    if (countdown > 0) {
+      interval = setInterval(() => {
+        setCountdown(countdown => countdown - 1)
+      }, 1000)
+    } else if (countdown === 0 && showEmailVerificationMessage) {
+      // Auto redirect after countdown
+      const user = JSON.parse(localStorage.getItem('registeredUser') || '{}')
+      localStorage.removeItem('registeredUser') // Clean up
+      if (user.role === "learner") {
+        navigate("/learner/learner-profile")
+      } else if (user.role === "instructor") {
+        navigate("/instructor/instructor-profile")
+      } else {
+        navigate("/login")
+      }
+    }
+    return () => clearInterval(interval)
+  }, [countdown, showEmailVerificationMessage, navigate])
+
+  // Cleanup on unmount
+  useEffect(() => {
+    return () => {
+      localStorage.removeItem('registeredUser')
+    }
+  }, [])
 
   const handleChange = (e) => {
     const { name, value } = e.target
@@ -153,16 +184,15 @@ const Register = () => {
       })
 
       const user = response.data.user
-      setMessage("Inscription réussie ! Redirection...")
 
-      // Multistep redirect based on role
-      if (user.role === "learner") {
-        setTimeout(() => navigate("/learner/learner-profile"), 1500)
-      } else if (user.role === "instructor") {
-        setTimeout(() => navigate("/instructor/instructor-profile"), 1500)
-      } else {
-        setTimeout(() => navigate("/login"), 1500)
-      }
+      // Store user info temporarily for redirect
+      localStorage.setItem('registeredUser', JSON.stringify(user))
+
+      // Show email verification message
+      setShowEmailVerificationMessage(true)
+      setMessage("")
+      setCountdown(8) // 8 seconds to read the message
+
     } catch (error) {
       if (error.response?.data?.errors) {
         setErrors(error.response.data.errors)
@@ -186,7 +216,38 @@ const Register = () => {
         {/* Form Container */}
         <div className="bg-white rounded-3xl shadow-2xl border border-slate-200 p-10">
           {/* Messages */}
-          {message && (
+          {showEmailVerificationMessage && (
+            <div className="p-6 mb-8 bg-blue-50 border border-blue-200 rounded-xl">
+              <div className="flex items-start gap-3 mb-4">
+                <Mail className="w-6 h-6 text-blue-600 flex-shrink-0 mt-0.5" />
+                <div className="flex-1">
+                  <h3 className="text-lg font-semibold text-blue-900 mb-2">
+                    Inscription réussie ! 🎉
+                  </h3>
+                  <p className="text-blue-800 mb-3">
+                    Un email de vérification a été envoyé à votre adresse email.
+                    Veuillez cliquer sur le lien dans l'email pour activer votre compte.
+                  </p>
+                  <div className="flex items-center gap-2 text-blue-700">
+                    <Clock className="w-4 h-4" />
+                    <p className="text-sm">
+                      <strong>Important :</strong> Le lien de vérification expire dans 1 heure.
+                    </p>
+                  </div>
+                </div>
+              </div>
+              {countdown > 0 && (
+                <div className="flex items-center justify-center gap-2 p-3 bg-blue-100 rounded-lg">
+                  <Loader2 className="w-4 h-4 animate-spin text-blue-600" />
+                  <p className="text-blue-800 text-sm">
+                    Redirection dans {countdown} seconde{countdown > 1 ? 's' : ''}...
+                  </p>
+                </div>
+              )}
+            </div>
+          )}
+
+          {message && !showEmailVerificationMessage && (
             <div className="flex items-center gap-3 p-4 mb-8 bg-emerald-50 border border-emerald-200 rounded-xl">
               <CheckCircle className="w-5 h-5 text-emerald-600 flex-shrink-0" />
               <p className="text-emerald-700 font-medium">{message}</p>

@@ -14,6 +14,7 @@ use Laravel\Sanctum\HasApiTokens;
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\Eloquent\Factories\HasFactory;
 use Illuminate\Database\Eloquent\SoftDeletes;
+use Illuminate\Contracts\Auth\MustVerifyEmail;
 
 /**
  * Class User
@@ -36,7 +37,7 @@ use Illuminate\Database\Eloquent\SoftDeletes;
  *
  * @package App\Models
  */
-class User extends Authenticatable
+class User extends Authenticatable implements MustVerifyEmail
 {
 	use HasApiTokens, Notifiable, HasFactory, SoftDeletes;
 
@@ -103,5 +104,10 @@ class User extends Authenticatable
 	public function comments(): \Illuminate\Database\Eloquent\Relations\HasMany
 	{
 		return $this->hasMany(Comment::class);
+	}
+
+	public function sendEmailVerificationNotification()
+	{
+		$this->notify(new \App\Notifications\VerifyEmailLink());
 	}
 }
