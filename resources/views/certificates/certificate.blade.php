@@ -38,6 +38,8 @@
             display: flex;
             align-items: center;
             justify-content: center;
+            transform: scale(1.2);
+            transform-origin: center center;
         }
 
         .certificate-wrapper {
@@ -48,6 +50,7 @@
             align-items: center;
             justify-content: center;
             background: #fff;
+            transform: translateY(15px);
         }
 
         .certificate {
@@ -97,37 +100,37 @@
         .corner-tl {
             top: 30px;
             left: 30px;
-            width: 40px;
-            height: 40px;
-            border-top: 3px solid #0000ff;
-            border-left: 3px solid #0000ff;
+            width: 50px;
+            height: 50px;
+            border-top: 4px solid #0000ff;
+            border-left: 4px solid #0000ff;
         }
 
         .corner-tr {
             top: 30px;
             right: 30px;
-            width: 40px;
-            height: 40px;
-            border-top: 3px solid #9333EA;
-            border-right: 3px solid #9333EA;
+            width: 50px;
+            height: 50px;
+            border-top: 4px solid #9333EA;
+            border-right: 4px solid #9333EA;
         }
 
         .corner-bl {
             bottom: 30px;
             left: 30px;
-            width: 40px;
-            height: 40px;
-            border-bottom: 3px solid #0000ff;
-            border-left: 3px solid #0000ff;
+            width: 50px;
+            height: 50px;
+            border-bottom: 4px solid #0000ff;
+            border-left: 4px solid #0000ff;
         }
 
         .corner-br {
             bottom: 30px;
             right: 30px;
-            width: 40px;
-            height: 40px;
-            border-bottom: 3px solid #9333EA;
-            border-right: 3px solid #9333EA;
+            width: 50px;
+            height: 50px;
+            border-bottom: 4px solid #9333EA;
+            border-right: 4px solid #9333EA;
         }
 
         .watermark {
@@ -135,7 +138,7 @@
             top: 50%;
             left: 50%;
             transform: translate(-50%, -50%) rotate(-45deg);
-            font-size: 120px;
+            font-size: 140px;
             font-weight: 100;
             color: rgba(0, 0, 255, 0.03);
             white-space: nowrap;
@@ -152,71 +155,72 @@
             max-width: 240mm;
             padding: 0 30mm;
             background: transparent;
+            transform: translateY(10px);
         }
 
         .header {
-            margin-bottom: 25px;
+            margin-bottom: 30px;
             background: transparent;
         }
 
         .logo-section {
-            margin-bottom: 20px;
+            margin-bottom: 25px;
         }
 
         .logo-placeholder {
-            width: 80px;
-            height: 80px;
+            width: 100px;
+            height: 100px;
             background: linear-gradient(135deg, #0000ff, #9333EA);
             border-radius: 50%;
-            margin: 0 auto 15px;
+            margin: 0 auto 20px;
             display: flex;
             align-items: center;
             justify-content: center;
             color: white;
-            font-size: 32px;
+            font-size: 40px;
             font-weight: 700;
             box-shadow: 0 10px 25px rgba(0, 0, 255, 0.3);
         }
 
         .title {
             font-family: 'Playfair Display', serif;
-            font-size: 48px;
+            font-size: 56px;
             font-weight: 600;
             color: #000000;
-            margin-bottom: 8px;
+            margin-bottom: 10px;
             letter-spacing: 2px;
             text-transform: uppercase;
         }
 
         .subtitle {
-            font-size: 18px;
+            font-size: 22px;
             color: #6b7280;
             font-weight: 400;
-            margin-bottom: 25px;
+            margin-bottom: 30px;
             font-style: italic;
         }
 
         .main-content {
-            margin-bottom: 25px;
+            margin-bottom: 30px;
             background: transparent;
         }
 
         .recipient-text {
-            font-size: 20px;
+            font-size: 24px;
             color: #374151;
-            margin-bottom: 12px;
+            margin-bottom: 15px;
             font-weight: 400;
         }
 
         .name {
             font-family: 'Playfair Display', serif;
-            font-size: 52px;
+            font-size: 60px;
             font-weight: 700;
             background: linear-gradient(135deg, #0000ff, #9333EA);
             -webkit-background-clip: text;
             -webkit-text-fill-color: transparent;
             background-clip: text;
-            margin-bottom: 20px;
+            margin-bottom: 25px;
             letter-spacing: 1px;
             position: relative;
             text-transform: capitalize;
@@ -225,29 +229,29 @@
         .name::after {
             content: '';
             position: absolute;
-            bottom: -8px;
+            bottom: -10px;
             left: 50%;
             transform: translateX(-50%);
-            width: 120px;
-            height: 3px;
+            width: 140px;
+            height: 4px;
             background: linear-gradient(90deg, #0000ff, #9333EA);
             border-radius: 2px;
         }
 
         .completion-text {
-            font-size: 18px;
+            font-size: 22px;
             color: #374151;
-            margin-bottom: 12px;
+            margin-bottom: 15px;
             font-weight: 400;
         }
 
         .course-name {
             font-family: 'Playfair Display', serif;
-            font-size: 32px;
+            font-size: 38px;
             color: #000000;
             font-weight: 600;
             font-style: italic;
-            margin-bottom: 20px;
+            margin-bottom: 25px;
             line-height: 1.3;
             position: relative;
         }
@@ -255,7 +259,7 @@
         .course-name::before,
         .course-name::after {
             content: '"';
-            font-size: 40px;
+            font-size: 46px;
             color: #9333EA;
             font-weight: 400;
         }
@@ -263,34 +267,34 @@
         .achievement-badge {
             display: inline-flex;
             align-items: center;
-            gap: 8px;
+            gap: 10px;
             background: linear-gradient(135deg, #0000ff, #9333EA);
             color: white;
-            padding: 8px 20px;
-            border-radius: 25px;
-            font-size: 14px;
+            padding: 12px 25px;
+            border-radius: 30px;
+            font-size: 18px;
             font-weight: 600;
-            margin-bottom: 20px;
+            margin-bottom: 25px;
             box-shadow: 0 4px 15px rgba(0, 0, 255, 0.3);
         }
 
         .achievement-icon {
-            width: 16px;
-            height: 16px;
+            width: 20px;
+            height: 20px;
             background: white;
             border-radius: 50%;
             display: flex;
             align-items: center;
             justify-content: center;
             color: #0000ff;
-            font-size: 10px;
+            font-size: 12px;
             font-weight: 700;
         }
 
         .date-line {
-            font-size: 16px;
+            font-size: 20px;
             color: #6b7280;
-            margin-bottom: 20px;
+            margin-bottom: 25px;
             font-weight: 500;
         }
 
@@ -300,7 +304,7 @@
             align-items: flex-end;
             width: 100%;
             max-width: 500px;
-            margin-top: 15px;
+            margin-top: 20px;
         }
 
         .signature {
@@ -309,22 +313,22 @@
         }
 
         .signature-line {
-            width: 150px;
-            height: 2px;
+            width: 180px;
+            height: 3px;
             background: linear-gradient(90deg, #0000ff, #9333EA);
-            margin: 0 auto 8px;
+            margin: 0 auto 10px;
             border-radius: 1px;
         }
 
         .signature-name {
-            font-size: 14px;
+            font-size: 18px;
             color: #000000;
             font-weight: 600;
-            margin-bottom: 3px;
+            margin-bottom: 5px;
         }
 
         .signature-title {
-            font-size: 12px;
+            font-size: 14px;
             color: #6b7280;
             font-weight: 400;
             font-style: italic;
@@ -332,43 +336,43 @@
 
         .certificate-info {
             position: absolute;
-            bottom: 35px;
-            right: 35px;
+            bottom: 40px;
+            right: 40px;
             text-align: right;
-            font-size: 11px;
+            font-size: 14px;
             color: #6b7280;
             z-index: 3;
             background: rgba(255, 255, 255, 0.9);
-            padding: 8px 12px;
-            border-radius: 6px;
+            padding: 12px 16px;
+            border-radius: 8px;
             border: 1px solid rgba(0, 0, 0, 0.1);
         }
 
         .certificate-code {
-            margin-bottom: 4px;
+            margin-bottom: 6px;
             font-weight: 600;
-            font-size: 12px;
+            font-size: 16px;
             color: #000000;
         }
 
         .issue-date {
             font-style: italic;
-            font-size: 11px;
+            font-size: 14px;
         }
 
         .qr-placeholder {
             position: absolute;
-            bottom: 35px;
-            left: 35px;
-            width: 60px;
-            height: 60px;
+            bottom: 40px;
+            left: 40px;
+            width: 75px;
+            height: 75px;
             background: #f8fafc;
             border: 2px solid #e2e8f0;
-            border-radius: 8px;
+            border-radius: 10px;
             display: flex;
             align-items: center;
             justify-content: center;
-            font-size: 10px;
+            font-size: 12px;
             color: #64748b;
             text-align: center;
             z-index: 3;
@@ -376,17 +380,17 @@
 
         .excellence-seal {
             position: absolute;
-            top: 40px;
-            right: 80px;
-            width: 80px;
-            height: 80px;
+            top: 45px;
+            right: 90px;
+            width: 100px;
+            height: 100px;
             background: linear-gradient(135deg, #fbbf24, #f59e0b);
             border-radius: 50%;
             display: flex;
             align-items: center;
             justify-content: center;
             color: white;
-            font-size: 12px;
+            font-size: 14px;
             font-weight: 700;
             text-align: center;
             z-index: 3;

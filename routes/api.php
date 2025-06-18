@@ -59,6 +59,8 @@ Route::middleware('auth:sanctum')->group(function () {
         ->where(['course' => '[0-9]+', 'module' => '[0-9]+']);
 
     Route::post('/courses/{course}/comments', [CommentController::class, 'store']);
+    Route::put('/courses/{course}/comments/{comment}', [CommentController::class, 'update']);
+    Route::delete('/courses/{course}/comments/{comment}', [CommentController::class, 'destroy']);
     Route::put('/courses/{course}', [ResourceController::class, 'updateCourseRating']);
     Route::post('/courses/{id}/enroll', [CourseController::class, 'enrollNow']);
     /*     Route::delete('/courses/{course}/leave', [CourseController::class, 'leave']);

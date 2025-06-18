@@ -19,7 +19,7 @@ const API_URL = import.meta.env.VITE_BACKEND_URL;
  * @param {Array} props.quizQuestions - Array of quiz questions (for quiz type)
  * @param {Array} props.resources - Array of module-specific resources from Resource
  */
-const ContentRenderer = ({ type, textContent, filePath, quizQuestions = [], resources = [], onQuizComplete, courseId, moduleId }) => {
+const ContentRenderer = ({ type, textContent, filePath, quizQuestions = [], resources = [], onQuizComplete, courseId, moduleId, onModuleComplete }) => {
     // State for quiz functionality
     const [currentQuestionIndex, setCurrentQuestionIndex] = useState(0);
     const [selectedAnswer, setSelectedAnswer] = useState(null);
@@ -38,7 +38,7 @@ const ContentRenderer = ({ type, textContent, filePath, quizQuestions = [], reso
     // PDF specific state
     const [pdfLoading, setPdfLoading] = useState(true);
     const [pdfError, setPdfError] = useState(null);
-    const [pdfScale, setPdfScale] = useState(1);
+    const [pdfScale] = useState(1);
     const iframeRef = useRef(null);
 
     // Quiz progress calculation
@@ -210,9 +210,9 @@ const ContentRenderer = ({ type, textContent, filePath, quizQuestions = [], reso
             const response = await markModuleAsCompleted(parseInt(courseId, 10), moduleId);
             console.log("🚀 Response:", response);
             toast.success(`Quiz completed with ${Math.round(finalScore)}% score!`);
-            setTimeout(() => {
-                window.location.reload();
-            }, 2000);
+            if (typeof onModuleComplete === 'function') {
+                await onModuleComplete(moduleId);
+            }
         } catch (error) {
             console.error("❌ Error marking module as completed:", error);
             toast.error("Failed to update progress. Please try again.");
@@ -221,14 +221,7 @@ const ContentRenderer = ({ type, textContent, filePath, quizQuestions = [], reso
 
     // Reset quiz
     const resetQuiz = () => {
-        setCurrentQuestionIndex(0);
-        setSelectedAnswer(null);
-        setShowResult(false);
-        setQuizScore(0);
-        setQuizCompleted(false);
-        setAnswers({});
-        setRandomizedOptions([]);
-        setCorrectAnswerMap({});
+        window.location.reload()
     };
 
     // Render content based on type
@@ -275,7 +268,7 @@ const ContentRenderer = ({ type, textContent, filePath, quizQuestions = [], reso
                             <div className="absolute inset-0 flex items-center justify-center bg-gray-100">
                                 <div className="text-center">
                                     <p className="text-red-500 mb-2">{pdfError}</p>
-                                    <p className="text-sm text-gray-500">Please ensure you are logged in and have access to this resource.</p>
+                                    <p className="text-sm text-gray-500">Authentifiez-vous d'abbord s'il vous plait.</p>
                                 </div>
                             </div>
                         ) : pdfUrl ? (
@@ -305,7 +298,7 @@ const ContentRenderer = ({ type, textContent, filePath, quizQuestions = [], reso
                             </>
                         ) : (
                             <div className="absolute inset-0 flex items-center justify-center">
-                                <p className="text-gray-500">No PDF available</p>
+                                <p className="text-gray-500">Pas de PDF disponible</p>
                             </div>
                         )}
                     </div>
@@ -343,7 +336,7 @@ const ContentRenderer = ({ type, textContent, filePath, quizQuestions = [], reso
                     </div>
                 ) : (
                     <div className="w-full aspect-video bg-gray-100 rounded-lg flex items-center justify-center">
-                        <p className="text-lg text-gray-500">No video available for this module.</p>
+                        <p className="text-lg text-gray-500">Pas de video disponible.</p>
                     </div>
                 );
 
@@ -351,7 +344,7 @@ const ContentRenderer = ({ type, textContent, filePath, quizQuestions = [], reso
                 if (quizQuestions.length === 0) {
                     return (
                         <div className="w-full p-8 bg-gray-100 rounded-lg text-center">
-                            <p className="text-lg text-gray-500">No quiz questions available.</p>
+                            <p className="text-lg text-gray-500">Pas de quiz disponible.</p>
                         </div>
                     );
                 }
@@ -360,12 +353,12 @@ const ContentRenderer = ({ type, textContent, filePath, quizQuestions = [], reso
                     return (
                         <div className="space-y-8">
                             <div className="text-center">
-                                <h3 className="text-3xl font-bold mb-4">Quiz Completed!</h3>
+                                <h3 className="text-3xl font-bold mb-4">Quiz complété!</h3>
                                 <div className="text-5xl font-bold text-blue-600 mb-6">
                                     {quizScore.toFixed(1)}%
                                 </div>
                                 <p className="text-xl text-gray-600">
-                                    You got {Math.round((quizScore / 100) * quizQuestions.length)} out of {quizQuestions.length} questions correct.
+                                    T'as eu {Math.round((quizScore / 100) * quizQuestions.length)} sur {quizQuestions.length} comme note du quiz.
                                 </p>
                             </div>
 
@@ -397,7 +390,7 @@ const ContentRenderer = ({ type, textContent, filePath, quizQuestions = [], reso
                                 onClick={resetQuiz}
                                 className="w-full px-6 py-4 bg-blue-600 text-white rounded-lg hover:bg-blue-700 text-lg"
                             >
-                                Retake Quiz
+                                Refaire le quiz
                             </button>
                         </div>
                     );
@@ -416,13 +409,13 @@ const ContentRenderer = ({ type, textContent, filePath, quizQuestions = [], reso
                                 <p className="font-medium">
                                     {selectedAnswer === correctAnswerMap[currentQuestionIndex]
                                         ? 'Correct!'
-                                        : `Incorrect. The correct answer is: ${randomizedOptions[correctAnswerMap[currentQuestionIndex]].text}`}
+                                        : `Incorrecte réponse. La correcte réponse est a: ${randomizedOptions[correctAnswerMap[currentQuestionIndex]].text}`}
                                 </p>
                             </div>
 
                             <div className="flex justify-between items-center">
                                 <div className="text-sm text-gray-600">
-                                    Question {currentQuestionIndex + 1} of {quizQuestions.length}
+                                    Question {currentQuestionIndex + 1} parmi {quizQuestions.length}
                                 </div>
                                 <div className="w-32 h-2 bg-gray-200 rounded-full">
                                     <div
@@ -445,8 +438,8 @@ const ContentRenderer = ({ type, textContent, filePath, quizQuestions = [], reso
                                 className="w-full px-4 py-2 bg-blue-600 text-white rounded hover:bg-blue-700"
                             >
                                 {currentQuestionIndex < quizQuestions.length - 1
-                                    ? 'Next Question'
-                                    : 'Finish Quiz'}
+                                    ? 'Question suivante'
+                                    : 'Terminer le quiz'}
                             </button>
                         </div>
                     );
@@ -456,7 +449,7 @@ const ContentRenderer = ({ type, textContent, filePath, quizQuestions = [], reso
                     <div className="space-y-6">
                         <div className="flex justify-between items-center">
                             <div className="text-sm text-gray-600">
-                                Question {currentQuestionIndex + 1} of {quizQuestions.length}
+                                Question {currentQuestionIndex + 1} parmi {quizQuestions.length}
                             </div>
                             <div className="w-32 h-2 bg-gray-200 rounded-full">
                                 <div
@@ -494,7 +487,7 @@ const ContentRenderer = ({ type, textContent, filePath, quizQuestions = [], reso
                                     : 'bg-blue-600 text-white hover:bg-blue-700'
                             }`}
                         >
-                            Check Answer
+                            Vérifier ma réponse
                         </button>
                     </div>
                 );
@@ -502,7 +495,7 @@ const ContentRenderer = ({ type, textContent, filePath, quizQuestions = [], reso
             default:
                 return (
                     <div className="w-full p-4 bg-gray-100 rounded-lg text-center">
-                        <p className="text-gray-500">Unsupported content type.</p>
+                        <p className="text-gray-500"> Type insupporté.</p>
                     </div>
                 );
         }
@@ -512,7 +505,7 @@ const ContentRenderer = ({ type, textContent, filePath, quizQuestions = [], reso
         <div className="mt-6">
             <div className="flex items-center gap-3 mb-6">
                 {contentTypeIcons[type]}
-                <h3 className="text-2xl font-medium capitalize">{type} Content</h3>
+                <h3 className="text-2xl font-medium capitalize">{type} </h3>
             </div>
             {renderContent()}
         </div>

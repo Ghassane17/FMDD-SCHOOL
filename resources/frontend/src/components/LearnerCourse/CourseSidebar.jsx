@@ -3,7 +3,7 @@ import PropTypes from 'prop-types';
 import { useNavigate } from 'react-router-dom';
 import { CheckCircle, School, Lock } from '@mui/icons-material';
 
-const CourseSidebar = ({ modules, currentModuleId, progress, isOpen, onModuleSelect, quizProgress, courseId, hasExam, completedModules = [] }) => {
+const CourseSidebar = ({ modules, currentModuleId, progress, isOpen, onModuleSelect, courseId, hasExam }) => {
     const navigate = useNavigate();
     
     // Exam is disabled when progress is less than 100%
@@ -30,7 +30,7 @@ const CourseSidebar = ({ modules, currentModuleId, progress, isOpen, onModuleSel
                 <h2 className="text-lg font-semibold text-gray-800 mb-4">Modules</h2>
                 <ul className="space-y-2">
                     {modules.map((module) => {
-                        const isCompleted = completedModules.includes(module.id);
+                        const isCompleted = !!module.is_completed;
                         return (
                             <li key={module.id}>
                                 <button
@@ -95,10 +95,8 @@ CourseSidebar.propTypes = {
     progress: PropTypes.number.isRequired,
     isOpen: PropTypes.bool.isRequired,
     onModuleSelect: PropTypes.func.isRequired,
-    quizProgress: PropTypes.object,
     courseId: PropTypes.number.isRequired,
     hasExam: PropTypes.bool.isRequired,
-    completedModules: PropTypes.arrayOf(PropTypes.number),
 };
 
 export default CourseSidebar;

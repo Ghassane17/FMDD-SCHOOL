@@ -57,4 +57,38 @@ class CommentController extends Controller
             ->get();
         return response()->json($comments);
     }
+
+    public function update(Request $request, $courseId, $commentId)
+    {
+        $comment = Comment::where('id', $commentId)->where('user_id', Auth::id())->firstOrFail();
+        $validated = $request->validate([
+            'text' => 'required|min:5',
+            'rating' => 'required|integer|min:1|max:5',
+        ]);
+        $comment->update([
+            'text' => $validated['text'],
+            'rating' => $validated['rating'],
+        ]);
+        // Update course average rating
+        $course = Course::findOrFail($courseId);
+        $averageRating = $course->comments()->avg('rating') ?? 0;
+        $course->update(['rating' => round($averageRating, 2)]);
+        return response()->json([
+            'message' => 'Commentaire modifié avec succès',
+            'comment' => $comment
+        ]);
+    }
+
+    public function destroy($courseId, $commentId)
+    {
+        $comment = Comment::where('id', $commentId)->where('user_id', Auth::id())->firstOrFail();
+        $comment->delete();
+        // Update course average rating
+        $course = Course::findOrFail($courseId);
+        $averageRating = $course->comments()->avg('rating') ?? 0;
+        $course->update(['rating' => round($averageRating, 2)]);
+        return response()->json([
+            'message' => 'Commentaire supprimé avec succès'
+        ]);
+    }
 }

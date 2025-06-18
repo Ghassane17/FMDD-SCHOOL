@@ -254,16 +254,11 @@ const CourseContent = ({
   onNextClick,
   onQuizComplete,
   courseId,
-  moduleId,
-  onSaveNotes,
-  notes,
   onModuleComplete,
   isFocused,
   onToggleFocus,
-  completedModules = [],
 }) => {
   const [downloadingResources, setDownloadingResources] = useState(new Set())
-  const [previewResource, setPreviewResource] = useState(null)
   const [expandedCategories, setExpandedCategories] = useState(new Set())
 
   if (!currentModule) {
@@ -277,7 +272,7 @@ const CourseContent = ({
   }
 
   // Check if current module is completed
-  const isModuleCompleted = completedModules.includes(currentModule?.id);
+  const isModuleCompleted = !!currentModule?.is_completed;
 
   const handleDownloadResource = async (resourceId, resource) => {
     if (downloadingResources.has(resourceId)) return;
@@ -327,7 +322,7 @@ const CourseContent = ({
     if (fileInfo.category === "Images") {
       window.open(resource.url, "_blank", "noopener,noreferrer")
     } else if (fileInfo.category === "Videos" || fileInfo.category === "Audio") {
-      setPreviewResource(resource)
+      window.open(resource.url, "_blank", "noopener,noreferrer")
     } else if (fileInfo.canPreview) {
       window.open(resource.url, "_blank", "noopener,noreferrer")
     }
@@ -373,7 +368,7 @@ const CourseContent = ({
               {isModuleCompleted && (
                 <div className="flex items-center gap-2 text-green-600">
                   <CheckCircle className="w-5 h-5" />
-                  <span>Completed</span>
+                  <span>Complété</span>
                 </div>
               )}
             </div>
@@ -422,8 +417,8 @@ const CourseContent = ({
             quizQuestions={currentModule.quiz?.questions || []}
             resources={currentModule.resources}
             courseId={courseId}
-            moduleId={currentModule.id}
             onQuizComplete={onQuizComplete}
+            onModuleComplete={onModuleComplete}
           />
         </div>
 
@@ -578,12 +573,9 @@ CourseContent.propTypes = {
   onNextClick: PropTypes.func.isRequired,
   onQuizComplete: PropTypes.func,
   courseId: PropTypes.number.isRequired,
-  onSaveNotes: PropTypes.func.isRequired,
-  notes: PropTypes.string,
   onModuleComplete: PropTypes.func.isRequired,
   isFocused: PropTypes.bool,
   onToggleFocus: PropTypes.func.isRequired,
-  completedModules: PropTypes.arrayOf(PropTypes.number),
 }
 
 export default CourseContent

@@ -2,7 +2,7 @@
 
 import { useState, useEffect } from "react"
 import { useParams, useNavigate } from "react-router-dom"
-import { courseDetails, enrollNow, leaveCourse, ShowCourseComments } from "@/services/api"
+import { courseDetails, enrollNow, ShowCourseComments, getUser, updateComment, deleteComment } from "@/services/api"
 import {
   CheckCircle,
   PlayArrow,
@@ -16,9 +16,12 @@ import {
   ExpandMore,
   ChevronRight,
 } from "@mui/icons-material"
-import { ChevronDown, ChevronUp } from "lucide-react"
+import { ChevronDown, ChevronUp, Pencil, Trash } from "lucide-react"
 import NotesPanel from "../components/LearnerCourse/NotesPanel"
 import { toast } from "react-hot-toast"
+import { Rating } from '@mui/material';
+import React, { Fragment } from 'react';
+import { Dialog, Transition } from '@headlessui/react';
 
 const EnrollmentPage = () => {
   const { courseId } = useParams()
@@ -26,23 +29,24 @@ const EnrollmentPage = () => {
   const [course, setCourse] = useState(null)
   const [loading, setLoading] = useState(true)
   const [error, setError] = useState("")
-  const [isEnrolling, setIsEnrolling] = useState(false)
   const [isEnrolled, setIsEnrolled] = useState(false)
   const [thumbnailLoading, setThumbnailLoading] = useState(true)
-  const [avatarLoading, setAvatarLoading] = useState(true)
-  const [thumbnailError, setThumbnailError] = useState(false)
-  const [avatarError, setAvatarError] = useState(false)
   const [comments, setComments] = useState([])
   const [progress, setProgress] = useState(0)
   const [showAllComments, setShowAllComments] = useState(false)
+  const currentUser = getUser()
+  const [editingComment, setEditingComment] = useState(null)
+  const [editText, setEditText] = useState("")
+  const [editRating, setEditRating] = useState(1)
+  const [showDeleteModal, setShowDeleteModal] = useState(false);
+  const [commentToDelete, setCommentToDelete] = useState(null);
 
   // Add refreshComments function
   const refreshComments = async () => {
     try {
       const commentsData = await ShowCourseComments(courseId)
       setComments(commentsData || [])
-    } catch (err) {
-      console.error("❌ Error refreshing comments:", err)
+    } catch {
       toast.error("Failed to refresh comments")
     }
   }
@@ -85,11 +89,11 @@ const EnrollmentPage = () => {
         console.log("🚀 Setting Progress Value:", progressValue)
         console.log("🚀 Progress Value Type:", typeof progressValue)
         setProgress(Number(progressValue))
-      } catch (err) {
-        console.error("❌ Course Details Error:", err)
-        if (err.response?.status === 404) {
+      } catch (error) {
+        console.error("❌ Course Details Error:", error)
+        if (error.response?.status === 404) {
           setError("Course not found.")
-        } else if (err.response?.status === 400) {
+        } else if (error.response?.status === 400) {
           setError("Invalid course ID.")
         } else {
           setError("Failed to load course details.")
@@ -120,50 +124,54 @@ const EnrollmentPage = () => {
     }
   }
 
-  const handleLeaveCourse = async () => {
-    setError("")
+  const handleThumbnailLoad = () => {
+    console.log('✅ Thumbnail loaded successfully')
+    console.log('✅ Loaded URL:', `${API_URL}${course.course_thumbnail}`)
+    setThumbnailLoading(false)
+  }
+
+  const handleEditClick = (comment) => {
+    setEditingComment(comment)
+    setEditText(comment.text)
+    setEditRating(comment.rating)
+  }
+
+  const handleEditSave = async (e) => {
+    e.preventDefault()
+    if (!editingComment) return
     try {
-      const response = await leaveCourse(courseId)
-      console.log("🚀 Leave Response:", response)
-      if (!response.message || response.message !== "Successfully left the course") {
-        throw new Error("Unexpected leave response")
-      }
-      setIsEnrolled(false)
-      const data = await courseDetails(courseId)
-      if (!data.course) {
-        throw new Error("Failed to refresh course details")
-      }
-      setCourse(data.course)
-    } catch (err) {
-      console.error("❌ Leave Error:", err)
-      setError(err.response?.data?.message || "Failed to leave the course.")
-      setTimeout(() => setError(""), 5000)
+      await updateComment(courseId, editingComment.id, { text: editText, rating: editRating })
+      setEditingComment(null)
+      refreshComments()
+      toast.success("Commentaire modifié avec succès")
+    } catch {
+      toast.error("Erreur lors de la modification du commentaire")
     }
   }
 
- const handleThumbnailLoad = () => {
-  console.log('✅ Thumbnail loaded successfully')
-  console.log('✅ Loaded URL:', `${API_URL}${course.course_thumbnail}`)
-  setThumbnailLoading(false)
-}
+  const handleDelete = (commentId) => {
+    setCommentToDelete(commentId);
+    setShowDeleteModal(true);
+  };
 
-const handleThumbnailError = (e) => {
-  console.error('❌ Thumbnail failed to load')
-  console.error('❌ Failed URL:', `${API_URL}${course.course_thumbnail}`)
-  console.error('❌ Error event:', e)
-  console.error('❌ Error target:', e.target)
-  console.error('❌ Error type:', e.type)
-  setThumbnailLoading(false)
-}
+  const confirmDelete = async () => {
+    if (!commentToDelete) return;
+    try {
+      await deleteComment(courseId, commentToDelete);
+      refreshComments();
+      toast.success("Commentaire supprimé");
+    } catch {
+      toast.error("Erreur lors de la suppression du commentaire");
+    } finally {
+      setShowDeleteModal(false);
+      setCommentToDelete(null);
+    }
+  };
 
-  const handleAvatarLoad = () => {
-    setAvatarLoading(false)
-  }
-
-  const handleAvatarError = () => {
-    setAvatarLoading(false)
-    setAvatarError(true)
-  }
+  const cancelDelete = () => {
+    setShowDeleteModal(false);
+    setCommentToDelete(null);
+  };
 
   if (loading) {
     return (
@@ -207,7 +215,6 @@ const handleThumbnailError = (e) => {
           src={`${API_URL}${course.course_thumbnail}`}
           alt={course.title}
           onLoad={handleThumbnailLoad}
-          onError={handleThumbnailError}
           className={`w-full h-full object-cover transition-opacity duration-300 ${
             thumbnailLoading ? 'opacity-0' : 'opacity-100'
           }`}
@@ -345,8 +352,6 @@ const handleThumbnailError = (e) => {
                     src={ `${API_URL}${course.instructor.avatar}`}
                     alt={course.instructor.name}
                     className="w-20 h-20 rounded-full object-cover"
-                    onLoad={handleAvatarLoad}
-                    onError={handleAvatarError}
                   />
                 </div>
                 <div className="flex-1">
@@ -402,10 +407,13 @@ const handleThumbnailError = (e) => {
                 <div className="relative">
                   <div className={`space-y-6 ${!showAllComments ? 'max-h-[500px] overflow-hidden' : ''}`}>
                     {comments
-                      .sort(() => Math.random() - 0.5) // Randomize comments
-                      .slice(0, showAllComments ? undefined : 5) // Show only 5 if not showing all
+                      .sort(() => Math.random() - 0.5)
+                      .slice(0, showAllComments ? undefined : 5)
                       .map((comment) => (
-                        <div key={comment.id} className="border-b border-gray-100 pb-6 last:border-b-0 last:pb-0">
+                        <div
+                          key={comment.id}
+                          className="border-b border-gray-100 pb-6 last:border-b-0 last:pb-0 group relative"
+                        >
                           <div className="flex items-start space-x-4">
                             <img 
                               src={`${API_URL}${comment.user.avatar}`}
@@ -417,24 +425,73 @@ const handleThumbnailError = (e) => {
                             />
                             <div className="flex-1">
                               <div className="flex items-center justify-between">
-                                <h4 className="font-medium text-gray-900">{comment.user.username}</h4>
+                                <div className="flex items-center gap-2">
+                                  <h4 className="font-medium text-gray-900">{comment.user.username}</h4>
+                                  {currentUser && (comment.user.id === currentUser.id || comment.user.username === currentUser.username) && !editingComment && (
+                                    <div className="flex items-center gap-1 ml-1">
+                                      <button
+                                        className="text-blue-600 hover:text-blue-800 p-1 rounded-full focus:outline-none"
+                                        onClick={() => handleEditClick(comment)}
+                                        title="Modifier"
+                                      >
+                                        <Pencil className="w-4 h-4" />
+                                      </button>
+                                      <button
+                                        className="text-red-600 hover:text-red-800 p-1 rounded-full focus:outline-none"
+                                        onClick={() => handleDelete(comment.id)}
+                                        title="Supprimer"
+                                      >
+                                        <Trash className="w-4 h-4" />
+                                      </button>
+                                    </div>
+                                  )}
+                                </div>
                                 <div className="flex items-center space-x-1">
                                   <Star className="text-yellow-400 w-4 h-4" />
                                   <span className="text-sm text-gray-600">{comment.rating}</span>
                                 </div>
                               </div>
-                              <p className="text-gray-600 mt-1">{comment.text}</p>
-                              <p className="text-sm text-gray-400 mt-2">
-                                {new Date(comment.created_at).toLocaleDateString('en-US', {
-                                  year: 'numeric',
-                                  month: 'long',
-                                  day: 'numeric'
-                                })}
-                              </p>
+                              {editingComment && editingComment.id === comment.id ? (
+                                <form onSubmit={handleEditSave} className="mt-2 flex flex-col gap-2">
+                                  <div className="mb-2">
+                                    <label className="block text-sm font-medium text-gray-700 mb-1">Votre note</label>
+                                    <Rating
+                                      value={editRating}
+                                      onChange={(event, newValue) => setEditRating(newValue)}
+                                      precision={1}
+                                    />
+                                  </div>
+                                  <textarea
+                                    value={editText}
+                                    onChange={e => setEditText(e.target.value)}
+                                    className="w-full border rounded-md p-3 min-h-[100px] focus:ring-2 focus:ring-blue-500 focus:border-blue-500 outline-none"
+                                    minLength={5}
+                                    required
+                                    placeholder="Écrivez votre commentaire..."
+                                  />
+                                  <div className="flex gap-2 justify-end mt-2">
+                                    <button type="submit" className="bg-blue-600 hover:bg-blue-700 text-white px-4 py-2 rounded transition disabled:opacity-50 disabled:cursor-not-allowed" disabled={!editText.trim() || editRating === 0}>
+                                      Enregistrer
+                                    </button>
+                                    <button type="button" onClick={() => setEditingComment(null)} className="bg-gray-300 px-4 py-2 rounded">Annuler</button>
+                                  </div>
+                                </form>
+                              ) : (
+                                <>
+                                  <p className="text-gray-600 mt-1">{comment.text}</p>
+                                  <p className="text-sm text-gray-400 mt-2">
+                                    {new Date(comment.created_at).toLocaleDateString('en-US', {
+                                      year: 'numeric',
+                                      month: 'long',
+                                      day: 'numeric'
+                                    })}
+                                  </p>
+                                </>
+                              )}
                             </div>
                           </div>
                         </div>
-                    ))}
+                      ))}
                   </div>
                   
                   {!showAllComments && comments.length > 5 && (
@@ -617,17 +674,9 @@ const handleThumbnailError = (e) => {
                 ) : (
                   <button
                     onClick={handleEnroll}
-                    disabled={isEnrolling}
                     className="w-full bg-gray-900 text-white py-4 px-6 rounded-lg hover:bg-gray-800 transition-colors font-medium text-lg disabled:opacity-50 disabled:cursor-not-allowed"
                   >
-                    {isEnrolling ? (
-                      <div className="flex items-center justify-center space-x-2">
-                        <div className="animate-spin rounded-full h-5 w-5 border-b-2 border-white"></div>
-                        <span>En train de s'inscrire à la formation...</span>
-                      </div>
-                    ) : (
-                      "Inscris-toi maintenant"
-                    )}
+                    "Inscris-toi maintenant"
                   </button>
                 )}
               </div>
@@ -668,6 +717,55 @@ const handleThumbnailError = (e) => {
           </div>
         </div>
       </div>
+
+      {/* Delete Confirmation Modal */}
+      <Transition.Root show={showDeleteModal} as={Fragment}>
+        <Dialog as="div" className="relative z-50" onClose={cancelDelete}>
+          <Transition.Child
+            as={Fragment}
+            enter="ease-out duration-300" enterFrom="opacity-0" enterTo="opacity-100"
+            leave="ease-in duration-200" leaveFrom="opacity-100" leaveTo="opacity-0"
+          >
+            <div className="fixed inset-0 bg-gray-500 bg-opacity-60 backdrop-blur-sm transition-opacity" />
+          </Transition.Child>
+          <div className="fixed inset-0 z-50 overflow-y-auto">
+            <div className="flex min-h-full items-center justify-center p-4 text-center">
+              <Transition.Child
+                as={Fragment}
+                enter="ease-out duration-300" enterFrom="opacity-0 scale-95" enterTo="opacity-100 scale-100"
+                leave="ease-in duration-200" leaveFrom="opacity-100 scale-100" leaveTo="opacity-0 scale-95"
+              >
+                <Dialog.Panel className="w-full max-w-md transform overflow-hidden rounded-2xl bg-white p-6 text-left align-middle shadow-xl transition-all">
+                  <Dialog.Title as="h3" className="text-lg font-medium leading-6 text-gray-900">
+                    Confirmation de suppression
+                  </Dialog.Title>
+                  <div className="mt-2">
+                    <p className="text-sm text-gray-500">
+                      Êtes-vous sûr de vouloir supprimer ce commentaire ? Cette action est irréversible.
+                    </p>
+                  </div>
+                  <div className="mt-4 flex justify-end gap-2">
+                    <button
+                      type="button"
+                      className="inline-flex justify-center rounded-md border border-transparent bg-gray-200 px-4 py-2 text-sm font-medium text-gray-700 hover:bg-gray-300 focus:outline-none"
+                      onClick={cancelDelete}
+                    >
+                      Annuler
+                    </button>
+                    <button
+                      type="button"
+                      className="inline-flex justify-center rounded-md border border-transparent bg-red-600 px-4 py-2 text-sm font-medium text-white hover:bg-red-700 focus:outline-none"
+                      onClick={confirmDelete}
+                    >
+                      Supprimer
+                    </button>
+                  </div>
+                </Dialog.Panel>
+              </Transition.Child>
+            </div>
+          </div>
+        </Dialog>
+      </Transition.Root>
     </div>
   )
 }
