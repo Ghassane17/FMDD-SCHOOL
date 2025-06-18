@@ -315,7 +315,7 @@ class CourseController extends Controller
                 ->get();
 
             // Get learner's field of interest and language
-            $fieldOfInterest = $learner->field_of_interest ?? [];
+            $fieldOfInterest = $learner->fields_of_interest ?? [];
             $languages = $learner->languages ?? [];
 
             // Convert to arrays if they're JSON strings
@@ -335,32 +335,32 @@ class CourseController extends Controller
                 $enrolledCategories = $enrolledCourses->pluck('category')->filter()->unique();
                 if ($enrolledCategories->contains($course['category'])) {
                     $score += 3;
-                    $reasons[] = 'Based on your enrolled courses';
+                    $reasons[] = 'Basé sur vos anciennes inscriptions';
                 }
 
                 // Score based on field of interest match (weight: 4)
                 if (in_array($course['category'], $fieldOfInterest)) {
                     $score += 4;
-                    $reasons[] = 'Matches your field of interest';
+                    $reasons[] = "Ca convient avec vos centres d'interets";
                 }
 
                 // Score based on level progression (weight: 2)
                 $enrolledLevels = $enrolledCourses->pluck('level')->filter()->unique();
                 if ($this->isLevelProgression($enrolledLevels, $course['level'])) {
                     $score += 2;
-                    $reasons[] = 'Suitable level progression';
+                    $reasons[] = "Pris en compte le niveau d'apprentissage";
                 }
 
                 // Score based on high rating (weight: 1)
                 if ($course['rating'] >= 4.5) {
                     $score += 1;
-                    $reasons[] = 'Highly rated course';
+                    $reasons[] = 'Top rating';
                 }
 
                 // Score based on popularity (weight: 1)
                 if ($course['students'] >= 100) {
                     $score += 1;
-                    $reasons[] = 'Popular course';
+                    $reasons[] = 'Plusieurs personnes se sont inscris dans cette formation';
                 }
 
                 // Score based on language preference (weight: 2)
@@ -390,7 +390,7 @@ class CourseController extends Controller
             Log::info('Course recommendations generated', [
                 'learner_id' => $learner->id,
                 'enrolled_courses_count' => $enrolledCourses->count(),
-                'field_of_interest' => $fieldOfInterest,
+                'fields_of_interest' => $fieldOfInterest,
                 'languages' => $languages,
                 'recommendations_count' => $recommendedCourses->count()
             ]);

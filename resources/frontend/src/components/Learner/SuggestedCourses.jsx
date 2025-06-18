@@ -1,6 +1,7 @@
 "use client"
 
 import { useEffect, useState } from "react"
+import { Link } from "react-router-dom"
 import { getAllCourses } from "../../services/api.js"
 import CourseCard from "./CourseCard.jsx"
 import {
@@ -95,6 +96,10 @@ const SuggestedCourses = () => {
 
   const totalStudents = courses.reduce((sum, course) => sum + (course.students || 0), 0)
 
+  const handleReasonsClick = (e) => {
+    e.stopPropagation()
+  }
+
   if (loading) {
     return (
       <div className="min-h-screen bg-gradient-to-br from-gray-50 via-white to-purple-50">
@@ -176,7 +181,7 @@ const SuggestedCourses = () => {
     <div className="min-h-screen bg-gradient-to-br from-gray-50 via-white to-purple-50">
       <div className="container mx-auto px-6 py-8">
         {/* Enhanced Header Section */}
-        <div className="bg-gradient-to-r from-purple-900 via-black to-blue-900 rounded-2xl p-8 mb-8 text-white shadow-2xl">
+        <div className="bg-gradient-to-r from-purple-900 via-black to-blue-900 rounded-2xl p-8 mb-12 text-white shadow-2xl">
           <div className="flex flex-col lg:flex-row justify-between items-start lg:items-center gap-6 mb-8">
             <div className="flex-1">
               <div className="flex items-center gap-3 mb-4">
@@ -184,7 +189,7 @@ const SuggestedCourses = () => {
                   <RecommendIcon className="w-6 h-6" />
                 </div>
                 <div>
-                  <h1 className="text-3xl font-bold mb-1">Formations Suggérées</h1>
+                  <h1 className="text-3xl font-bold mb-1">Trouve ta nouvelle formation</h1>
                   <p className="text-white/80 text-lg">Découvrez des formations choisies spécialement pour vous</p>
                 </div>
               </div>
@@ -280,7 +285,7 @@ const SuggestedCourses = () => {
         </div>
 
         {/* Statistics Section */}
-        <div className="grid grid-cols-1 md:grid-cols-3 gap-6 mb-8">
+        <div className="grid grid-cols-1 md:grid-cols-3 gap-6 mb-12">
           <div className="bg-white rounded-2xl shadow-lg border border-gray-100 p-6 hover:shadow-xl transition-all duration-200">
             <div className="flex items-center justify-between mb-4">
               <div className="w-12 h-12 bg-gradient-to-br from-blue-100 to-blue-200 rounded-full flex items-center justify-center">
@@ -317,7 +322,7 @@ const SuggestedCourses = () => {
 
         {/* Level Distribution */}
         {Object.keys(levelStats).length > 0 && (
-          <div className="bg-white rounded-2xl shadow-lg border border-gray-100 p-6 mb-8">
+          <div className="bg-white rounded-2xl shadow-lg border border-gray-100 p-6 mb-12">
             <h3 className="text-lg font-semibold text-gray-800 mb-4 flex items-center gap-2">
               <LightbulbIcon className="w-5 h-5 text-yellow-600" />
               Répartition par niveau
@@ -335,7 +340,7 @@ const SuggestedCourses = () => {
 
         {/* Recommended Courses Section */}
         {recommendedCourses.length > 0 && (
-          <div className="mb-8">
+          <div className="mb-12">
             <div className="bg-gradient-to-r from-green-900 via-emerald-800 to-teal-900 rounded-2xl p-8 text-white shadow-2xl mb-6">
               <div className="flex items-center gap-4 mb-6">
                 <div className="w-16 h-16 bg-white/20 rounded-full flex items-center justify-center backdrop-blur-sm">
@@ -361,47 +366,58 @@ const SuggestedCourses = () => {
 
             <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-6">
               {recommendedCourses.map((course) => (
-                <div key={course.id} className="transform hover:scale-105 transition-all duration-200 relative">
+                <Link
+                  key={course.id}
+                  to={`/learner/courses/${course.id}`}
+                  className="relative group transform hover:scale-105 transition-all duration-200 h-full min-h-[350px] block"
+                  style={{ minHeight: 350 }}
+                >
                   {/* Recommendation Badge */}
                   <div className="absolute top-4 left-4 z-10">
                     <div className="bg-gradient-to-r from-green-600 to-emerald-600 text-white px-3 py-1 rounded-full text-xs font-semibold shadow-lg">
                       Recommandé
                     </div>
                   </div>
-                  
-                  <CourseCard
-                    id={course.id}
-                    title={course.title}
-                    description={course.description}
-                    image={course.course_thumbnail}
-                    level={course.level}
-                    students={course.students || 0}
-                    rating={course.rating || 0}
-                    instructor={course.instructor?.name || "Instructeur"}
-                  />
-                  
-                  {/* Recommendation Reasons */}
+                  {/* Course Card (hidden on hover) */}
+                  <div className="transition-opacity duration-300 group-hover:opacity-0">
+                    <CourseCard
+                      id={course.id}
+                      title={course.title}
+                      description={course.description}
+                      image={course.course_thumbnail}
+                      level={course.level}
+                      students={course.students || 0}
+                      rating={course.rating || 0}
+                      instructor={course.instructor?.name || "Instructeur"}
+                    />
+                  </div>
+                  {/* Reasons Overlay (shown on hover) */}
                   {course.recommendation_reasons && course.recommendation_reasons.length > 0 && (
-                    <div className="mt-3 p-3 bg-gradient-to-r from-green-50 to-emerald-50 border border-green-200 rounded-xl">
-                      <div className="text-xs font-semibold text-green-800 mb-2">Pourquoi recommandé :</div>
-                      <ul className="text-xs text-green-700 space-y-1">
-                        {course.recommendation_reasons.slice(0, 2).map((reason, index) => (
-                          <li key={index} className="flex items-center gap-2">
-                            <div className="w-1.5 h-1.5 bg-green-500 rounded-full"></div>
-                            {reason}
-                          </li>
-                        ))}
-                      </ul>
+                    <div 
+                      className="absolute inset-0 flex items-center justify-center transition-opacity duration-300 opacity-0 group-hover:opacity-100 z-20"
+                      onClick={handleReasonsClick}
+                    >
+                      <div className="w-11/12 max-w-xs mx-auto p-6 bg-gradient-to-r from-green-50 to-emerald-50 border border-green-200 rounded-2xl shadow-2xl flex flex-col items-center justify-center">
+                        <div className="text-base font-bold text-green-800 mb-3">Pourquoi recommandé :</div>
+                        <ul className="text-sm text-green-700 space-y-2">
+                          {course.recommendation_reasons.slice(0, 4).map((reason, index) => (
+                            <li key={index} className="flex items-center gap-2">
+                              <div className="w-2 h-2 bg-green-500 rounded-full"></div>
+                              {reason}
+                            </li>
+                          ))}
+                        </ul>
+                      </div>
                     </div>
                   )}
-                </div>
+                </Link>
               ))}
             </div>
           </div>
         )}
 
         {/* All Courses Section */}
-        <div className="mb-8">
+        <div className="mb-12">
           <div className="bg-gradient-to-r from-purple-900 via-black to-blue-900 rounded-2xl p-8 text-white shadow-2xl mb-6">
             <div className="flex items-center gap-4 mb-6">
               <div className="w-16 h-16 bg-white/20 rounded-full flex items-center justify-center backdrop-blur-sm">
@@ -462,7 +478,7 @@ const SuggestedCourses = () => {
 
         {/* Recommendation Tips */}
         {suggestedCourses.length > 0 && (
-          <div className="mt-8 bg-gradient-to-r from-blue-50 to-purple-50 rounded-2xl p-8 border border-blue-200">
+          <div className="mt-12 bg-gradient-to-r from-blue-50 to-purple-50 rounded-2xl p-8 border border-blue-200">
             <div className="text-center">
               <div className="w-16 h-16 bg-gradient-to-r from-blue-600 to-purple-600 rounded-full flex items-center justify-center mx-auto mb-4">
                 <LightbulbIcon className="w-8 h-8 text-white" />
