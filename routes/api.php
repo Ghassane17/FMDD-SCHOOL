@@ -23,7 +23,7 @@ Route::post('/logout', [LoginController::class, 'logout'])->middleware('auth:san
 
 Route::post('/contact', [PublicController::class, 'contact'])->name('contact');
 Route::get('/formations', [PublicController::class, 'formations']);
-
+Route::get('/categories', [PublicController::class, 'getCategories']);
 
 // Protected Routes
 Route::middleware('auth:sanctum')->group(function () {

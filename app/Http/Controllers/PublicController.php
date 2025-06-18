@@ -48,7 +48,8 @@ class PublicController extends Controller
                     'course_thumbnail',
                     'level',
                     'rating',
-                    'instructor_id'
+                    'instructor_id',
+                    'category'
                 ])
                 ->get()
                 ->map(function ($course) {
@@ -58,6 +59,7 @@ class PublicController extends Controller
                         'description' => $course->description,
                         'course_thumbnail' => $course->course_thumbnail,
                         'level' => $course->level,
+                        'category' => $course->category,
                         'students' => $course->students_count,
                         'rating' => $course->rating,
                         'instructor' => [
@@ -69,6 +71,22 @@ class PublicController extends Controller
             return response()->json(['courses' => $courses], 200);
         } catch (\Exception $e) {
             Log::error('Error retrieving all courses!', ['error' => $e->getMessage()]);
+            return response()->json(['message' => 'Server Error'], 500);
+        }
+    }
+
+    public function getCategories()
+    {
+        try {
+            $categories = Course::where('is_published', 1)
+                ->distinct()
+                ->pluck('category')
+                ->filter()
+                ->sort()
+                ->values();
+            return response()->json(['categories' => $categories], 200);
+        } catch (\Exception $e) {
+            Log::error('Error retrieving categories!', ['error' => $e->getMessage()]);
             return response()->json(['message' => 'Server Error'], 500);
         }
     }
