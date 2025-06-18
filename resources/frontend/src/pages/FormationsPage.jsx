@@ -3,7 +3,20 @@
 import { useState, useMemo, useEffect } from "react"
 import { motion, AnimatePresence } from "framer-motion"
 import { useLoaderData, useNavigate } from "react-router-dom"
-import { Search, SortAsc, SortDesc, Grid, List, Star, Users, BookOpen, TrendingUp, Award, ChevronDown, X } from "lucide-react"
+import {
+  Search,
+  SortAsc,
+  SortDesc,
+  Grid,
+  List,
+  BookOpen,
+  Award,
+  ChevronDown,
+  X,
+  ArrowRight,
+  Play,
+  CheckCircle,
+} from "lucide-react"
 import CourseCard from "../components/Learner/CourseCard.jsx"
 import { getCategories } from "../services/api.js"
 
@@ -15,8 +28,8 @@ const FormationsPage = () => {
   const [searchTerm, setSearchTerm] = useState("")
   const [selectedCategory, setSelectedCategory] = useState("all")
   const [selectedLevel, setSelectedLevel] = useState("all")
-  const [sortBy, setSortBy] = useState("rating")
-  const [sortDirection, setSortDirection] = useState("desc") // "asc" or "desc"
+  const [sortBy, setSortBy] = useState("title")
+  const [sortDirection, setSortDirection] = useState("asc")
   const [viewMode, setViewMode] = useState("grid")
   const [showCategoryDropdown, setShowCategoryDropdown] = useState(false)
   const [showLevelDropdown, setShowLevelDropdown] = useState(false)
@@ -32,7 +45,7 @@ const FormationsPage = () => {
         const response = await getCategories()
         setCategories(response.categories || [])
       } catch (error) {
-        console.error('Error fetching categories:', error)
+        console.error("Error fetching categories:", error)
         setCategories([])
       } finally {
         setCategoriesLoading(false)
@@ -70,12 +83,6 @@ const FormationsPage = () => {
       let result = 0
 
       switch (sortBy) {
-        case "rating":
-          result = (b.rating || 0) - (a.rating || 0)
-          break
-        case "students":
-          result = (b.students || 0) - (a.students || 0)
-          break
         case "title":
           result = a.title.localeCompare(b.title)
           break
@@ -83,11 +90,13 @@ const FormationsPage = () => {
           const levelOrder = { Débutant: 1, Intermédiaire: 2, Avancé: 3 }
           result = (levelOrder[a.level] || 0) - (levelOrder[b.level] || 0)
           break
+        case "newest":
+          result = new Date(b.created_at || 0) - new Date(a.created_at || 0)
+          break
         default:
           result = 0
       }
 
-      // Apply sort direction
       return sortDirection === "asc" ? result : -result
     })
 
@@ -103,28 +112,15 @@ const FormationsPage = () => {
     navigate(`/learner/courses/${courseId}`)
   }
 
-  // Calculate statistics
-  const stats = useMemo(() => {
-    if (!courses || courses.length === 0) return { total: 0, avgRating: 0, totalStudents: 0 }
-
-    const total = courses.length
-    const avgRating = courses.reduce((sum, course) => sum + (course.rating || 0), 0) / total
-    const totalStudents = courses.reduce((sum, course) => sum + (course.students || 0), 0)
-
-    return { total, avgRating: avgRating.toFixed(1), totalStudents }
-  }, [courses])
-
   const getSortLabel = () => {
     const baseLabel = (() => {
       switch (sortBy) {
-        case "rating":
-          return "Note"
-        case "students":
-          return "Popularité"
         case "title":
           return "Titre"
         case "level":
           return "Niveau"
+        case "newest":
+          return "Plus récent"
         default:
           return "Trier par"
       }
@@ -140,12 +136,9 @@ const FormationsPage = () => {
 
   const handleSortChange = (newSortBy) => {
     if (newSortBy === sortBy) {
-      // If clicking the same sort option, toggle direction
       setSortDirection(sortDirection === "asc" ? "desc" : "asc")
     } else {
-      // If clicking a different sort option, set new sort and default direction
       setSortBy(newSortBy)
-      // Set default direction based on sort type
       const defaultDirection = newSortBy === "title" ? "asc" : "desc"
       setSortDirection(defaultDirection)
     }
@@ -159,7 +152,7 @@ const FormationsPage = () => {
   return (
     <div className="min-h-screen bg-gradient-to-br from-slate-50 to-blue-50">
       {/* Hero Section */}
-      <div className="bg-gradient-to-r from-teal-600 to-blue-600 text-white py-16">
+      <div className="bg-gradient-to-r from-teal-600 to-blue-600 text-white py-20">
         <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
           <motion.div
             initial={{ opacity: 0, y: 30 }}
@@ -167,34 +160,58 @@ const FormationsPage = () => {
             transition={{ duration: 0.8, ease: "easeOut" }}
             className="text-center"
           >
-            <h1 className="text-4xl md:text-6xl font-bold mb-4">Nos Formations e-Learning</h1>
-            <p className="text-lg md:text-xl text-blue-100 max-w-3xl mx-auto mb-8">
-              Apprenez des meilleurs experts avec nos cours interactifs et projets pratiques
+            <h1 className="text-4xl md:text-6xl font-bold mb-6">Transformez Votre Carrière avec Nos Formations</h1>
+            <p className="text-lg md:text-xl text-blue-100 max-w-4xl mx-auto mb-8">
+              Découvrez des formations de qualité professionnelle conçues par des experts. Apprenez à votre rythme et
+              développez les compétences recherchées par les employeurs.
             </p>
 
-            {/* Stats */}
-            <div className="grid grid-cols-1 md:grid-cols-3 gap-6 max-w-2xl mx-auto">
-              <div className="bg-white/10 backdrop-blur-sm rounded-lg p-4">
-                <div className="flex items-center justify-center mb-2">
-                  <BookOpen className="w-6 h-6 mr-2" />
-                  <span className="text-2xl font-bold">{stats.total}</span>
+            {/* Value Propositions */}
+            <div className="grid grid-cols-1 md:grid-cols-3 gap-6 max-w-4xl mx-auto mb-10">
+              <div className="bg-white/10 backdrop-blur-sm rounded-lg p-6">
+                <div className="flex items-center justify-center mb-4">
+                  <Play className="w-8 h-8" />
                 </div>
-                <p className="text-sm text-blue-100">Formations disponibles</p>
+                <h3 className="text-lg font-semibold mb-2">Apprentissage Interactif</h3>
+                <p className="text-sm text-blue-100">
+                  Vidéos HD, exercices pratiques et projets concrets pour une expérience d'apprentissage immersive
+                </p>
               </div>
-              <div className="bg-white/10 backdrop-blur-sm rounded-lg p-4">
-                <div className="flex items-center justify-center mb-2">
-                  <Star className="w-6 h-6 mr-2" />
-                  <span className="text-2xl font-bold">{stats.avgRating}</span>
+              <div className="bg-white/10 backdrop-blur-sm rounded-lg p-6">
+                <div className="flex items-center justify-center mb-4">
+                  <Award className="w-8 h-8" />
                 </div>
-                <p className="text-sm text-blue-100">Note moyenne</p>
+                <h3 className="text-lg font-semibold mb-2">Certificats Reconnus</h3>
+                <p className="text-sm text-blue-100">
+                  Obtenez des certificats valorisés par les entreprises et boostez votre profil professionnel
+                </p>
               </div>
-              <div className="bg-white/10 backdrop-blur-sm rounded-lg p-4">
-                <div className="flex items-center justify-center mb-2">
-                  <Users className="w-6 h-6 mr-2" />
-                  <span className="text-2xl font-bold">{stats.totalStudents}</span>
+              <div className="bg-white/10 backdrop-blur-sm rounded-lg p-6">
+                <div className="flex items-center justify-center mb-4">
+                  <CheckCircle className="w-8 h-8" />
                 </div>
-                <p className="text-sm text-blue-100">Étudiants inscrits</p>
+                <h3 className="text-lg font-semibold mb-2">Support Expert</h3>
+                <p className="text-sm text-blue-100">
+                  Bénéficiez de l'accompagnement de formateurs expérimentés tout au long de votre parcours
+                </p>
               </div>
+            </div>
+
+            {/* CTA Buttons */}
+            <div className="flex flex-col sm:flex-row gap-4 justify-center items-center">
+              <button
+                onClick={() => navigate("/register")}
+                className="bg-white text-blue-600 px-8 py-3 rounded-lg font-semibold hover:bg-blue-50 transition-colors flex items-center gap-2 shadow-lg cursor-pointer"
+              >
+                Commencer Gratuitement
+                <ArrowRight className="w-4 h-4" />
+              </button>
+              <button
+                onClick={() => navigate("/login")}
+                className="border-2 border-white text-white px-8 py-3 rounded-lg font-semibold hover:bg-white/10 transition-colors cursor-pointer"
+              >
+                Se Connecter
+              </button> 
             </div>
           </motion.div>
         </div>
@@ -244,9 +261,7 @@ const FormationsPage = () => {
                     Toutes les catégories
                   </button>
                   {categoriesLoading ? (
-                    <div className="px-4 py-2 text-gray-500 text-center">
-                      Chargement des catégories...
-                    </div>
+                    <div className="px-4 py-2 text-gray-500 text-center">Chargement des catégories...</div>
                   ) : (
                     categories.map((category) => (
                       <button
@@ -332,22 +347,6 @@ const FormationsPage = () => {
               {showSortDropdown && (
                 <div className="absolute top-full left-0 right-0 lg:right-auto lg:w-48 mt-1 bg-white border border-gray-200 rounded-lg shadow-lg z-50">
                   <button
-                    onClick={() => handleSortChange("rating")}
-                    className="w-full px-4 py-2 text-left hover:bg-gray-50 flex items-center"
-                  >
-                    <Star className="w-4 h-4 mr-2" />
-                    Note
-                    {sortBy === "rating" && <span className="text-blue-600 ml-auto">✓</span>}
-                  </button>
-                  <button
-                    onClick={() => handleSortChange("students")}
-                    className="w-full px-4 py-2 text-left hover:bg-gray-50 flex items-center"
-                  >
-                    <Users className="w-4 h-4 mr-2" />
-                    Popularité
-                    {sortBy === "students" && <span className="text-blue-600 ml-auto">✓</span>}
-                  </button>
-                  <button
                     onClick={() => handleSortChange("title")}
                     className="w-full px-4 py-2 text-left hover:bg-gray-50 flex items-center"
                   >
@@ -362,6 +361,14 @@ const FormationsPage = () => {
                     <Award className="w-4 h-4 mr-2" />
                     Niveau
                     {sortBy === "level" && <span className="text-blue-600 ml-auto">✓</span>}
+                  </button>
+                  <button
+                    onClick={() => handleSortChange("newest")}
+                    className="w-full px-4 py-2 text-left hover:bg-gray-50 flex items-center"
+                  >
+                    <BookOpen className="w-4 h-4 mr-2" />
+                    Plus récent
+                    {sortBy === "newest" && <span className="text-blue-600 ml-auto">✓</span>}
                   </button>
                 </div>
               )}
@@ -441,15 +448,9 @@ const FormationsPage = () => {
         {/* Results Count */}
         <div className="flex justify-between items-center mb-6">
           <p className="text-gray-600">
-            {filteredAndSortedCourses.length} formation{filteredAndSortedCourses.length !== 1 ? "s" : ""} trouvée
+            {filteredAndSortedCourses.length} formation{filteredAndSortedCourses.length !== 1 ? "s" : ""} disponible
             {filteredAndSortedCourses.length !== 1 ? "s" : ""}
           </p>
-          {filteredAndSortedCourses.length > 0 && (
-            <div className="flex items-center gap-2 text-sm text-gray-500">
-              <TrendingUp className="w-4 h-4" />
-              Trié par {getSortLabel().toLowerCase()}
-            </div>
-          )}
         </div>
 
         {/* Courses Grid/List */}
@@ -482,11 +483,10 @@ const FormationsPage = () => {
                     description={course.description}
                     image={course.course_thumbnail}
                     level={course.level}
-                    students={course.students}
-                    rating={course.rating}
                     instructor={course.instructor?.username}
                     onClick={() => handleCardClick(course.id)}
                     viewMode={viewMode}
+                    isPublic={true} // Hide sensitive data in public view
                   />
                 </motion.div>
               ))}
@@ -503,14 +503,14 @@ const FormationsPage = () => {
                 <BookOpen className="w-12 h-12 text-gray-400" />
               </div>
               <h3 className="text-2xl font-semibold mb-4 text-gray-900">
-                {courses && courses.length > 0 ? "Aucun résultat trouvé" : "Aucune formation disponible"}
+                {courses && courses.length > 0 ? "Aucun résultat trouvé" : "Découvrez nos formations bientôt"}
               </h3>
               <p className="text-gray-600 mb-8 max-w-md mx-auto">
                 {courses && courses.length > 0
                   ? "Essayez de modifier vos critères de recherche ou de filtrage."
-                  : "Il n'y a actuellement aucune formation disponible. Veuillez réessayer plus tard."}
+                  : "Nous préparons des formations exceptionnelles pour vous. Inscrivez-vous pour être notifié du lancement."}
               </p>
-              {courses && courses.length > 0 && (
+              {courses && courses.length > 0 ? (
                 <button
                   onClick={() => {
                     setSearchTerm("")
@@ -521,10 +521,47 @@ const FormationsPage = () => {
                 >
                   Réinitialiser les filtres
                 </button>
+              ) : (
+                <button
+                  onClick={() => navigate("/register")}
+                  className="bg-blue-600 text-white px-6 py-3 rounded-lg hover:bg-blue-700 focus:ring-2 focus:ring-blue-500 focus:ring-offset-2 outline-none font-semibold"
+                >
+                  S'inscrire maintenant
+                </button>
               )}
             </motion.div>
           )}
         </AnimatePresence>
+
+        {/* Bottom CTA Section */}
+        {filteredAndSortedCourses && filteredAndSortedCourses.length > 0 && (
+          <motion.div
+            initial={{ opacity: 0, y: 30 }}
+            animate={{ opacity: 1, y: 0 }}
+            transition={{ duration: 0.6, delay: 0.3 }}
+            className="bg-gradient-to-r from-teal-600 to-blue-600 text-white rounded-2xl p-8 mt-16 text-center"
+          >
+            <h2 className="text-2xl md:text-3xl font-bold mb-4">Prêt à commencer votre parcours d'apprentissage ?</h2>
+            <p className="text-blue-100 mb-6 max-w-2xl mx-auto">
+              Rejoignez des milliers d'apprenants qui ont déjà transformé leur carrière grâce à nos formations.
+            </p>
+            <div className="flex flex-col sm:flex-row gap-4 justify-center">
+              <button
+                onClick={() => navigate("/register")}
+                className="bg-white text-blue-600 px-8 py-3 rounded-lg font-semibold hover:bg-blue-50 transition-colors flex items-center justify-center gap-2"
+              >
+                Créer un compte gratuit
+                <ArrowRight className="w-4 h-4" />
+              </button>
+              <button
+                onClick={() => navigate("/login")}
+                className="border-2 border-white text-white px-8 py-3 rounded-lg font-semibold hover:bg-white/10 transition-colors"
+              >
+                J'ai déjà un compte
+              </button>
+            </div>
+          </motion.div>
+        )}
       </div>
     </div>
   )
