@@ -37,6 +37,7 @@ export default function AccountSettings({ instructorData, backend_url }) {
     name: instructorData?.user?.name || "",
     email: instructorData?.user?.email || "",
     bio: instructorData?.user?.bio || "",
+    phone: instructorData?.user?.phone || "",
   })
 
   // Validation states
@@ -79,6 +80,7 @@ export default function AccountSettings({ instructorData, backend_url }) {
         name: instructorData.user.name || "",
         email: instructorData.user.email || "",
         bio: instructorData.user.bio || "",
+        phone: instructorData.user.phone || "",
       })
       setAvatarPreview(instructorData.user.avatar || null)
       setAvatar(null)
@@ -143,6 +145,10 @@ export default function AccountSettings({ instructorData, backend_url }) {
       errors.bio = "La biographie professionnelle est requise"
     }
 
+    if (formData.phone.trim() && !/^[\+]?[0-9\s\-\(\)]{8,}$/.test(formData.phone.trim())) {
+      errors.phone = "Veuillez entrer un numéro de téléphone valide"
+    }
+
     setFieldErrors(errors)
     return Object.keys(errors).length === 0
   }
@@ -166,6 +172,7 @@ export default function AccountSettings({ instructorData, backend_url }) {
       dataToSend.append("name", formData.name)
       dataToSend.append("email", formData.email)
       dataToSend.append("bio", formData.bio)
+      dataToSend.append("phone", formData.phone)
       if (avatar && avatar instanceof File) {
         dataToSend.append("avatar", avatar)
       }
@@ -179,6 +186,7 @@ export default function AccountSettings({ instructorData, backend_url }) {
           name: response.instructor.user.name,
           email: response.instructor.user.email,
           bio: response.instructor.user.bio,
+          phone: response.instructor.user.phone,
         })
         setAvatarPreview(response.instructor.user.avatar || null)
         setAvatar(null)
@@ -491,6 +499,34 @@ export default function AccountSettings({ instructorData, backend_url }) {
                 )}
                 <p className="text-sm text-slate-500">
                 Une biographie complète aide les autres membres à mieux vous connaître et à établir un lien de confiance.
+                </p>
+              </div>
+
+              <div className="space-y-2">
+                <label htmlFor="phone" className="block text-sm font-medium text-slate-700">
+                  Numéro de téléphone
+                </label>
+                <input
+                  type="tel"
+                  id="phone"
+                  name="phone"
+                  value={formData.phone}
+                  onChange={handleInputChange}
+                  className={`w-full px-4 py-3 rounded-xl border transition-all duration-200 ${
+                    fieldErrors.phone
+                      ? 'border-red-500 focus:ring-2 focus:ring-red-500 focus:border-red-500'
+                      : 'border-slate-300 focus:ring-2 focus:ring-blue-500 focus:border-blue-500'
+                  }`}
+                  placeholder="+33 1 23 45 67 89"
+                />
+                {fieldErrors.phone && (
+                  <p className="text-sm text-red-600 flex items-center gap-1">
+                    <AlertTriangle className="h-4 w-4" />
+                    {fieldErrors.phone}
+                  </p>
+                )}
+                <p className="text-sm text-slate-500">
+                  Numéro de téléphone pour vous contacter (optionnel). Format international recommandé.
                 </p>
               </div>
 

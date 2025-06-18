@@ -64,7 +64,7 @@ Route::middleware('auth:sanctum')->group(function () {
     Route::post('/createCourse', [CourseInstructorController::class, 'createCourse'])->name('instructor.createCourse');
     //settings
     Route::get('/learner/settings', [LearnerController::class, 'settings'])->name('learner.settings');
-    Route::patch('/learner/personal-info', [LearnerController::class, 'updatePersonalInfo'])->name('learner.personal-info');
+    Route::post('/learner/personal-info', [LearnerController::class, 'updatePersonalInfo'])->name('learner.personal-info');
     Route::patch('/learner/password', [LearnerController::class, 'updatePassword'])->name('learner.password');
     Route::patch('/learner/additional-info', [LearnerController::class, 'updateAdditionalInfo'])->name('learner.additional-info');
     Route::patch('/learner/notifications', [LearnerController::class, 'updateNotifications'])->name('learner.notifications');

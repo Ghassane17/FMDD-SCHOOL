@@ -311,17 +311,17 @@ export const getLearnerSettings = async (forceRefresh = false) => {
     }
 };
 
-export const updateLearnerPersonalInfo = async (data) => {
+export const updatePersonalInfo = async formData => {
     try {
-        const response = await api.patch('/learner/personal-info', data);
-        settingsCache = null; // Clear cache after update
-        return response;
+        const response = await api.post('/learner/personal-info', formData, {
+            headers: { 'Content-Type': 'multipart/form-data' },
+        });
+        return response.data;
     } catch (error) {
-        console.error('Failed to update personal info');
+        console.error('Error updating personal info:', error);
         throw error;
     }
 };
-
 export const updateLearnerPassword = async (data) => {
     try {
         const response = await api.patch('/learner/password', data);
@@ -591,20 +591,6 @@ export const markModuleAsCompleted = async (courseId, moduleId) => {
     }
 };
 
-export const updatePersonalInfo = async formData => {
-    try {
-        const response = await api.patch('/learner/personal-info', formData, {
-            headers: { 'Content-Type': 'multipart/form-data' },
-        });
-        if (!response.data?.data) {
-            throw new Error('Invalid response format');
-        }
-        return response.data;
-    } catch (error) {
-        console.error('Error updating personal info:', error);
-        throw error;
-    }
-};
 
 export const updatePassword = async formData => {
     try {

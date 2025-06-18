@@ -20,10 +20,10 @@ import {
 import { Switch } from "@headlessui/react"
 import SkillsForm from "../../components/formateurs/profile-completion-formateur/SkillsForm"
 import LanguagesForm from "../../components/formateurs/profile-completion-formateur/LanguagesForm"
-import CertificationsForm from "../../components/formateurs/profile-completion-formateur/LanguagesForm"
+import CertificationsForm from "../../components/formateurs/profile-completion-formateur/CertificationsForm"
 import {
   getLearnerSettings,
-  updateLearnerPersonalInfo,
+  updatePersonalInfo,
   updateLearnerPassword,
   updateLearnerAdditionalInfo,
   updateLearnerNotifications
@@ -88,7 +88,8 @@ export default function LearnerSettingsPage() {
       try {
         const response = await getLearnerSettings()
         const data = response.data
-        
+        console.log("data", data)
+        localStorage.setItem("user", JSON.stringify(data))
         setFormData({
           username: data.username || "",
           email: data.email || "",
@@ -126,7 +127,7 @@ export default function LearnerSettingsPage() {
         return
       }
       setAvatar(file)
-      setAvatarPreview(URL.createObjectURL(file))
+      setAvatarPreview(file) // Store the File object directly
     }
   }
 
@@ -172,6 +173,10 @@ export default function LearnerSettingsPage() {
       errors.bio = "La biographie professionnelle est requise"
     }
 
+    if (formData.phone.trim() && !/^[\+]?[0-9\s\-\(\)]{8,}$/.test(formData.phone.trim())) {
+      errors.phone = "Veuillez entrer un numéro de téléphone valide"
+    }
+
     setFieldErrors(errors)
     return Object.keys(errors).length === 0
   }
@@ -199,9 +204,11 @@ export default function LearnerSettingsPage() {
         dataToSend.append("avatar", avatar)
       }
 
-      const response = await updateLearnerPersonalInfo(dataToSend)
+      console.log("dataToSend", dataToSend.get("bio"))
+      const response = await updatePersonalInfo(dataToSend)
       setSuccess("Profil mis à jour avec succès")
       addToast("Profil mis à jour avec succès", "success")
+      localStorage.setItem("user", JSON.stringify(response.data))
 
       if (response.data) {
         setFormData({
@@ -611,7 +618,7 @@ export default function LearnerSettingsPage() {
                   Numéro de téléphone
                 </label>
                 <input
-                  type="text"
+                  type="tel"
                   id="phone"
                   name="phone"
                   value={formData.phone}
@@ -629,6 +636,9 @@ export default function LearnerSettingsPage() {
                     {fieldErrors.phone}
                   </p>
                 )}
+                <p className="text-sm text-slate-500">
+                  Numéro de téléphone pour vous contacter (optionnel). Format international recommandé.
+                </p>
               </div>
 
               <div className="flex justify-end">

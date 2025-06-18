@@ -12,6 +12,7 @@ use Illuminate\Support\Facades\DB;
 use App\Models\User;
 use Illuminate\Support\Facades\Storage;
 use Illuminate\Validation\ValidationException;
+use Illuminate\Validation\Rule;
 
 class LearnerController extends Controller
 {
@@ -233,6 +234,7 @@ class LearnerController extends Controller
                 'avatar',
                 'bio',
                 'phone',
+                'role',
                 'notifications'
             ]);
 
@@ -410,53 +412,97 @@ class LearnerController extends Controller
      */
     public function updatePersonalInfo(Request $request): \Illuminate\Http\JsonResponse
     {
-        $user = Auth::user();
-        if (!$user) {
-            return response()->json(['message' => 'Unauthenticated'], 401);
-        }
-
-        if ($user->role !== 'learner') {
-            return response()->json(['message' => 'Unauthorized'], 403);
-        }
-
         try {
+            $user = Auth::user();
+
+            // Check if user is authenticated
+            if (!$user) {
+                return response()->json(['message' => 'Unauthorized - User not authenticated'], 401);
+            }
+
+            // Check if user is a learner
+            if ($user->role !== 'learner') {
+                return response()->json(['message' => 'Unauthorized - User is not a learner'], 403);
+            }
+
+            // 2) Validate the request
             $validated = $request->validate([
-                'username' => 'sometimes|required|string|max:255',
-                'email' => 'sometimes|required|email|max:255|unique:users,email,' . $user->id,
-                'bio' => 'sometimes|nullable|string',
-                'avatar' => 'sometimes|nullable|image|mimes:jpeg,png,jpg,gif|max:5120'
+                'username' => 'sometimes|string|max:255',
+                'email' => [
+                    'sometimes',
+                    'email',
+                    'max:255',
+                    Rule::unique('users')->ignore($user->id)
+                ],
+                'bio' => 'sometimes|string|max:1000',
+                'phone' => 'sometimes|nullable|string|max:20',
+                'avatar' => 'sometimes|file|mimes:jpeg,png,jpg,gif,avif|max:5120', // 5MB max
             ]);
 
-            // Prepare update data
-            $updateData = [];
-            if (isset($validated['username'])) $updateData['username'] = $validated['username'];
-            if (isset($validated['email'])) $updateData['email'] = $validated['email'];
-            if (isset($validated['bio'])) $updateData['bio'] = $validated['bio'];
-
-            // Handle avatar upload
+            // 4) Handle avatar upload
             if ($request->hasFile('avatar')) {
-                $avatar = $request->file('avatar');
-                $avatarName = time() . '.' . $avatar->getClientOriginalExtension();
-                $avatar->move(public_path('avatars'), $avatarName);
-                $updateData['avatar'] = 'avatars/' . $avatarName;
+                // Delete old avatar if exists
+                if ($user->avatar) {
+                    $oldAvatarPath = str_replace('/storage/', '', $user->avatar);
+                    if (Storage::disk('public')->exists($oldAvatarPath)) {
+                        Storage::disk('public')->delete($oldAvatarPath);
+                    }
+                }
+
+                // Store new avatar
+                $avatarPath = $request->file('avatar')->store('avatars', 'public');
+                $user->avatar = '/storage/' . $avatarPath;
             }
 
-            // Only update if there are fields to update
+            // 5) Update user profile
+            $updateData = [];
+
+            if (isset($validated['username'])) {
+                $updateData['username'] = $validated['username'];
+            }
+            if (isset($validated['email'])) {
+                $updateData['email'] = $validated['email'];
+            }
+            if (isset($validated['bio'])) {
+                $updateData['bio'] = $validated['bio'];
+            }
+            if (isset($validated['phone'])) {
+                $updateData['phone'] = $validated['phone'];
+            }
+            if (isset($user->avatar)) {
+                $updateData['avatar'] = $user->avatar;
+            }
+
+            // Only update if there are changes
             if (!empty($updateData)) {
-                $user->update($updateData);
-                $user->refresh();
+                \App\Models\User::where('id', $user->id)->update($updateData);
+                // Refresh user data
+                $user = \App\Models\User::find($user->id);
             }
 
+            // 6) Return updated user data
             return response()->json([
                 'message' => 'Profile updated successfully',
-                'user' => $user->only(['id', 'username', 'email', 'avatar', 'bio'])
-            ], 200);
-        } catch (\Exception $e) {
-            Log::error('Error updating personal info', [
-                'user_id' => $user->id,
-                'error' => $e->getMessage()
+                'data' => [
+                    'username' => $validated['username'] ?? $user->username,
+                    'email' => $validated['email'] ?? $user->email,
+                    'bio' => $validated['bio'] ?? $user->bio,
+                    'phone' => $validated['phone'] ?? $user->phone,
+                    'avatar' => $user->avatar,
+                    'role' => $user->role,
+                ]
             ]);
-            return response()->json(['message' => 'Error updating profile'], 500);
+        } catch (\Illuminate\Validation\ValidationException $e) {
+            return response()->json([
+                'message' => 'Validation failed',
+                'errors' => $e->errors()
+            ], 422);
+        } catch (\Exception $e) {
+            Log::error('Learner profile update error: ' . $e->getMessage());
+            return response()->json([
+                'message' => 'An error occurred while updating the profile',
+                'error' => $e->getMessage()
+            ], 500);
         }
     }
 

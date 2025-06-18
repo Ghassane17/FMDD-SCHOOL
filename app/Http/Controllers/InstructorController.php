@@ -44,6 +44,7 @@ class InstructorController extends Controller
                     'email'  => $user->email,
                     'avatar' => $user->avatar,
                     'bio'    => $user->bio,
+                    'phone'  => $user->phone,
                     'role'   => $user->role,
                 ],
                 'skills'         => $instructor->skills ?? [],
@@ -153,6 +154,7 @@ class InstructorController extends Controller
                     Rule::unique('users')->ignore($user->id)
                 ],
                 'bio' => 'sometimes|string|max:1000',
+                'phone' => 'sometimes|nullable|string|max:20',
                 'current_password' => 'required_with:new_password|string',
                 'new_password' => 'required_with:current_password|string|min:8|confirmed',
                 'avatar' => 'sometimes|file|mimes:jpeg,png,jpg,gif|max:5120', // 5MB max
@@ -193,6 +195,9 @@ class InstructorController extends Controller
             if (isset($validated['bio'])) {
                 $updateData['bio'] = $validated['bio'];
             }
+            if (isset($validated['phone'])) {
+                $updateData['phone'] = $validated['phone'];
+            }
             if (isset($user->avatar)) {
                 $updateData['avatar'] = $user->avatar;
             }
@@ -212,6 +217,7 @@ class InstructorController extends Controller
                         'name' => $validated['name'] ?? $user->username,
                         'email' => $validated['email'] ?? $user->email,
                         'bio' => $validated['bio'] ?? $user->bio,
+                        'phone' => $validated['phone'] ?? $user->phone,
                         'avatar' => $user->avatar,
                     ]
                 ]
