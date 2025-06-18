@@ -419,7 +419,7 @@ const CourseContent = ({
             type={currentModule.type}
             textContent={currentModule.text_content}
             filePath={currentModule.file_path}
-            quizQuestions={currentModule.quiz_questions}
+            quizQuestions={currentModule.quiz?.questions || []}
             resources={currentModule.resources}
             courseId={courseId}
             moduleId={currentModule.id}
@@ -542,19 +542,25 @@ CourseContent.propTypes = {
     text_content: PropTypes.string,
     file_path: PropTypes.string,
     is_completed: PropTypes.bool,
-    quiz_questions: PropTypes.arrayOf(
-      PropTypes.shape({
-        id: PropTypes.number,
-        question: PropTypes.string,
-        options: PropTypes.arrayOf(
-          PropTypes.shape({
-            id: PropTypes.number,
-            text: PropTypes.string,
-          }),
-        ),
-        correct_option: PropTypes.number,
-      }),
-    ),
+    quiz: PropTypes.shape({
+      id: PropTypes.number,
+      title: PropTypes.string,
+      questions: PropTypes.arrayOf(
+        PropTypes.shape({
+          id: PropTypes.number,
+          question: PropTypes.string,
+          options: PropTypes.arrayOf(
+            PropTypes.shape({
+              id: PropTypes.number,
+              text: PropTypes.string,
+            }),
+          ),
+          correct_option: PropTypes.number,
+        }),
+      ),
+      is_completed: PropTypes.bool,
+      score: PropTypes.number,
+    }),
     resources: PropTypes.arrayOf(
       PropTypes.shape({
         id: PropTypes.number,

@@ -198,26 +198,29 @@ const FinalQuiz = () => {
                         </Button>
                     </div>
                     <div className="mb-6 p-4 bg-blue-50 border border-blue-200 rounded-lg">
-                        <h3 className="text-lg font-semibold mb-2">Exam Information</h3>
+                        <h3 className="text-lg font-semibold mb-2">🚀 C’est parti pour l’examen final !</h3>
                         <ul className="space-y-2">
-                            <li className="flex items-center">
-                                <span className="font-medium mr-2">Duration:</span> {exam.duration_min} minutes
+                             <li className="flex items-center">
+                                <span className="font-medium mr-2">Type:</span> Questions à choix multiples
                             </li>
                             <li className="flex items-center">
-                                <span className="font-medium mr-2">Questions:</span> {exam.questions.length}
+                                <span className="font-medium mr-2">Durée d'examen:</span> {exam.duration_min} minutes
                             </li>
                             <li className="flex items-center">
-                                <span className="font-medium mr-2">Passing Score:</span> {exam.passing_score}%
+                                <span className="font-medium mr-2">Nombre de questions:</span> {exam.questions.length}
                             </li>
                             <li className="flex items-center">
-                                <span className="font-medium mr-2">Tentatives:</span> {exam.tentatives} / {exam.max_tentatives}
+                                <span className="font-medium mr-2">Score de réussite:</span> {exam.passing_score}%
+                            </li>
+                            <li className="flex items-center">
+                                <span className="font-medium mr-2">Tentatives de l'examen:</span> {exam.tentatives} / {exam.max_tentatives}
                             </li>
                         </ul>
                     </div>
                     <div className="mb-6">
                         <h3 className="text-lg font-semibold mb-2">Instructions:</h3>
                         <div className="p-4 bg-gray-50 rounded-lg">
-                            <p>{exam.instructions || "Answer all questions to the best of your ability. Once you start the exam, the timer will begin counting down."}</p>
+                            <p>{exam.instructions || "Répondez à toutes les questions du mieux que vous pouvez. Une fois que vous commencez l'examen, le minuteur commencera à décompter"}</p>
                         </div>
                     </div>
                     <button
@@ -230,8 +233,8 @@ const FinalQuiz = () => {
                         }`}
                     >
                         {exam.tentatives >= exam.max_tentatives
-                            ? 'Maximum attempts reached'
-                            : 'Start Exam'}
+                            ? 'Nombre maximal de tentatives atteint'
+                            : "Que l'examen commence !"}
                     </button>
                 </div>
             </div>
@@ -257,7 +260,7 @@ const FinalQuiz = () => {
                         >
                             Quitter
                         </Button>
-                        <h2 className="text-xl font-bold">Final Exam: {exam.title}</h2>
+                        <h2 className="text-xl font-bold">Examen final </h2>
                     </div>
                     <div className="flex items-center">
                         <Clock className="mr-2 text-gray-600" />
@@ -295,9 +298,9 @@ const FinalQuiz = () => {
                 <div className="mb-6 bg-white p-4 rounded-lg shadow-sm">
                     <div className="flex justify-between items-center">
                         <span className="text-sm font-medium">
-                            Questions answered: {Object.keys(selectedAnswers).length}/{exam.questions.length}
+                            Questions répondues: {Object.keys(selectedAnswers).length}/{exam.questions.length}
                         </span>
-                        <span className="text-sm font-medium">Passing score: {exam.passing_score}%</span>
+                        <span className="text-sm font-medium">Score de réussite: {exam.passing_score}%</span>
                     </div>
                     <div className="w-full bg-gray-200 rounded-full h-2.5 mt-2">
                         <div
@@ -338,7 +341,7 @@ const FinalQuiz = () => {
                 </div>
                 <div className="sticky bottom-0 bg-white p-4 border-t shadow-lg mt-6 flex justify-between items-center">
                     <div className="text-sm">
-                        <span className="font-medium">Time remaining:</span> {formatTime(timeRemaining)}
+                        <span className="font-medium">Temps restant:</span> {formatTime(timeRemaining)}
                     </div>
                     <Button
                         variant="contained"
@@ -347,7 +350,7 @@ const FinalQuiz = () => {
                         disabled={loading || Object.keys(selectedAnswers).length < exam.questions.length}
                         size="large"
                     >
-                        Submit Exam
+                        Soummetre mes repponses
                     </Button>
                 </div>
             </div>

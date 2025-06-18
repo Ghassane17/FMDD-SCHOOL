@@ -63,6 +63,21 @@ const ContentRenderer = ({ type, textContent, filePath, quizQuestions = [], reso
         return shuffled;
     };
 
+    // Initialize quiz state from module data
+    useEffect(() => {
+        if (type === 'quiz' && quizQuestions.length > 0) {
+            // Reset quiz state when quiz questions change
+            setCurrentQuestionIndex(0);
+            setSelectedAnswer(null);
+            setShowResult(false);
+            setQuizCompleted(false);
+            setQuizScore(0);
+            setAnswers({});
+            setRandomizedOptions([]);
+            setCorrectAnswerMap({});
+        }
+    }, [type, quizQuestions]);
+
     // Initialize randomized options when quiz module is loaded or current question changes
     useEffect(() => {
         if (type === 'quiz' && quizQuestions.length > 0) {
