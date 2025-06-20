@@ -105,7 +105,7 @@ const CourseList = ({ instructorData, backend_url }) => {
       },
       {
         title: "Note Moyenne",
-        value: averageRating.toFixed(1) || 0,
+        value: averageRating?.toFixed(1) || 0,
         icon: Star,
         color: "from-amber-500 to-orange-600",
         bgColor: "from-amber-50 to-orange-50",

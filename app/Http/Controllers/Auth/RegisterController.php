@@ -24,7 +24,7 @@ class RegisterController extends Controller
                 'email' => 'required|email|unique:users',
                 'password' => 'required|string|min:6|confirmed',
                 'role' => 'required|in:learner,instructor',
-                'avatar' => 'nullable|image|mimes:jpeg,png,jpg,gif,svg|max:2048',
+                'avatar' => 'nullable|image|mimes:jpeg,png,jpg,gif,svg,avif|max:2048',
                 'bio' => 'nullable|string|max:1000',
                 'phone' => 'nullable|string|max:20',
             ]);

@@ -125,7 +125,7 @@ export default function RaisonsDeRejoindre() {
             }
           }}
         >
-          Pourquoi s'abboner avec FMDD SCHOOL ?
+          Pourquoi s'abonner avec FMDD SCHOOL ?
         </Typography>
 
         <Box

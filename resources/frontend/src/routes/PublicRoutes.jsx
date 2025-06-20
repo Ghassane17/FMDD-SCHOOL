@@ -9,7 +9,6 @@ import Register from '../pages/Register.jsx';
 import CompleteProfileInstructor from '../pages/CompleteProfileInstructor.jsx';
 import CompleteProfileLearner from "@/pages/CompleteProfileLearner.jsx";
 import { getPublicCourses } from '../services/api.js';
-
 const loader = async () => {
   try {
     const response = await getPublicCourses();
@@ -55,7 +54,6 @@ const PublicRoutes = {
             path: 'register',
             element: <Register />,
         },
-
         
         {
             path: '*',
