@@ -267,6 +267,7 @@ class ProfessionalDemoSeeder extends Seeder
                 'text_content' => '<p>Bienvenue dans ce cours essentiel sur <strong>' . $course->title . '</strong>. Ce module vous introduira aux concepts fondamentaux et aux objectifs d\'apprentissage.</p><p>Préparez-vous à acquérir des compétences pratiques et théoriques qui transformeront votre approche de ' . Str::lower($course->category) . '.</p>',
                 'file_path' => null,
                 'order' => 1,
+                'duration' => 10, // 10 minutes
             ]);
 
             // Module 2: Core Video Content
@@ -276,6 +277,7 @@ class ProfessionalDemoSeeder extends Seeder
                 'type' => 'video',
                 'file_path' => $moduleContents['video'],
                 'order' => 2,
+                'duration' => 30, // 30 minutes
             ]);
 
             // Module 3: Detailed PDF Guide
@@ -286,6 +288,7 @@ class ProfessionalDemoSeeder extends Seeder
                 'text_content' => null,
                 'file_path' => $moduleContents['pdf'],
                 'order' => 3,
+                'duration' => 60, // 60 minutes
             ]);
 
             // Module 4: Illustrative Diagram
@@ -296,6 +299,7 @@ class ProfessionalDemoSeeder extends Seeder
                 'text_content' => null,
                 'file_path' => $moduleContents['image'],
                 'order' => 4,
+                'duration' => 10, // 10 minutes
             ]);
 
             // Module 5: Quiz
@@ -304,6 +308,7 @@ class ProfessionalDemoSeeder extends Seeder
                 'title' => 'Quiz du Cours : Vérifiez vos Connaissances',
                 'type' => 'quiz',
                 'order' => 5,
+                'duration' => 30, // 30 minutes
             ]);
             $modules[] = $quizModule;
 

@@ -39,22 +39,6 @@ class MachineLearningCourseSeeder extends Seeder
         // Nous allons utiliser Sanae pour ce cours. Si elle n'existe pas, on la crée.
         $instructorUser = User::where('email', 'sanae@example.com')->first();
 
-        if (!$instructorUser) {
-            $instructorUser = User::create([
-                'username' => 'prof.sanae',
-                'email' => 'sanae@example.com',
-                'password' => Hash::make('password'),
-                'role' => 'instructor',
-                'nom' => 'Sanae',
-                'prenom' => 'Sanae',
-                'avatar' => '/storage/avatars/sanae.png',
-            ]);
-            Instructor::create(['user_id' => $instructorUser->id, 'specialisation' => 'Intelligence Artificielle, Cybersécurité, Python Avancé']);
-            $this->command->info('Instructeur Sanae créé.');
-        } else {
-            $this->command->info('Instructeur Sanae déjà existant.');
-        }
-
         $instructor = $instructorUser->instructor;
 
         // --- 2. Définition des détails du cours ---
@@ -91,6 +75,7 @@ class MachineLearningCourseSeeder extends Seeder
             'text_content' => null,
             'file_path' => '/storage/courses/' . $courseSlug . '/modules/module_1_introduction_ml.png',
             'order' => 1,
+            'duration' => 10, // 10 minutes
         ]);
         $this->command->info('Module 1 (Introduction - Image) créé.');
 
@@ -147,6 +132,7 @@ class MachineLearningCourseSeeder extends Seeder
             'text_content' => $basicConceptsText,
             'file_path' => null,
             'order' => 2,
+            'duration' => 20, // 20 minutes
         ]);
         $this->command->info('Module 2 (Concepts Basiques - Texte HTML) créé.');
 
@@ -158,6 +144,7 @@ class MachineLearningCourseSeeder extends Seeder
             'text_content' => null,
             'file_path' => '/storage/courses/' . $courseSlug . '/modules/module_3_animation_learning.mp4',
             'order' => 3,
+            'duration' => 30, // 30 minutes
         ]);
         $this->command->info('Module 3 (Animation Vidéo) créé.');
 
@@ -167,6 +154,7 @@ class MachineLearningCourseSeeder extends Seeder
             'title' => 'Quiz : Testez vos Connaissances du Module 2',
             'type' => 'quiz',
             'order' => 4,
+            'duration' => 30, // 30 minutes
         ]);
         $this->command->info('Module 4 (Quiz) créé.');
 
@@ -215,6 +203,7 @@ class MachineLearningCourseSeeder extends Seeder
             'text_content' => null,
             'file_path' => '/storage/courses/' . $courseSlug . '/modules/module_5_pdf_ml.pdf',
             'order' => 5,
+            'duration' => 60, // 60 minutes
         ]);
 
         // Module 6: Conclusion Image
@@ -225,6 +214,7 @@ class MachineLearningCourseSeeder extends Seeder
             'text_content' => null,
             'file_path' => '/storage/courses/' . $courseSlug . '/modules/module_6_conclusion_ml.png',
             'order' => 6,
+            'duration' => 10, // 10 minutes
         ]);
         $this->command->info('Module 6 (Conclusion - Image) créé.');
 
