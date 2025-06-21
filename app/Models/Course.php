@@ -91,4 +91,9 @@ class Course extends Model
     {
         return $this->hasMany(Certificate::class);
     }
+
+    public function chatMessages(): \Illuminate\Database\Eloquent\Relations\HasMany
+    {
+        return $this->hasMany(ChatMessage::class);
+    }
 }

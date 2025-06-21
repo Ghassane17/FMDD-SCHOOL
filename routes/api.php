@@ -15,6 +15,7 @@ use App\Http\Controllers\LearnerController;
 use App\Http\Controllers\InstructorController;
 use App\Http\Controllers\CommentReplyController;
 use App\Http\Controllers\Auth\EmailVerificationController;
+use App\Http\Controllers\ChatMessageController;
 // Authentication Routes
 Route::post('/register', [RegisterController::class, 'register'])->name('register');
 
@@ -132,6 +133,12 @@ Route::middleware('auth:sanctum')->group(function () {
 
     Route::get('/certificates/verify/{certificateCode}', [CertificateController::class, 'verify'])
         ->name('certificates.verify');
+
+    // Chat messages routes
+    Route::get('/courses/{courseId}/chat', [ChatMessageController::class, 'index']);
+    Route::post('/courses/{courseId}/chat', [ChatMessageController::class, 'store']);
+    Route::put('/courses/{courseId}/chat/{messageId}', [ChatMessageController::class, 'update']);
+    Route::delete('/courses/{courseId}/chat/{messageId}', [ChatMessageController::class, 'destroy']);
 });
 
 // Certificate routes

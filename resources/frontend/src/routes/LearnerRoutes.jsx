@@ -14,6 +14,7 @@ import CourseLearnerLayout from "@/Layouts/LearnerCourseLayout.jsx";
 import AccountSettings from '../components/formateurs/AccountSettings.jsx';
 import LearnerSettingsPage from '../components/Learner/LearnerSettingsPage.jsx';
 import CompleteProfileLearner from '../pages/CompleteProfileLearner.jsx'
+import CourseChat from '../components/Course/CourseChat.jsx';
 // Make sure the routes are in the correct order
 const LearnerRoutes = {
     element: <CourseLayout />,
@@ -56,6 +57,17 @@ const LearnerRoutes = {
                 {
                     index: true,
                     element: <LearnerCourse />,
+                }
+            ]
+        },
+        // Course chat route
+        {
+            path: 'courses/:courseId/chat',
+            element: <CourseLearnerLayout />,
+            children: [
+                {
+                    index: true,
+                    element: <CourseChat />,
                 }
             ]
         },

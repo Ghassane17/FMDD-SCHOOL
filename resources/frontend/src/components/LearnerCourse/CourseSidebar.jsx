@@ -1,7 +1,7 @@
 import React from 'react';
 import PropTypes from 'prop-types';
 import { useNavigate } from 'react-router-dom';
-import { CheckCircle, School, Lock } from '@mui/icons-material';
+import { CheckCircle, School, Lock, Chat } from '@mui/icons-material';
 
 const CourseSidebar = ({ modules, currentModuleId, progress, isOpen, onModuleSelect, courseId, hasExam }) => {
     const navigate = useNavigate();
@@ -15,6 +15,13 @@ const CourseSidebar = ({ modules, currentModuleId, progress, isOpen, onModuleSel
         }
         console.log('Navigating to Final Exam:', `/learner/courses/${courseId}/finalQuiz`);
         navigate(`/learner/courses/${courseId}/finalQuiz`);
+        if (window.innerWidth < 1024) {
+            // Sidebar closes on mobile (controlled by parent via isOpen)
+        }
+    };
+
+    const handleChatClick = () => {
+        navigate(`/learner/courses/${courseId}/chat`);
         if (window.innerWidth < 1024) {
             // Sidebar closes on mobile (controlled by parent via isOpen)
         }
@@ -50,28 +57,40 @@ const CourseSidebar = ({ modules, currentModuleId, progress, isOpen, onModuleSel
                         );
                     })}
                 </ul>
+
+                {/* Outils de collaboration */}
+                <div className="mt-6 pt-4 border-t border-gray-200">
+                    <h3 className="text-md font-semibold text-gray-800 mb-3">Outils de collaboration</h3>
+                    <button
+                        onClick={handleChatClick}
+                        className="w-full text-left p-3 rounded-lg bg-blue-50 text-blue-700 hover:bg-blue-100 flex items-center gap-2"
+                    >
+                        <Chat className="w-4 h-4" />
+                        <span className="text-sm font-medium">Discussion du Cours</span>
+                    </button>
+                </div>
+
+                {/* Final Exam Section */}
                 {hasExam && (
-                    <div className="mt-4">
+                    <div className="mt-4 pt-4 border-t border-gray-200">
+                        <h3 className="text-md font-semibold text-gray-800 mb-3">Final Exam</h3>
                         <button
                             onClick={handleFinalExamClick}
-                            className={`w-full text-left p-3 rounded-lg flex items-center ${
+                            disabled={isExamDisabled}
+                            className={`w-full text-left p-3 rounded-lg flex items-center gap-2 ${
                                 isExamDisabled
                                     ? 'bg-gray-100 text-gray-400 cursor-not-allowed'
-                                    : 'bg-gray-50 text-gray-700 hover:bg-indigo-100'
+                                    : 'bg-green-50 text-green-700 hover:bg-green-100'
                             }`}
-                            disabled={isExamDisabled}
                         >
-                            {isExamDisabled ? (
-                                <Lock className="mr-2 text-gray-400" fontSize="small" />
-                            ) : (
-                                <School className="mr-2 text-indigo-600" fontSize="small" />
-                            )}
-                            <span className="text-sm font-medium">
-                                {isExamDisabled ? 'Examen final (Pas disponible)' : 'Examen final'}
-                            </span>
+                            <School className="w-4 h-4" />
+                            <span className="text-sm font-medium">Take Final Exam</span>
+                            {isExamDisabled && <Lock className="w-3 h-3 ml-auto" />}
                         </button>
                         {isExamDisabled && (
-                            <p className="mt-2 text-xs text-gray-500 px-3">Vous devez compléter tous les modules ({progress} %) pour accéder à l'examen final.</p>
+                            <p className="text-xs text-gray-500 mt-1">
+                                Complete all modules to unlock the exam
+                            </p>
                         )}
                     </div>
                 )}
