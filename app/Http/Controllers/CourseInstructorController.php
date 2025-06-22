@@ -37,8 +37,9 @@ class CourseInstructorController extends Controller
                 return response()->json(['message' => 'Instructor profile not found'], 404);
             }
 
-            // Get all courses for this instructor with related data
+            // Get all courses for this instructor with related data and comment count
             $courses = Course::with(['modules', 'learners'])
+                ->withCount('chatMessages as comment_count')
                 ->where('instructor_id', $instructor->id)
                 ->get()
                 ->map(function ($course) {
@@ -53,6 +54,7 @@ class CourseInstructorController extends Controller
                         'duration_hours' => $course->duration_hours,
                         'students_count' => $course->learners->count(),
                         'modules_count' => $course->modules->count(),
+                        'comment_count' => $course->comment_count,
                         'created_at' => $course->created_at,
                         'updated_at' => $course->updated_at
                     ];

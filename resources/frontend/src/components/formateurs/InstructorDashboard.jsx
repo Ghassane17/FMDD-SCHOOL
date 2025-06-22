@@ -11,7 +11,7 @@ import CommentSection from './CommentSection';
 import AccountSettings from './AccountSettings';
 import PaymentSection from './PaymentSection';
 import { getInstructorDashboard } from '../../services/api_instructor';
-
+import ChatMessageInstructor from './chatMessageInstructor';
 const API_URL = import.meta.env.VITE_API_BASE_URL || 'http://localhost:8000';
 
 const InstructorDashboard = () => {
@@ -111,6 +111,8 @@ const InstructorDashboard = () => {
         );
       case 'settings':
         return <AccountSettings instructorData={instructorData} backend_url={API_URL} />;
+      case 'messages':
+        return <ChatMessageInstructor />;
       default:
         return (
           <div className="container mx-auto px-4 py-8">

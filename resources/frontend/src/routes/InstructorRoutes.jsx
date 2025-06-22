@@ -9,6 +9,9 @@ import ManageCourse from '../components/formateurs/ManageCourse.jsx';
 import CompleteProfileInstructor from '../pages/CompleteProfileInstructor.jsx'
 import Notifications from '../components/formateurs/Notifications.jsx'
 import InstructorDashboard from '../components/formateurs/InstructorDashboard.jsx'
+import ChatMessageInstructor from '../components/formateurs/chatMessageInstructor.jsx'
+import InstructorCourseChat from '../components/formateurs/InstructorCourseChat.jsx'
+
 const InstructorRoutes = {
     element : <InstructorLayout />,
     errorElement: <ErrorBoundary />,
@@ -48,6 +51,14 @@ const InstructorRoutes = {
         {
           path: 'notifications',
           element: <Notifications />,
+        },
+        {
+          path: 'chat',
+          element: <ChatMessageInstructor />,
+        },
+        {
+          path: 'chat/:courseId',
+          element: <InstructorCourseChat />,
         },
         {
           path: '*',

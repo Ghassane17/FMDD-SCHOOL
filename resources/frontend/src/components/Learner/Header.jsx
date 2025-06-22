@@ -240,6 +240,14 @@ const Header = ({ school, isAuthenticated, user, onLogout }) => {
                         <BookOpen className="w-4 h-4" />
                         My Courses
                       </Link>}
+                      { user.role === "instructor" && <Link
+                            to="/instructor/chat"
+                            onClick={() => toggle("menu")}
+                            className="flex items-center gap-3 px-3 py-2 text-sm text-gray-700 hover:bg-gray-50 hover:text-black rounded-lg transition-colors"
+                      >
+                        <MessageCircle className="w-4 h-4" />
+                        Discussions
+                      </Link>}
                       { user.role === "learner" && <Link
                             to="/learner/suggested-courses"
                             onClick={() => toggle("menu")}
