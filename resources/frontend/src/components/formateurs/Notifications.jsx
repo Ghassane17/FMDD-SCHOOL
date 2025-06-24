@@ -67,6 +67,8 @@ const Notifications = () => {
             case 'changes_requested':
                 return 'border-orange-200 bg-orange-50';
             case 'new_comment':
+            case 'chat_message':
+                return 'border-blue-200 bg-blue-50';
             case 'new_enrollment':
                 return 'border-blue-200 bg-blue-50';
             default:
@@ -205,7 +207,7 @@ const Notifications = () => {
 
     // Check if notification type should be clickable (exclude course_rejected since course is deleted)
     const isClickableNotification = (type) => {
-        return ['course_approved', 'changes_requested'].includes(type);
+        return ['course_approved', 'changes_requested', 'chat_message'].includes(type);
     };
 
     // Check if notification has admin message
@@ -230,8 +232,13 @@ const Notifications = () => {
             if (!notification.read) {
                 handleMarkAsRead(notification.id);
             }
-            // Navigate to manage course page
-            navigate(`/instructor/manage-course/${notification.data.course_id}`);
+            if (notification.type === 'chat_message') {
+                // Navigate to chat message page
+                navigate(`/instructor/chat/${notification.data.course_id}`);
+            } else {
+                // Navigate to manage course page
+                navigate(`/instructor/manage-course/${notification.data.course_id}`);
+            }
         }
     };
 

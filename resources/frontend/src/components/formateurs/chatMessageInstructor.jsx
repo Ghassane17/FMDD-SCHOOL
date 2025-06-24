@@ -3,6 +3,8 @@ import { useNavigate } from 'react-router-dom';
 import { getInstructorCourses } from '../../services/api_instructor';
 import { MessageCircle, Users, Clock, AlertCircle, Loader, ArrowRight, Hash, CheckCircle2 } from 'lucide-react';
 
+const backendUrl = import.meta.env.VITE_BACKEND_URL;
+
 export default function ChatMessageInstructor() {
     const [courses, setCourses] = useState([]);
     const [loading, setLoading] = useState(true);
@@ -145,7 +147,7 @@ export default function ChatMessageInstructor() {
                                 {/* Course Image */}
                                 <div className="relative h-40 mb-4 rounded-xl overflow-hidden">
                                     <img 
-                                        src={course.image ? `${import.meta.env.VITE_BACKEND_URL}${course.image}` : '/placeholder-course.jpg'} 
+                                        src={backendUrl + course.course_thumbnail} 
                                         alt={course.title} 
                                         className="w-full h-full object-cover group-hover:scale-110 transition-transform duration-300" 
                                     />

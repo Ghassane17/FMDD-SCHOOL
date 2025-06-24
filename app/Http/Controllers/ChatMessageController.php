@@ -5,6 +5,8 @@ namespace App\Http\Controllers;
 
 use App\Models\ChatMessage;
 use App\Models\Course;
+use App\Models\Notification;
+use App\Models\Instructor;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Auth;
 
@@ -79,6 +81,19 @@ class ChatMessageController extends Controller
             'user_id'           => $user->id,
             'parent_message_id' => $data['parent_message_id'] ?? null,
             'content'           => $data['content'],
+        ]);
+
+        // Créer une notification pour l'instructeur
+
+        $instructor = Instructor::find($course->instructor_id);
+        Notification::create([
+            'user_id' => $instructor->user_id,
+            'text' => 'Vous avez un nouveau message dans le chat du cours ' . $course->title,
+            'type' => 'chat_message',
+            'data' => [
+                'course_id' => $course->id,
+                'message_id' => $message->id,
+            ],
         ]);
 
         // Charger l'utilisateur pour la réponse avec les champs nécessaires
